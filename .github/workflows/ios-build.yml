@@ -82,3 +82,52 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
             build
+
+      - name: Select iOS simulator
+        id: simulator
+        shell: bash
+        run: |
+          xcrun simctl list devices available --json > "$RUNNER_TEMP/simulators.json"
+          python3 <<'PY'
+          import json
+          import os
+          import sys
+
+          path = os.path.join(os.environ["RUNNER_TEMP"], "simulators.json")
+          with open(path, "r", encoding="utf-8") as handle:
+              data = json.load(handle)
+
+          candidates = []
+          for runtime, devices in data.get("devices", {}).items():
+              if "SimRuntime.iOS" not in runtime:
+                  continue
+              for device in devices:
+                  if device.get("isAvailable") and device.get("name", "").startswith("iPad"):
+                      candidates.append(device)
+
+          if not candidates:
+              print("No available iPad Simulator was found.", file=sys.stderr)
+              sys.exit(1)
+
+          selected = next(
+              (device for device in candidates if "iPad Pro 13-inch" in device["name"]),
+              candidates[0],
+          )
+          print(f"Selected simulator: {selected['name']} ({selected['udid']})")
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"udid={selected['udid']}\n")
+          PY
+
+      - name: Run MOBA unit tests
+        run: |
+          set -o pipefail
+          xcodebuild \
+            test \
+            -project Moonlight.xcodeproj \
+            -scheme MoonlightMobaTests \
+            -configuration Debug \
+            -destination "platform=iOS Simulator,id=${{ steps.simulator.outputs.udid }}" \
+            -derivedDataPath "$RUNNER_TEMP/MoonlightMobaTestDerivedData" \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO
