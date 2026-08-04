@@ -230,7 +230,7 @@
     // Only cleanup when we're being destroyed
     if (parent == nil) {
 #if !TARGET_OS_TV
-        [_mobaOverlayCoordinator stop];
+        [_mobaOverlayCoordinator viewControllerWillDisappear];
         _mobaOverlayCoordinator = nil;
 #endif
         [_controllerSupport cleanup];
@@ -332,6 +332,10 @@
 
 // This will fire if the user opens control center or gets a low battery message
 - (void)applicationWillResignActive:(NSNotification *)notification {
+#if !TARGET_OS_TV
+    [_mobaOverlayCoordinator applicationWillResignActive];
+#endif
+
     if (_inactivityTimer != nil) {
         [_inactivityTimer invalidate];
     }
@@ -356,6 +360,10 @@
 }
 
 - (void)applicationDidBecomeActive:(NSNotification *)notification {
+#if !TARGET_OS_TV
+    [_mobaOverlayCoordinator applicationDidBecomeActive];
+#endif
+
     // Stop the background timer, since we're foregrounded again
     if (_inactivityTimer != nil) {
         Log(LOG_I, @"Stopping inactivity timer after becoming active again");
@@ -367,6 +375,10 @@
 // This fires when the home button is pressed
 - (void)applicationDidEnterBackground:(UIApplication *)application {
     Log(LOG_I, @"Terminating stream immediately for backgrounding");
+
+#if !TARGET_OS_TV
+    [_mobaOverlayCoordinator applicationDidEnterBackground];
+#endif
 
     if (_inactivityTimer != nil) {
         [_inactivityTimer invalidate];
@@ -416,7 +428,7 @@
     
     dispatch_async(dispatch_get_main_queue(), ^{
 #if !TARGET_OS_TV
-        [self->_mobaOverlayCoordinator stop];
+        [self->_mobaOverlayCoordinator streamDidDisconnect];
 #endif
         // Allow the display to go to sleep now
         [UIApplication sharedApplication].idleTimerDisabled = NO;
@@ -700,6 +712,16 @@
 
 #if !TARGET_OS_TV
 // Require a confirmation when streaming to activate a system gesture
+- (void)viewWillTransitionToSize:(CGSize)size
+       withTransitionCoordinator:(id<UIViewControllerTransitionCoordinator>)coordinator {
+    [_mobaOverlayCoordinator orientationWillChange];
+    [super viewWillTransitionToSize:size withTransitionCoordinator:coordinator];
+
+    [coordinator animateAlongsideTransition:nil completion:^(__unused id<UIViewControllerTransitionCoordinatorContext> context) {
+        [self->_mobaOverlayCoordinator orientationDidChange];
+    }];
+}
+
 - (UIRectEdge)preferredScreenEdgesDeferringSystemGestures {
     return UIRectEdgeAll;
 }

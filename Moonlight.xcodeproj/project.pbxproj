@@ -29,6 +29,9 @@
 		A6E00000000000000000000A /* MoonlightMobaInputAdapterTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */; };
 		A6E00000000000000000000B /* MobaCursorDiagnosticsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */; };
 		A6E00000000000000000000C /* MobaVideoGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A3C000000000000000000004 /* MobaVideoGeometry.m */; };
+		A7F000000000000000000001 /* MobaOverlayLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A7F000000000000000000102 /* MobaOverlayLifecycle.m */; };
+		A7F000000000000000000002 /* MobaOverlayLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A7F000000000000000000102 /* MobaOverlayLifecycle.m */; };
+		A7F000000000000000000003 /* MobaOverlayLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A7F000000000000000000103 /* MobaOverlayLifecycleTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -238,6 +241,9 @@
 		A6E00000000000000000010B /* MobaGameCanvasTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaGameCanvasTests.m; sourceTree = "<group>"; };
 		A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MoonlightMobaInputAdapterTests.m; sourceTree = "<group>"; };
 		A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCursorDiagnosticsTests.m; sourceTree = "<group>"; };
+		A7F000000000000000000101 /* MobaOverlayLifecycle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaOverlayLifecycle.h; sourceTree = "<group>"; };
+		A7F000000000000000000102 /* MobaOverlayLifecycle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaOverlayLifecycle.m; sourceTree = "<group>"; };
+		A7F000000000000000000103 /* MobaOverlayLifecycleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaOverlayLifecycleTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -606,6 +612,8 @@
 				A6E000000000000000000106 /* MoonlightMobaInputSender.m */,
 				A6E000000000000000000107 /* MobaCursorDiagnostics.h */,
 				A6E000000000000000000108 /* MobaCursorDiagnostics.m */,
+				A7F000000000000000000101 /* MobaOverlayLifecycle.h */,
+				A7F000000000000000000102 /* MobaOverlayLifecycle.m */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -637,6 +645,7 @@
 				A6E00000000000000000010B /* MobaGameCanvasTests.m */,
 				A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */,
 				A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */,
+				A7F000000000000000000103 /* MobaOverlayLifecycleTests.m */,
 			);
 			path = MoonlightMobaTests;
 			sourceTree = "<group>";
@@ -986,6 +995,8 @@
 				A6E00000000000000000000A /* MoonlightMobaInputAdapterTests.m in Sources */,
 				A6E00000000000000000000B /* MobaCursorDiagnosticsTests.m in Sources */,
 				A6E00000000000000000000C /* MobaVideoGeometry.m in Sources */,
+				A7F000000000000000000002 /* MobaOverlayLifecycle.m in Sources */,
+				A7F000000000000000000003 /* MobaOverlayLifecycleTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1055,6 +1066,7 @@
 				A6E000000000000000000005 /* MoonlightMobaInputSender.m in Sources */,
 				A6E000000000000000000006 /* MobaCursorDiagnostics.m in Sources */,
 				A6E000000000000000000008 /* MobaCursorDiagnosticPanel.m in Sources */,
+				A7F000000000000000000001 /* MobaOverlayLifecycle.m in Sources */,
 				FB290D0719B2C406004C83CF /* Limelight.xcdatamodeld in Sources */,
 				9819CC22254F180F008A7C8E /* AbsoluteTouchHandler.m in Sources */,
 				9819CC14254F107A008A7C8E /* RelativeTouchHandler.m in Sources */,

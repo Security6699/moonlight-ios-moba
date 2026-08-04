@@ -64,4 +64,14 @@
     [_diagnostics sendPointAtIndex:(NSUInteger)sender.tag];
 }
 
+- (void)setMobaLocalInteractionEnabled:(BOOL)enabled {
+    self.hidden = !enabled;
+    self.userInteractionEnabled = enabled;
+}
+
+- (void)resetMobaLocalInteractionForReason:(MobaInputInterruptionReason)reason {
+    (void)reason;
+    [self setMobaLocalInteractionEnabled:NO];
+}
+
 @end

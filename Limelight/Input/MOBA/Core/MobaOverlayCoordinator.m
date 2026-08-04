@@ -15,39 +15,43 @@
 #endif
 
 @interface MobaOverlayCoordinator () <MobaBattleInputGate>
-- (void)updateDiagnosticPanelVisibility;
 @end
 
 @implementation MobaOverlayCoordinator {
     __weak StreamView *_streamView;
     MobaInputDispatcher *_inputDispatcher;
+    MobaOverlayLifecycle *_lifecycle;
     MobaCursorDiagnostics *_cursorDiagnostics;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
 #endif
-    BOOL _running;
 }
 
 - (instancetype)initWithStreamView:(StreamView *)streamView {
     self = [super init];
     if (self) {
         _streamView = streamView;
-        _mode = [streamView isMobaBattleModeSupported] ? MobaOverlayModeBattle : MobaOverlayModeUI;
-
         MoonlightMobaInputSender *sender = [[MoonlightMobaInputSender alloc] init];
         MoonlightMobaInputAdapter *adapter = [[MoonlightMobaInputAdapter alloc] initWithSender:sender];
         _inputDispatcher = [[MobaInputDispatcher alloc] initWithSink:adapter];
+        _lifecycle = [[MobaOverlayLifecycle alloc] initWithEnvironment:(id<MobaOverlayLifecycleEnvironment>)streamView
+                                                       inputDispatcher:_inputDispatcher];
         _cursorDiagnostics = [[MobaCursorDiagnostics alloc] initWithDispatcher:_inputDispatcher
                                                                      inputGate:self];
 #if DEBUG
         _cursorDiagnosticPanel = [[MobaCursorDiagnosticPanel alloc] initWithDiagnostics:_cursorDiagnostics];
+        [_lifecycle registerLocalInteractionResetParticipant:_cursorDiagnosticPanel];
 #endif
     }
     return self;
 }
 
 - (BOOL)isRunning {
-    return _running;
+    return _lifecycle.isRunning;
+}
+
+- (MobaOverlayMode)mode {
+    return _lifecycle.mode;
 }
 
 - (void)setMode:(MobaOverlayMode)mode {
@@ -59,31 +63,29 @@
 }
 
 - (BOOL)isBattleInputAllowed {
-    return _running && _mode == MobaOverlayModeBattle && [self isBattleModeAvailable];
+    return _lifecycle.isBattleInputAllowed;
+}
+
+- (BOOL)isInputSuspended {
+    return _lifecycle.isInputSuspended;
+}
+
+- (void)registerLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant {
+    [_lifecycle registerLocalInteractionResetParticipant:participant];
+}
+
+- (void)unregisterLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant {
+    [_lifecycle unregisterLocalInteractionResetParticipant:participant];
 }
 
 - (BOOL)transitionToMode:(MobaOverlayMode)mode {
-    if (mode == MobaOverlayModeBattle && ![self isBattleModeAvailable]) {
-        return NO;
-    }
-
-    if (_mode == mode) {
-        [self updateDiagnosticPanelVisibility];
-        return YES;
-    }
-
-    _mode = mode;
-    [self updateDiagnosticPanelVisibility];
-    return YES;
+    return [_lifecycle transitionToMode:mode];
 }
 
 - (void)start {
-    if (_running) {
+    if (_lifecycle.isRunning) {
         return;
     }
-
-    _running = YES;
-    [_streamView setTraditionalOnScreenControlsSuppressed:YES];
 
 #if DEBUG
     if (_cursorDiagnosticPanel.superview == nil) {
@@ -95,29 +97,78 @@
         ]];
     }
 #endif
-    [self updateDiagnosticPanelVisibility];
+    [_lifecycle start];
 }
 
 - (void)stop {
-    if (!_running) {
-        return;
-    }
-
-    _running = NO;
+    [_lifecycle stop];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
-    [_streamView setTraditionalOnScreenControlsSuppressed:NO];
 }
 
-- (void)updateDiagnosticPanelVisibility {
+- (BOOL)interruptAndReleaseInputsForReason:(MobaInputInterruptionReason)reason {
+    return [_lifecycle interruptAndReleaseInputsForReason:reason];
+}
+
+- (void)touchesCancelled {
+    [_lifecycle touchesCancelled];
+}
+
+- (void)applicationWillResignActive {
+    [_lifecycle applicationWillResignActive];
+}
+
+- (void)applicationDidEnterBackground {
+    [_lifecycle applicationDidEnterBackground];
+}
+
+- (void)applicationDidBecomeActive {
+    [_lifecycle applicationDidBecomeActive];
+}
+
+- (void)streamDidDisconnect {
+    [_lifecycle streamDidDisconnect];
 #if DEBUG
-    _cursorDiagnosticPanel.hidden = ![self isBattleInputAllowed];
+    [_cursorDiagnosticPanel removeFromSuperview];
+#endif
+}
+
+- (void)viewControllerWillDisappear {
+    [_lifecycle viewControllerWillDisappear];
+#if DEBUG
+    [_cursorDiagnosticPanel removeFromSuperview];
+#endif
+}
+
+- (void)orientationWillChange {
+    [_lifecycle orientationWillChange];
+}
+
+- (void)orientationDidChange {
+    [_lifecycle orientationDidChange];
+}
+
+- (void)profileWillReload {
+    [_lifecycle profileWillReload];
+}
+
+- (void)profileDidReload {
+    [_lifecycle profileDidReload];
+}
+
+- (void)mobaFeatureWillDisable {
+    [_lifecycle mobaFeatureWillDisable];
+#if DEBUG
+    [_cursorDiagnosticPanel removeFromSuperview];
 #endif
 }
 
 - (void)dealloc {
-    [self stop];
+    [_lifecycle invalidateForDestruction];
+#if DEBUG
+    [_cursorDiagnosticPanel removeFromSuperview];
+#endif
 }
 
 @end

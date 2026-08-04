@@ -68,6 +68,10 @@ Objective-C, UIKit, Foundation, and XCTest are the default technologies. Do not 
 
 Owns overlay lifecycle, active mode, profile loading, child controls, notifications, and release-all behavior. It is the only object attached directly by the stream view controller.
 
+The coordinator owns one `MobaOverlayLifecycle` state machine. Battle input is allowed only while the coordinator is running, the mode is Battle, the stream resolution is valid, and input is not suspended. An interruption synchronously suspends Battle input and disables local interaction before it enqueues dispatcher release-all. It then resets every registered local interaction participant. Repeated interruption calls while already suspended do not release or reset again.
+
+Local interaction reset participants must cancel owned touches, invalidate timers and display links, clear cast or session state, and remove visual pressed state. The DEBUG cursor diagnostic panel uses the same participant boundary. The dispatcher remains the only pressed-key and pressed-button owner. Sink and production adapter implementations remain stateless.
+
 ### MobaOverlayView
 
 Hosts controls and manages hit testing by mode. It does not send remote input directly.
@@ -145,7 +149,11 @@ Mode transitions always release remote input before changing hit testing.
 
 ## 7. Lifecycle
 
-Coordinator subscribes to app background/inactive events, stream teardown, controller disappearance, orientation changes, profile reloads, and feature-toggle changes. Every such transition calls `releaseAllInputs`, cancels active touches/casts, and invalidates display links.
+Coordinator receives app background/inactive, stream teardown, controller disappearance, and orientation callbacks through the existing `StreamFrameViewController` lifecycle. It also exposes profile reload and feature-toggle interruption entries for their future owners. Every such transition calls `releaseAllInputs`, cancels active touches/casts, and invalidates display links.
+
+All paths converge on `interruptAndReleaseInputsForReason:`. The ordered boundary is suspend input, disable diagnostics and local interaction, enqueue dispatcher release-all, then reset local participants. Release-all expands tracked state into concrete key-up and mouse-up events exactly once and invalidates pending tap tokens.
+
+App-active, orientation-complete, and profile-reloaded callbacks may clear suspension only when the stream remains connected, the coordinator remains running, the mode is Battle, and the resolution remains exactly 2560x1440. Recovery never recreates a pressed input or cancelled timer. Stop, stream teardown, controller disappearance, destruction, and feature disable remain suspended and restore traditional on-screen controls.
 
 ## 8. Extension path
 
