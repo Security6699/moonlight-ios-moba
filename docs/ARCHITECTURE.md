@@ -102,6 +102,8 @@ Load validated, versioned configuration. Layout, runtime, input, and champion be
 
 Fixed 2560x1440 integer-like coordinates, origin top-left. Used for hero anchor, skill range, cursor targets, diagnostics, and champion calibration.
 
+`MobaGameCanvas` accepts only finite game-space coordinates. It clamps X to 0...2559 and Y to 0...1439 before conversion to the integer values required by moonlight-common. Fractional parts are discarded toward zero after clamping. Non-finite coordinates are rejected and no input event is sent. This conversion never uses StreamView bounds, safe areas, videoRect, or device screen dimensions.
+
 ### View space
 
 UIKit points in the stream view/controller hierarchy. Used only for rendering and local touch locations.
@@ -126,7 +128,11 @@ Runtime Aspect Fit rectangle derived from StreamView bounds and stream aspect ra
 
 The production adapter should call the existing Moonlight input APIs. A sink sends only individual stateless input actions and must not maintain another pressed-key or pressed-button collection.
 
+`MoonlightMobaInputAdapter` uses the existing `KeyboardSupport` Win32 VK convention of `0x8000 | keyCode`, with `KEY_ACTION_DOWN` or `KEY_ACTION_UP` and zero modifiers. Mouse buttons use `LiSendMouseButtonEvent` with `BUTTON_ACTION_PRESS` or `BUTTON_ACTION_RELEASE`. Absolute cursor events use `LiSendMousePositionEvent` after `MobaGameCanvas` validation, always with reference width 2560 and reference height 1440. A thin stateless sender is the only layer that calls these moonlight-common functions.
+
 The dispatcher is the only input state owner. It owns pressed-key and pressed-button tracking, duplicate transition suppression, tap timing, event ordering, and release-all behavior. Release-all invalidates pending tap timers, clears dispatcher state, and expands every tracked input into one concrete key-up or mouse-up. Each tracked state is released at most once. UI code must not call the Moonlight input APIs directly.
+
+The debug nine-point panel submits only the fixed canvas points documented in the test plan. It calls `MobaCursorDiagnostics`, which checks the coordinator's `battleInputAllowed` gate and then submits the point to `MobaInputDispatcher`. The panel is compiled into the DEBUG diagnostic path and is attached only by a running MOBA coordinator. It never calls the adapter or moonlight-common directly.
 
 ## 6. Modes and hit testing
 

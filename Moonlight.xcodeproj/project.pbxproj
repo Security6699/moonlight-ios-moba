@@ -17,6 +17,18 @@
 		A5D000000000000000000004 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5D000000000000000000010 /* XCTest.framework */; };
 		A5D000000000000000000019 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB290CF119B2C406004C83CF /* Foundation.framework */; };
 		A5D000000000000000000020 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB290CF319B2C406004C83CF /* CoreGraphics.framework */; };
+		A6E000000000000000000001 /* MobaGameCanvas.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E000000000000000000102 /* MobaGameCanvas.m */; };
+		A6E000000000000000000002 /* MobaGameCanvas.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E000000000000000000102 /* MobaGameCanvas.m */; };
+		A6E000000000000000000003 /* MoonlightMobaInputAdapter.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E000000000000000000104 /* MoonlightMobaInputAdapter.m */; };
+		A6E000000000000000000004 /* MoonlightMobaInputAdapter.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E000000000000000000104 /* MoonlightMobaInputAdapter.m */; };
+		A6E000000000000000000005 /* MoonlightMobaInputSender.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E000000000000000000106 /* MoonlightMobaInputSender.m */; };
+		A6E000000000000000000006 /* MobaCursorDiagnostics.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E000000000000000000108 /* MobaCursorDiagnostics.m */; };
+		A6E000000000000000000007 /* MobaCursorDiagnostics.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E000000000000000000108 /* MobaCursorDiagnostics.m */; };
+		A6E000000000000000000008 /* MobaCursorDiagnosticPanel.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E00000000000000000010A /* MobaCursorDiagnosticPanel.m */; };
+		A6E000000000000000000009 /* MobaGameCanvasTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E00000000000000000010B /* MobaGameCanvasTests.m */; };
+		A6E00000000000000000000A /* MoonlightMobaInputAdapterTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */; };
+		A6E00000000000000000000B /* MobaCursorDiagnosticsTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */; };
+		A6E00000000000000000000C /* MobaVideoGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A3C000000000000000000004 /* MobaVideoGeometry.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -213,6 +225,19 @@
 		A5D000000000000000000008 /* MobaInputDispatcherTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaInputDispatcherTests.m; sourceTree = "<group>"; };
 		A5D000000000000000000009 /* MoonlightMobaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoonlightMobaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		A5D000000000000000000010 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		A6E000000000000000000101 /* MobaGameCanvas.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaGameCanvas.h; sourceTree = "<group>"; };
+		A6E000000000000000000102 /* MobaGameCanvas.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaGameCanvas.m; sourceTree = "<group>"; };
+		A6E000000000000000000103 /* MoonlightMobaInputAdapter.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MoonlightMobaInputAdapter.h; sourceTree = "<group>"; };
+		A6E000000000000000000104 /* MoonlightMobaInputAdapter.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MoonlightMobaInputAdapter.m; sourceTree = "<group>"; };
+		A6E000000000000000000105 /* MoonlightMobaInputSender.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MoonlightMobaInputSender.h; sourceTree = "<group>"; };
+		A6E000000000000000000106 /* MoonlightMobaInputSender.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MoonlightMobaInputSender.m; sourceTree = "<group>"; };
+		A6E000000000000000000107 /* MobaCursorDiagnostics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCursorDiagnostics.h; sourceTree = "<group>"; };
+		A6E000000000000000000108 /* MobaCursorDiagnostics.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCursorDiagnostics.m; sourceTree = "<group>"; };
+		A6E000000000000000000109 /* MobaCursorDiagnosticPanel.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCursorDiagnosticPanel.h; sourceTree = "<group>"; };
+		A6E00000000000000000010A /* MobaCursorDiagnosticPanel.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCursorDiagnosticPanel.m; sourceTree = "<group>"; };
+		A6E00000000000000000010B /* MobaGameCanvasTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaGameCanvasTests.m; sourceTree = "<group>"; };
+		A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MoonlightMobaInputAdapterTests.m; sourceTree = "<group>"; };
+		A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCursorDiagnosticsTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -562,6 +587,7 @@
 			children = (
 				A2B000000000000000000005 /* Core */,
 				A3C000000000000000000005 /* Geometry */,
+				A6E000000000000000000110 /* Debug */,
 			);
 			path = MOBA;
 			sourceTree = "<group>";
@@ -574,6 +600,12 @@
 				A5D000000000000000000005 /* MobaInputSink.h */,
 				A5D000000000000000000006 /* MobaInputDispatcher.h */,
 				A5D000000000000000000007 /* MobaInputDispatcher.m */,
+				A6E000000000000000000103 /* MoonlightMobaInputAdapter.h */,
+				A6E000000000000000000104 /* MoonlightMobaInputAdapter.m */,
+				A6E000000000000000000105 /* MoonlightMobaInputSender.h */,
+				A6E000000000000000000106 /* MoonlightMobaInputSender.m */,
+				A6E000000000000000000107 /* MobaCursorDiagnostics.h */,
+				A6E000000000000000000108 /* MobaCursorDiagnostics.m */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -583,14 +615,28 @@
 			children = (
 				A3C000000000000000000003 /* MobaVideoGeometry.h */,
 				A3C000000000000000000004 /* MobaVideoGeometry.m */,
+				A6E000000000000000000101 /* MobaGameCanvas.h */,
+				A6E000000000000000000102 /* MobaGameCanvas.m */,
 			);
 			path = Geometry;
+			sourceTree = "<group>";
+		};
+		A6E000000000000000000110 /* Debug */ = {
+			isa = PBXGroup;
+			children = (
+				A6E000000000000000000109 /* MobaCursorDiagnosticPanel.h */,
+				A6E00000000000000000010A /* MobaCursorDiagnosticPanel.m */,
+			);
+			path = Debug;
 			sourceTree = "<group>";
 		};
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
 				A5D000000000000000000008 /* MobaInputDispatcherTests.m */,
+				A6E00000000000000000010B /* MobaGameCanvasTests.m */,
+				A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */,
+				A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */,
 			);
 			path = MoonlightMobaTests;
 			sourceTree = "<group>";
@@ -933,6 +979,13 @@
 			files = (
 				A5D000000000000000000002 /* MobaInputDispatcher.m in Sources */,
 				A5D000000000000000000003 /* MobaInputDispatcherTests.m in Sources */,
+				A6E000000000000000000002 /* MobaGameCanvas.m in Sources */,
+				A6E000000000000000000004 /* MoonlightMobaInputAdapter.m in Sources */,
+				A6E000000000000000000007 /* MobaCursorDiagnostics.m in Sources */,
+				A6E000000000000000000009 /* MobaGameCanvasTests.m in Sources */,
+				A6E00000000000000000000A /* MoonlightMobaInputAdapterTests.m in Sources */,
+				A6E00000000000000000000B /* MobaCursorDiagnosticsTests.m in Sources */,
+				A6E00000000000000000000C /* MobaVideoGeometry.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -997,6 +1050,11 @@
 				A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */,
 				A3C000000000000000000001 /* MobaVideoGeometry.m in Sources */,
 				A5D000000000000000000001 /* MobaInputDispatcher.m in Sources */,
+				A6E000000000000000000001 /* MobaGameCanvas.m in Sources */,
+				A6E000000000000000000003 /* MoonlightMobaInputAdapter.m in Sources */,
+				A6E000000000000000000005 /* MoonlightMobaInputSender.m in Sources */,
+				A6E000000000000000000006 /* MobaCursorDiagnostics.m in Sources */,
+				A6E000000000000000000008 /* MobaCursorDiagnosticPanel.m in Sources */,
 				FB290D0719B2C406004C83CF /* Limelight.xcdatamodeld in Sources */,
 				9819CC22254F180F008A7C8E /* AbsoluteTouchHandler.m in Sources */,
 				9819CC14254F107A008A7C8E /* RelativeTouchHandler.m in Sources */,
@@ -1091,6 +1149,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/moonlight-common/moonlight-common-c/src";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1113,6 +1172,7 @@
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/moonlight-common/moonlight-common-c/src";
 				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
