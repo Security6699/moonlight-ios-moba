@@ -24,6 +24,13 @@
 @interface StreamView : UIView <X1KitMouseDelegate, UITextFieldDelegate, UIPointerInteractionDelegate>
 #endif
 
+// Pixel dimensions from the active stream configuration.
+@property (nonatomic, readonly) CGSize streamResolution;
+
+// Aspect Fit video area in the StreamView's current bounds coordinate space.
+@property (nonatomic, readonly) CGRect videoRect;
+@property (nonatomic, readonly, getter=isMobaBattleModeSupported) BOOL mobaBattleModeSupported;
+
 - (void) setupStreamView:(ControllerSupport*)controllerSupport
      interactionDelegate:(id<UserInteractionDelegate>)interactionDelegate
                   config:(StreamConfiguration*)streamConfig;

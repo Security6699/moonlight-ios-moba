@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		693B3A9B218638CD00982F7B /* Settings.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 693B3A9A218638CD00982F7B /* Settings.bundle */; };
 		A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B000000000000000000003 /* MobaOverlayCoordinator.m */; };
+		A3C000000000000000000001 /* MobaVideoGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A3C000000000000000000004 /* MobaVideoGeometry.m */; };
+		A3C000000000000000000002 /* MobaVideoGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A3C000000000000000000004 /* MobaVideoGeometry.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -197,6 +199,8 @@
 		A2B000000000000000000002 /* MobaOverlayCoordinator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaOverlayCoordinator.h; sourceTree = "<group>"; };
 		A2B000000000000000000003 /* MobaOverlayCoordinator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaOverlayCoordinator.m; sourceTree = "<group>"; };
 		A2B000000000000000000006 /* Moonlight v1.11.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.11.xcdatamodel"; sourceTree = "<group>"; };
+		A3C000000000000000000003 /* MobaVideoGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaVideoGeometry.h; sourceTree = "<group>"; };
+		A3C000000000000000000004 /* MobaVideoGeometry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaVideoGeometry.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -532,6 +536,7 @@
 			isa = PBXGroup;
 			children = (
 				A2B000000000000000000005 /* Core */,
+				A3C000000000000000000005 /* Geometry */,
 			);
 			path = MOBA;
 			sourceTree = "<group>";
@@ -543,6 +548,15 @@
 				A2B000000000000000000003 /* MobaOverlayCoordinator.m */,
 			);
 			path = Core;
+			sourceTree = "<group>";
+		};
+		A3C000000000000000000005 /* Geometry */ = {
+			isa = PBXGroup;
+			children = (
+				A3C000000000000000000003 /* MobaVideoGeometry.h */,
+				A3C000000000000000000004 /* MobaVideoGeometry.m */,
+			);
+			path = Geometry;
 			sourceTree = "<group>";
 		};
 		FB89460E19F646E200339C8A /* Network */ = {
@@ -853,6 +867,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A3C000000000000000000002 /* MobaVideoGeometry.m in Sources */,
 				9827E7A42514366900F25707 /* HapticContext.m in Sources */,
 				9897B6A62212732C00966419 /* Controller.m in Sources */,
 				9865DC3E21332D660005B9B9 /* MainFrameViewController.m in Sources */,
@@ -907,6 +922,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */,
+				A3C000000000000000000001 /* MobaVideoGeometry.m in Sources */,
 				FB290D0719B2C406004C83CF /* Limelight.xcdatamodeld in Sources */,
 				9819CC22254F180F008A7C8E /* AbsoluteTouchHandler.m in Sources */,
 				9819CC14254F107A008A7C8E /* RelativeTouchHandler.m in Sources */,

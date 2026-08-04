@@ -14,6 +14,7 @@
 #import "RelativeTouchHandler.h"
 #import "AbsoluteTouchHandler.h"
 #import "KeyboardInputField.h"
+#import "MOBA/Geometry/MobaVideoGeometry.h"
 
 static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
 
@@ -25,6 +26,7 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
     NSMutableSet* keysDown;
     
     float streamAspectRatio;
+    CGSize _streamResolution;
     
     // iOS 13.4 mouse support
     NSInteger lastMouseButtonMask;
@@ -51,6 +53,7 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
                   config:(StreamConfiguration*)streamConfig {
     self->interactionDelegate = interactionDelegate;
     self->streamAspectRatio = (float)streamConfig.width / (float)streamConfig.height;
+    self->_streamResolution = CGSizeMake(streamConfig.width, streamConfig.height);
     
     TemporarySettings* settings = [[[DataManager alloc] init] getSettings];
     
@@ -180,6 +183,18 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
 #if !TARGET_OS_TV
     [onScreenControls setSuppressed:suppressed];
 #endif
+}
+
+- (CGSize)streamResolution {
+    return _streamResolution;
+}
+
+- (CGRect)videoRect {
+    return MobaAspectFitVideoRect(self.bounds, _streamResolution);
+}
+
+- (BOOL)isMobaBattleModeSupported {
+    return MobaStreamResolutionAllowsBattleMode(_streamResolution);
 }
 
 - (CGSize) getVideoAreaSize {
