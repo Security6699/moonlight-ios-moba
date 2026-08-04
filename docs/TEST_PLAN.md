@@ -1,0 +1,183 @@
+# Test plan
+
+## 1. Test layers
+
+- Unit tests for geometry, state machines, profile validation, joystick transitions, and input ordering.
+- Integration tests with a fake `MobaInputSink`.
+- Unsigned generic iOS build validation.
+- Manual Windows cursor diagnostics.
+- Real-device gameplay validation on the target iPad.
+
+## 2. Required unit test groups
+
+### MobaGameCanvasTests
+
+- Clamp (-1,-1) -> (0,0).
+- Clamp (3000,2000) -> (2559,1439).
+- Preserve valid center (1280,720).
+
+### MobaAimGeometryTests
+
+- 270-degree default target is above anchor.
+- Cardinal and diagonal ray/ellipse intersections.
+- Asymmetric left/right and up/down ranges.
+- Output ray direction matches drag direction.
+- Zero or invalid radii are rejected by validation.
+
+### MobaPointResponseTests
+
+- Dead-zone input returns zero distance.
+- Full-range input returns one.
+- Exponent 1 is linear.
+- Exponents above/below one produce expected monotonic behavior.
+
+### MobaJoystickTests
+
+- All eight directions.
+- Dead zone.
+- Hysteresis near boundaries.
+- W+D -> D emits only W up.
+- Release/cancel emits all necessary key-up events once.
+
+### MobaCastStateMachineTests
+
+- Idle -> default -> dragged -> committed.
+- Enter/exit cancel zone.
+- Cancelled release.
+- Touch cancellation.
+- Repeated begin while active is rejected.
+
+### MobaInputDispatcherTests
+
+- Duplicate key-down/up suppression.
+- Final mouse position precedes skill key-up.
+- Cancel action precedes skill key-up.
+- Key tap uses scheduled up without blocking.
+- `releaseAllInputs` releases all tracked state exactly once.
+
+### MobaProfileValidatorTests
+
+- Valid bundled examples load.
+- Invalid canvas, opacity, coordinates, ranges, and enums report JSON paths.
+- Minimum range greater than maximum is rejected.
+- Unknown fields are tolerated.
+- Unsupported schema versions use migrator or fail safely.
+
+## 3. Nine-point cursor diagnostics
+
+Provide a developer panel that sends these game-canvas points:
+
+```text
+(0,0)       (1280,0)       (2559,0)
+(0,720)     (1280,720)     (2559,720)
+(0,1439)    (1280,1439)    (2559,1439)
+```
+
+Verify on the Windows host:
+
+- No offset from Aspect Fit black bars.
+- No X/Y stretch.
+- Correct center.
+- No Windows DPI or multi-monitor offset.
+
+Do not continue to ability calibration until this passes.
+
+## 4. Lifecycle tests
+
+For each condition, hold movement and/or an ability, trigger the condition, and verify no host key remains pressed:
+
+- App resign active.
+- Open Control Center.
+- Background app.
+- Stream disconnect.
+- Leave stream controller.
+- Rotate between landscape orientations.
+- Switch Battle -> UI/Edit/Tuning.
+- Reload champion or input profile.
+- Disable MOBA setting.
+
+## 5. Multi-touch tests
+
+Simultaneously:
+
+1. Hold movement.
+2. Drag an aimed skill.
+3. Tap attack or another control.
+
+Verify no touch ownership transfer, no native keyboard gesture, no dropped movement, and correct cast ordering.
+
+## 6. Caitlyn manual tests
+
+### Q
+
+- Eight directions.
+- No-drag upward cast.
+- Movement while casting.
+- Cancel-zone release.
+- Final cursor remains at target.
+
+### W
+
+- Near, mid, and maximum placement.
+- Four cardinal and four diagonal directions.
+- Live range/curve changes apply without restart.
+- No-drag upward maximum placement.
+
+### E
+
+- Eight directions.
+- Client does not invert direction for recoil.
+- Movement and cancel behavior.
+
+### R
+
+- Drag cursor onto a visible enemy champion.
+- Legal target succeeds through League behavior.
+- Invalid target does not trigger automatic fallback.
+- No target detection or snapping is visible.
+
+### Attack
+
+- One press -> one C tap.
+- Hold does not repeat.
+- Works while moving.
+- Does not steal active skill touch.
+
+## 7. Layout and opacity
+
+- Move and resize each control.
+- Adjust per-control and global opacity.
+- Confirm opacity zero does not disable hit testing.
+- Disable interaction explicitly and verify no hit.
+- Persist, restart, and reload.
+- Switch landscape directions and verify safe-area placement.
+- Restore defaults.
+
+## 8. JSON import/export
+
+- Export each profile type.
+- Re-import exported files.
+- Reject malformed and invalid files without changing active configuration.
+- Confirm backup creation before successful replacement.
+- Confirm field-specific error messages.
+
+## 9. Build validation
+
+Before every PR completion:
+
+```bash
+git diff --check
+xcodebuild -list -project Moonlight.xcodeproj
+xcodebuild \
+  -project Moonlight.xcodeproj \
+  -scheme <actual-scheme> \
+  -destination 'generic/platform=iOS' \
+  CODE_SIGNING_ALLOWED=NO \
+  build
+```
+
+Run relevant XCTest targets when introduced.
+
+## 10. MVP exit criteria
+
+All automated tests pass; nine-point diagnostics pass; no lifecycle stuck keys; Caitlyn strategies behave as configured; layout/opacity and import/export persist; unresolved items are limited to documented calibration values rather than architecture defects.
