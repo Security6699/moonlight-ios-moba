@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "championId": "caitlyn",
+  "displayName": "Caitlyn",
+  "displayNameZhCN": "皮城女警 凯特琳",
+  "calibrationStatus": "placeholder",
+  "skills": {
+    "Q": {
+      "inputAction": "ability1",
+      "castType": "directional",
+      "defaultAim": {
+        "angleDeg": 270,
+        "distanceRatio": 1.0
+      },
+      "range": {
+        "model": "asymmetricEllipse",
+        "leftPx": 720,
+        "rightPx": 720,
+        "upPx": 480,
+        "downPx": 480
+      },
+      "touchResponse": {
+        "deadzoneRatio": 0.10
+      },
+      "allowCancel": true
+    },
+    "W": {
+      "inputAction": "ability2",
+      "castType": "point",
+      "targetMode": "ground",
+      "defaultAim": {
+        "angleDeg": 270,
+        "distanceRatio": 1.0
+      },
+      "range": {
+        "model": "asymmetricEllipse",
+        "minLeftPx": 0,
+        "minRightPx": 0,
+        "minUpPx": 0,
+        "minDownPx": 0,
+        "maxLeftPx": 680,
+        "maxRightPx": 680,
+        "maxUpPx": 450,
+        "maxDownPx": 450
+      },
+      "touchResponse": {
+        "deadzoneRatio": 0.10,
+        "fullRangeRatio": 0.90,
+        "curveExponent": 1.25
+      },
+      "allowCancel": true
+    },
+    "E": {
+      "inputAction": "ability3",
+      "castType": "directional",
+      "defaultAim": {
+        "angleDeg": 270,
+        "distanceRatio": 1.0
+      },
+      "range": {
+        "model": "asymmetricEllipse",
+        "leftPx": 620,
+        "rightPx": 620,
+        "upPx": 420,
+        "downPx": 420
+      },
+      "touchResponse": {
+        "deadzoneRatio": 0.10
+      },
+      "allowCancel": true
+    },
+    "R": {
+      "inputAction": "ability4",
+      "castType": "point",
+      "targetMode": "unit",
+      "defaultAim": {
+        "angleDeg": 270,
+        "distanceRatio": 1.0
+      },
+      "range": {
+        "model": "asymmetricEllipse",
+        "minLeftPx": 0,
+        "minRightPx": 0,
+        "minUpPx": 0,
+        "minDownPx": 0,
+        "maxLeftPx": 1120,
+        "maxRightPx": 1120,
+        "maxUpPx": 620,
+        "maxDownPx": 620
+      },
+      "touchResponse": {
+        "deadzoneRatio": 0.06,
+        "fullRangeRatio": 0.90,
+        "curveExponent": 1.0
+      },
+      "allowCancel": true
+    }
+  }
+}

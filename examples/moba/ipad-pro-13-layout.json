@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "layoutId": "ipad-pro-13-default",
+  "deviceClass": "ipad-pro-13-landscape",
+  "controls": {
+    "move": {
+      "centerX": 0.14,
+      "centerY": 0.82,
+      "visualWidthPt": 190,
+      "visualHeightPt": 190,
+      "hitAreaScale": 1.20,
+      "wheelRadiusPt": 95,
+      "opacity": 0.66,
+      "pressedOpacity": 0.82,
+      "disabledOpacity": 0.30,
+      "zIndex": 10,
+      "interactionEnabled": true
+    },
+    "abilityQ": {
+      "centerX": 0.72,
+      "centerY": 0.87,
+      "visualWidthPt": 92,
+      "visualHeightPt": 92,
+      "hitAreaScale": 1.20,
+      "wheelRadiusPt": 150,
+      "opacity": 0.72,
+      "pressedOpacity": 0.88,
+      "disabledOpacity": 0.30,
+      "zIndex": 20,
+      "interactionEnabled": true
+    },
+    "abilityW": {
+      "centerX": 0.79,
+      "centerY": 0.77,
+      "visualWidthPt": 92,
+      "visualHeightPt": 92,
+      "hitAreaScale": 1.20,
+      "wheelRadiusPt": 150,
+      "opacity": 0.72,
+      "pressedOpacity": 0.88,
+      "disabledOpacity": 0.30,
+      "zIndex": 21,
+      "interactionEnabled": true
+    },
+    "abilityE": {
+      "centerX": 0.87,
+      "centerY": 0.71,
+      "visualWidthPt": 92,
+      "visualHeightPt": 92,
+      "hitAreaScale": 1.20,
+      "wheelRadiusPt": 150,
+      "opacity": 0.72,
+      "pressedOpacity": 0.88,
+      "disabledOpacity": 0.30,
+      "zIndex": 22,
+      "interactionEnabled": true
+    },
+    "abilityR": {
+      "centerX": 0.88,
+      "centerY": 0.84,
+      "visualWidthPt": 104,
+      "visualHeightPt": 104,
+      "hitAreaScale": 1.20,
+      "wheelRadiusPt": 165,
+      "opacity": 0.76,
+      "pressedOpacity": 0.90,
+      "disabledOpacity": 0.30,
+      "zIndex": 23,
+      "interactionEnabled": true
+    },
+    "attack": {
+      "centerX": 0.94,
+      "centerY": 0.90,
+      "visualWidthPt": 110,
+      "visualHeightPt": 110,
+      "hitAreaScale": 1.18,
+      "opacity": 0.78,
+      "pressedOpacity": 0.92,
+      "disabledOpacity": 0.30,
+      "zIndex": 24,
+      "interactionEnabled": true
+    }
+  },
+  "cancelZone": {
+    "centerX": 0.83,
+    "centerY": 0.48,
+    "diameterPt": 112,
+    "activationInsetPt": 8,
+    "opacity": 0.58,
+    "visibleOnlyWhileCasting": true
+  }
+}

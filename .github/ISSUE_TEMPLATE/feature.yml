@@ -1,0 +1,56 @@
+name: Feature task
+description: Scoped implementation work suitable for a branch and draft PR
+title: "[Phase][Priority][Codex] "
+body:
+  - type: markdown
+    attributes:
+      value: Read AGENTS.md and linked specifications before implementation.
+  - type: textarea
+    id: objective
+    attributes:
+      label: Objective
+      description: One clear, testable outcome.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: In scope
+      description: Exact behavior and files/modules expected.
+    validations:
+      required: true
+  - type: textarea
+    id: exclusions
+    attributes:
+      label: Explicitly out of scope
+      description: Prevent silent scope expansion.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies
+      description: Issues or PRs that must be complete first.
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: Checklist of observable completion conditions.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation
+      description: Build, test, and manual validation requirements.
+    validations:
+      required: true
+  - type: checkboxes
+    id: rules
+    attributes:
+      label: Safety and scope
+      options:
+        - label: No game-memory reading, injection, automation, or anti-cheat bypass.
+          required: true
+        - label: Upstream behavior remains unchanged when MOBA mode is disabled.
+          required: true

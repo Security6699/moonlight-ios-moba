@@ -1,0 +1,53 @@
+name: Bug report
+description: Report an implementation or regression defect
+title: "[Bug] "
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: Commit or PR
+  - type: dropdown
+    id: mode
+    attributes:
+      label: MOBA mode
+      options:
+        - Battle
+        - UI
+        - Layout Edit
+        - Skill Tuning
+        - Disabled / upstream mode
+  - type: textarea
+    id: input_state
+    attributes:
+      label: Active touches and inputs
+      description: Note joystick direction, held skill, cancel state, attack, and lifecycle event.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or diagnostics
+  - type: checkboxes
+    id: device
+    attributes:
+      label: Environment
+      options:
+        - label: Stream was 2560x1440 Aspect Fit.
+        - label: Camera was locked.
+        - label: Reproduced on the target 13-inch iPad Pro.

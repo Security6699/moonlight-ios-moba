@@ -1,0 +1,57 @@
+name: Real-device calibration
+description: Record measured iPad and League practice-mode calibration work
+title: "[M1.0][iPad][Calibration] "
+body:
+  - type: input
+    id: champion_skill
+    attributes:
+      label: Champion and skill
+      placeholder: Caitlyn W
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Fixed environment
+      description: iPad model, iPadOS, host resolution, stream resolution, video mode, League camera mode, network.
+    validations:
+      required: true
+  - type: textarea
+    id: starting
+    attributes:
+      label: Starting parameters
+      description: Paste the relevant JSON fields.
+    validations:
+      required: true
+  - type: textarea
+    id: procedure
+    attributes:
+      label: Calibration procedure
+      description: Directions, distances, repetitions, and how success was judged.
+    validations:
+      required: true
+  - type: textarea
+    id: result
+    attributes:
+      label: Accepted parameters
+      description: Paste final values and note uncertainty or remaining bias.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and observations
+      description: Screenshots, recordings, logs, or repeatability notes.
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: Used exactly 2560x1440 Aspect Fit.
+          required: true
+        - label: Used locked camera.
+          required: true
+        - label: Nine-point cursor diagnostics passed first.
+          required: true
+        - label: Updated JSON values are not hard-coded in implementation classes.
+          required: true

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "profileId": "lol-wasd-default",
+  "movement": {
+    "up": 87,
+    "left": 65,
+    "down": 83,
+    "right": 68
+  },
+  "actions": {
+    "ability1": 81,
+    "ability2": 69,
+    "ability3": 82,
+    "ability4": 84,
+    "attack": 67
+  },
+  "attackTapDurationMs": 30,
+  "cancelCastAction": {
+    "type": "keyboard",
+    "keyCode": 27,
+    "cancelBeforeSkillKeyUp": true
+  }
+}
