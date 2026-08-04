@@ -34,6 +34,7 @@
 @property (nonatomic) BOOL btMouseSupport;
 @property (nonatomic) BOOL absoluteTouchMode;
 @property (nonatomic) BOOL statsOverlay;
+@property (nonatomic) BOOL mobaControlsEnabled;
 
 - (id) initFromSettings:(Settings*)settings;
 
