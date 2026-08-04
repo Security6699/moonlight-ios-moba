@@ -170,8 +170,7 @@
 
 @implementation MobaOverlayLifecycleTests
 
-- (void)setUp {
-    [super setUp];
+- (void)configureLifecycleStarted:(BOOL)started {
     self.sink = [[MobaLifecycleFakeSink alloc] init];
     self.scheduler = [[MobaLifecycleManualScheduler alloc] init];
     self.dispatcher = [[MobaInputDispatcher alloc] initWithSink:self.sink scheduler:self.scheduler];
@@ -181,7 +180,14 @@
                                                        inputDispatcher:self.dispatcher];
     self.participant = [[MobaLifecycleFakeResetParticipant alloc] init];
     [self.lifecycle registerLocalInteractionResetParticipant:self.participant];
-    [self.lifecycle start];
+    if (started) {
+        [self.lifecycle start];
+    }
+}
+
+- (void)setUp {
+    [super setUp];
+    [self configureLifecycleStarted:YES];
 }
 
 - (void)drainDispatcher {
@@ -419,6 +425,54 @@
     XCTAssertFalse(self.lifecycle.isBattleInputAllowed);
     [self.lifecycle profileDidReload];
     XCTAssertTrue(self.lifecycle.isBattleInputAllowed);
+}
+
+- (void)testOrientationBlockerBeforeStartPersistsUntilOrientationCompletes {
+    [self configureLifecycleStarted:NO];
+    [self.lifecycle orientationWillChange];
+
+    [self.lifecycle start];
+
+    XCTAssertTrue(self.lifecycle.isRunning);
+    XCTAssertTrue(self.lifecycle.isInputSuspended);
+    XCTAssertFalse(self.lifecycle.isBattleInputAllowed);
+    XCTAssertTrue(self.environment.traditionalControlsSuppressed);
+    [self.lifecycle orientationDidChange];
+    XCTAssertTrue(self.lifecycle.isBattleInputAllowed);
+    [self drainDispatcher];
+    XCTAssertEqual(self.sink.eventSnapshot.count, 0u);
+}
+
+- (void)testProfileReloadBlockerBeforeStartPersistsUntilReloadCompletes {
+    [self configureLifecycleStarted:NO];
+    [self.lifecycle profileWillReload];
+
+    [self.lifecycle start];
+
+    XCTAssertTrue(self.lifecycle.isRunning);
+    XCTAssertTrue(self.lifecycle.isInputSuspended);
+    XCTAssertFalse(self.lifecycle.isBattleInputAllowed);
+    XCTAssertTrue(self.environment.traditionalControlsSuppressed);
+    [self.lifecycle profileDidReload];
+    XCTAssertTrue(self.lifecycle.isBattleInputAllowed);
+    [self drainDispatcher];
+    XCTAssertEqual(self.sink.eventSnapshot.count, 0u);
+}
+
+- (void)testInactiveBlockerBeforeStartPersistsUntilApplicationBecomesActive {
+    [self configureLifecycleStarted:NO];
+    [self.lifecycle applicationWillResignActive];
+
+    [self.lifecycle start];
+
+    XCTAssertTrue(self.lifecycle.isRunning);
+    XCTAssertTrue(self.lifecycle.isInputSuspended);
+    XCTAssertFalse(self.lifecycle.isBattleInputAllowed);
+    XCTAssertTrue(self.environment.traditionalControlsSuppressed);
+    [self.lifecycle applicationDidBecomeActive];
+    XCTAssertTrue(self.lifecycle.isBattleInputAllowed);
+    [self drainDispatcher];
+    XCTAssertEqual(self.sink.eventSnapshot.count, 0u);
 }
 
 @end

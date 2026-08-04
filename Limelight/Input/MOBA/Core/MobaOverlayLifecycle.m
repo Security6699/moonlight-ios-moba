@@ -137,8 +137,6 @@
 
     _running = YES;
     _streamConnected = YES;
-    _orientationTransitionInProgress = NO;
-    _profileReloadInProgress = NO;
     [_environment setTraditionalOnScreenControlsSuppressed:YES];
     [self resumeBattleInputIfAllowed];
 }
