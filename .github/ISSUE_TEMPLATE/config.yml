@@ -1,1 +1,5 @@
-blank_issues_enabled: false
+blank_issues_enabled: true
+contact_links:
+  - name: Product and architecture specifications
+    url: https://github.com/Security6699/moonlight-ios-moba/tree/master/docs
+    about: Review project decisions and scope before opening an issue.
