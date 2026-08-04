@@ -11,6 +11,12 @@
 		A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */ = {isa = PBXBuildFile; fileRef = A2B000000000000000000003 /* MobaOverlayCoordinator.m */; };
 		A3C000000000000000000001 /* MobaVideoGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A3C000000000000000000004 /* MobaVideoGeometry.m */; };
 		A3C000000000000000000002 /* MobaVideoGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A3C000000000000000000004 /* MobaVideoGeometry.m */; };
+		A5D000000000000000000001 /* MobaInputDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = A5D000000000000000000007 /* MobaInputDispatcher.m */; };
+		A5D000000000000000000002 /* MobaInputDispatcher.m in Sources */ = {isa = PBXBuildFile; fileRef = A5D000000000000000000007 /* MobaInputDispatcher.m */; };
+		A5D000000000000000000003 /* MobaInputDispatcherTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A5D000000000000000000008 /* MobaInputDispatcherTests.m */; };
+		A5D000000000000000000004 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A5D000000000000000000010 /* XCTest.framework */; };
+		A5D000000000000000000019 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB290CF119B2C406004C83CF /* Foundation.framework */; };
+		A5D000000000000000000020 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB290CF319B2C406004C83CF /* CoreGraphics.framework */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -201,6 +207,12 @@
 		A2B000000000000000000006 /* Moonlight v1.11.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.11.xcdatamodel"; sourceTree = "<group>"; };
 		A3C000000000000000000003 /* MobaVideoGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaVideoGeometry.h; sourceTree = "<group>"; };
 		A3C000000000000000000004 /* MobaVideoGeometry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaVideoGeometry.m; sourceTree = "<group>"; };
+		A5D000000000000000000005 /* MobaInputSink.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaInputSink.h; sourceTree = "<group>"; };
+		A5D000000000000000000006 /* MobaInputDispatcher.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaInputDispatcher.h; sourceTree = "<group>"; };
+		A5D000000000000000000007 /* MobaInputDispatcher.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaInputDispatcher.m; sourceTree = "<group>"; };
+		A5D000000000000000000008 /* MobaInputDispatcherTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaInputDispatcherTests.m; sourceTree = "<group>"; };
+		A5D000000000000000000009 /* MoonlightMobaTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoonlightMobaTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A5D000000000000000000010 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -331,6 +343,16 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		A5D000000000000000000013 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5D000000000000000000004 /* XCTest.framework in Frameworks */,
+				A5D000000000000000000019 /* Foundation.framework in Frameworks */,
+				A5D000000000000000000020 /* CoreGraphics.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FB1A67502132419700507771 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -409,6 +431,7 @@
 				98AB2E7F1CAD46830089BB98 /* moonlight-common.xcodeproj */,
 				FB290CF919B2C406004C83CF /* Moonlight */,
 				FB1A67542132419700507771 /* Moonlight TV */,
+				A5D000000000000000000011 /* MoonlightMobaTests */,
 				FB290CF019B2C406004C83CF /* Frameworks */,
 				FB290CEF19B2C406004C83CF /* Products */,
 			);
@@ -419,6 +442,7 @@
 			children = (
 				FB290CEE19B2C406004C83CF /* Moonlight.app */,
 				FB1A67532132419700507771 /* Moonlight TV.app */,
+				A5D000000000000000000009 /* MoonlightMobaTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -446,6 +470,7 @@
 				FB290CF319B2C406004C83CF /* CoreGraphics.framework */,
 				FB290CF519B2C406004C83CF /* UIKit.framework */,
 				FB290CF719B2C406004C83CF /* CoreData.framework */,
+				A5D000000000000000000010 /* XCTest.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -546,6 +571,9 @@
 			children = (
 				A2B000000000000000000002 /* MobaOverlayCoordinator.h */,
 				A2B000000000000000000003 /* MobaOverlayCoordinator.m */,
+				A5D000000000000000000005 /* MobaInputSink.h */,
+				A5D000000000000000000006 /* MobaInputDispatcher.h */,
+				A5D000000000000000000007 /* MobaInputDispatcher.m */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -557,6 +585,14 @@
 				A3C000000000000000000004 /* MobaVideoGeometry.m */,
 			);
 			path = Geometry;
+			sourceTree = "<group>";
+		};
+		A5D000000000000000000011 /* MoonlightMobaTests */ = {
+			isa = PBXGroup;
+			children = (
+				A5D000000000000000000008 /* MobaInputDispatcherTests.m */,
+			);
+			path = MoonlightMobaTests;
 			sourceTree = "<group>";
 		};
 		FB89460E19F646E200339C8A /* Network */ = {
@@ -724,6 +760,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		A5D000000000000000000015 /* MoonlightMobaTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A5D000000000000000000018 /* Build configuration list for PBXNativeTarget "MoonlightMobaTests" */;
+			buildPhases = (
+				A5D000000000000000000012 /* Sources */,
+				A5D000000000000000000013 /* Frameworks */,
+				A5D000000000000000000014 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MoonlightMobaTests;
+			productName = MoonlightMobaTests;
+			productReference = A5D000000000000000000009 /* MoonlightMobaTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		FB1A67522132419700507771 /* Moonlight TV */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = FB1A67682132419A00507771 /* Build configuration list for PBXNativeTarget "Moonlight TV" */;
@@ -776,6 +829,9 @@
 				LastUpgradeCheck = 1400;
 				ORGANIZATIONNAME = "Moonlight Game Streaming Project";
 				TargetAttributes = {
+					A5D000000000000000000015 = {
+						CreatedOnToolsVersion = 16.4;
+					};
 					FB1A67522132419700507771 = {
 						CreatedOnToolsVersion = 9.4.1;
 						LastSwiftMigration = 1140;
@@ -815,6 +871,7 @@
 			targets = (
 				FB290CED19B2C406004C83CF /* Moonlight */,
 				FB1A67522132419700507771 /* Moonlight TV */,
+				A5D000000000000000000015 /* MoonlightMobaTests */,
 			);
 		};
 /* End PBXProject section */
@@ -837,6 +894,13 @@
 /* End PBXReferenceProxy section */
 
 /* Begin PBXResourcesBuildPhase section */
+		A5D000000000000000000014 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FB1A67512132419700507771 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -863,6 +927,15 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		A5D000000000000000000012 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A5D000000000000000000002 /* MobaInputDispatcher.m in Sources */,
+				A5D000000000000000000003 /* MobaInputDispatcherTests.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		FB1A674F2132419700507771 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -923,6 +996,7 @@
 			files = (
 				A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */,
 				A3C000000000000000000001 /* MobaVideoGeometry.m in Sources */,
+				A5D000000000000000000001 /* MobaInputDispatcher.m in Sources */,
 				FB290D0719B2C406004C83CF /* Limelight.xcdatamodeld in Sources */,
 				9819CC22254F180F008A7C8E /* AbsoluteTouchHandler.m in Sources */,
 				9819CC14254F107A008A7C8E /* RelativeTouchHandler.m in Sources */,
@@ -1010,6 +1084,49 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		A5D000000000000000000016 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream.MoonlightMobaTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		A5D000000000000000000017 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.moonlight-stream.MoonlightMobaTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
 		FB1A67662132419A00507771 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -1335,6 +1452,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		A5D000000000000000000018 /* Build configuration list for PBXNativeTarget "MoonlightMobaTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A5D000000000000000000016 /* Debug */,
+				A5D000000000000000000017 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		FB1A67682132419A00507771 /* Build configuration list for PBXNativeTarget "Moonlight TV" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
