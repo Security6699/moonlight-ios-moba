@@ -10,6 +10,8 @@
 typedef NS_ENUM(NSInteger, MobaOverlayMode) {
     MobaOverlayModeBattle,
     MobaOverlayModeUI,
+    MobaOverlayModeLayoutEdit,
+    MobaOverlayModeSkillTuning,
 };
 
 @interface MobaOverlayCoordinator : NSObject

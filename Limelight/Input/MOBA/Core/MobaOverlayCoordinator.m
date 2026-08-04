@@ -30,7 +30,6 @@
     }
 
     _mode = mode;
-    [self updateTraditionalControls];
 }
 
 - (void)start {
@@ -39,7 +38,7 @@
     }
 
     _running = YES;
-    [self updateTraditionalControls];
+    [_streamView setTraditionalOnScreenControlsSuppressed:YES];
 }
 
 - (void)stop {
@@ -48,15 +47,7 @@
     }
 
     _running = NO;
-    [_streamView setMobaControlsActive:NO];
-}
-
-- (void)updateTraditionalControls {
-    if (!_running) {
-        return;
-    }
-
-    [_streamView setMobaControlsActive:_mode == MobaOverlayModeBattle];
+    [_streamView setTraditionalOnScreenControlsSuppressed:NO];
 }
 
 - (void)dealloc {
