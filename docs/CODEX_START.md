@@ -27,8 +27,22 @@ requiring real-iPad verification.
 - Do not ask Codex to implement the entire roadmap in one run.
 - Do not start an issue whose dependencies are open.
 - Review every diff before merging.
-- Keep PRs draft until build/test results and scope are clear.
+- Keep PRs draft until scope, local validation, and CI results are clear.
+- When Xcode is unavailable locally, report that limitation honestly and rely on the repository's `iOS Build` workflow for the required macOS compilation check.
+- Static Windows checks must not be described as a successful Xcode build.
+- A code PR is not ready to merge until the `iOS Build` GitHub Actions workflow passes.
+- Fix CI failures on the existing issue branch and PR rather than opening a replacement PR.
+- CI does not replace relevant XCTest or target-iPad testing.
 - Calibration Issues #23–#28 require the target iPad and League practice mode; Codex may prepare tooling but cannot claim physical calibration results.
+
+## Validation flow
+
+1. Run `git diff --check` and all environment-available static checks.
+2. Run local Xcode discovery and unsigned build when Xcode is available.
+3. Push the task branch and open a Draft PR.
+4. Wait for the `iOS Build` GitHub Actions result.
+5. Fix any real compilation failure on the same branch and PR.
+6. Merge only after required CI and tests pass and remaining real-device work is explicitly documented.
 
 ## Recommended implementation sequence
 
