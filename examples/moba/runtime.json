@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "canvas": {
+    "width": 2560,
+    "height": 1440
+  },
+  "requiredStreamResolution": {
+    "width": 2560,
+    "height": 1440
+  },
+  "videoMode": "aspectFit",
+  "camera": {
+    "mode": "locked",
+    "heroAnchorPx": {
+      "x": 1280,
+      "y": 720
+    }
+  },
+  "mouseUpdateRateHz": 60,
+  "globalOpacityMultiplier": 1.0
+}
