@@ -9,11 +9,9 @@
 
 @protocol MobaInputSink <NSObject>
 
+// Implementations send individual stateless actions and do not track pressed input.
 - (void)setKeyCode:(uint16_t)keyCode down:(BOOL)down;
 - (void)moveCursorToCanvasPoint:(CGPoint)point;
 - (void)sendMouseButton:(int)button down:(BOOL)down;
-
-// Called after the dispatcher emits releases for all state it tracks.
-- (void)releaseAllInputs;
 
 @end

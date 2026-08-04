@@ -42,10 +42,6 @@
     [self recordEvent:[NSString stringWithFormat:@"mouse:%d:%@", button, down ? @"down" : @"up"]];
 }
 
-- (void)releaseAllInputs {
-    [self recordEvent:@"release-all"];
-}
-
 - (NSArray<NSString *> *)eventSnapshot {
     @synchronized (self) {
         return [_events copy];
@@ -245,7 +241,7 @@
 
     XCTAssertEqualObjects(self.sink.eventSnapshot,
                           (@[@"key:71:up", @"key:72:up", @"mouse:1:up",
-                             @"mouse:2:up", @"release-all"]));
+                             @"mouse:2:up"]));
 }
 
 - (void)testRepeatedReleaseAllInputsIsIdempotent {
@@ -257,7 +253,7 @@
     [self.dispatcher releaseAllInputs];
     [self drainDispatcher];
 
-    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:80:up", @"release-all"]));
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:80:up"]));
 }
 
 - (void)testReleaseAllPreventsDelayedTapKeyUpFromRepeatingRelease {
@@ -270,7 +266,31 @@
     [self.scheduler runAll];
     [self drainDispatcher];
 
-    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:90:up", @"release-all"]));
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:90:up"]));
+}
+
+- (void)testManualKeyUpPreventsDelayedTapKeyUpFromRepeatingRelease {
+    [self.dispatcher tapKeyCode:91 durationMs:30];
+    [self drainDispatcher];
+
+    [self.dispatcher setKeyCode:91 down:NO];
+    [self drainDispatcher];
+    [self.scheduler runAll];
+    [self drainDispatcher];
+
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:91:down", @"key:91:up"]));
+}
+
+- (void)testRepeatedTapWhileKeyIsDownDoesNotScheduleAnotherRelease {
+    [self.dispatcher tapKeyCode:92 durationMs:30];
+    [self.dispatcher tapKeyCode:92 durationMs:30];
+    [self drainDispatcher];
+
+    XCTAssertEqual(self.scheduler.pendingCount, 1u);
+    [self.scheduler runAll];
+    [self drainDispatcher];
+
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:92:down", @"key:92:up"]));
 }
 
 @end

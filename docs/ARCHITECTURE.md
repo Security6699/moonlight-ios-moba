@@ -119,14 +119,14 @@ Runtime Aspect Fit rectangle derived from StreamView bounds and stream aspect ra
 ```objc
 @protocol MobaInputSink <NSObject>
 - (void)setKeyCode:(uint16_t)keyCode down:(BOOL)down;
-- (void)tapKeyCode:(uint16_t)keyCode durationMs:(NSUInteger)durationMs;
 - (void)moveCursorToCanvasPoint:(CGPoint)point;
 - (void)sendMouseButton:(int)button down:(BOOL)down;
-- (void)releaseAllInputs;
 @end
 ```
 
-The production adapter should call the existing Moonlight input APIs. The dispatcher owns ordering and timing; UI code must not call these APIs directly.
+The production adapter should call the existing Moonlight input APIs. A sink sends only individual stateless input actions and must not maintain another pressed-key or pressed-button collection.
+
+The dispatcher is the only input state owner. It owns pressed-key and pressed-button tracking, duplicate transition suppression, tap timing, event ordering, and release-all behavior. Release-all invalidates pending tap timers, clears dispatcher state, and expands every tracked input into one concrete key-up or mouse-up. Each tracked state is released at most once. UI code must not call the Moonlight input APIs directly.
 
 ## 6. Modes and hit testing
 

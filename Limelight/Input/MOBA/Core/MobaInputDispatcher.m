@@ -196,7 +196,6 @@
         for (NSNumber *mouseButton in mouseButtons) {
             [self->_sink sendMouseButton:mouseButton.intValue down:NO];
         }
-        [self->_sink releaseAllInputs];
     });
 }
 
