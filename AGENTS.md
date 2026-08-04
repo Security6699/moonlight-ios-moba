@@ -30,7 +30,12 @@ For Caitlyn-specific work, also read `docs/CAITLYN_PROFILE.md`.
 Before completing a task:
 
 1. Run `git diff --check`.
-2. Run `xcodebuild -list -project Moonlight.xcodeproj`.
+2. When a complete Xcode installation is available locally, run:
+
+```bash
+xcodebuild -list -project Moonlight.xcodeproj
+```
+
 3. Use an actual listed scheme for an unsigned generic iOS build:
 
 ```bash
@@ -42,8 +47,12 @@ xcodebuild \
   build
 ```
 
-4. Run relevant XCTest targets when available.
-5. Report changed files, commands run, results, limitations, and parameters requiring iPad calibration.
+4. When Xcode is unavailable locally, report that limitation explicitly. Static XML, PBX, Storyboard, Core Data, or text checks must not be described as a successful compile.
+5. Push the task branch and use the repository's `iOS Build` GitHub Actions workflow as the required macOS/Xcode compilation gate.
+6. Every code PR must pass `iOS Build` before merge. Fix CI failures on the same issue branch and PR unless the failure is demonstrably unrelated infrastructure breakage.
+7. Run relevant XCTest targets when available. GitHub Actions compilation does not replace unit tests.
+8. Report changed files, commands run, results, limitations, and parameters requiring iPad calibration.
+9. CI and simulator/build validation do not replace target-iPad testing for touch behavior, lifecycle interruptions, latency, layout, or League calibration.
 
 ## Input correctness
 
