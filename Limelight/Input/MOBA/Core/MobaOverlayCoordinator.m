@@ -15,7 +15,7 @@
     self = [super init];
     if (self) {
         _streamView = streamView;
-        _mode = MobaOverlayModeBattle;
+        _mode = [streamView isMobaBattleModeSupported] ? MobaOverlayModeBattle : MobaOverlayModeUI;
     }
     return self;
 }
@@ -25,11 +25,28 @@
 }
 
 - (void)setMode:(MobaOverlayMode)mode {
+    [self transitionToMode:mode];
+}
+
+- (BOOL)isBattleModeAvailable {
+    return [_streamView isMobaBattleModeSupported];
+}
+
+- (BOOL)isBattleInputAllowed {
+    return _running && _mode == MobaOverlayModeBattle && [self isBattleModeAvailable];
+}
+
+- (BOOL)transitionToMode:(MobaOverlayMode)mode {
+    if (mode == MobaOverlayModeBattle && ![self isBattleModeAvailable]) {
+        return NO;
+    }
+
     if (_mode == mode) {
-        return;
+        return YES;
     }
 
     _mode = mode;
+    return YES;
 }
 
 - (void)start {
