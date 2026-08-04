@@ -13,6 +13,10 @@
 #import "ControllerSupport.h"
 #import "DataManager.h"
 
+#if !TARGET_OS_TV
+#import "MobaOverlayCoordinator.h"
+#endif
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -50,6 +54,7 @@
     
 #if !TARGET_OS_TV
     UIScreenEdgePanGestureRecognizer *_exitSwipeRecognizer;
+    MobaOverlayCoordinator *_mobaOverlayCoordinator;
 #endif
 }
 
@@ -109,6 +114,12 @@
     
     _streamView = [[StreamView alloc] initWithFrame:self.view.frame];
     [_streamView setupStreamView:_controllerSupport interactionDelegate:self config:self.streamConfig];
+
+#if !TARGET_OS_TV
+    if (_settings.mobaControlsEnabled) {
+        _mobaOverlayCoordinator = [[MobaOverlayCoordinator alloc] initWithStreamView:_streamView];
+    }
+#endif
     
 #if TARGET_OS_TV
     if (!_menuTapGestureRecognizer || !_menuDoubleTapGestureRecognizer || !_playPauseTapGestureRecognizer) {
@@ -218,6 +229,10 @@
 - (void)willMoveToParentViewController:(UIViewController *)parent {
     // Only cleanup when we're being destroyed
     if (parent == nil) {
+#if !TARGET_OS_TV
+        [_mobaOverlayCoordinator stop];
+        _mobaOverlayCoordinator = nil;
+#endif
         [_controllerSupport cleanup];
         [UIApplication sharedApplication].idleTimerDisabled = NO;
         [_streamMan stopStream];
@@ -378,6 +393,10 @@
         [self->_streamView showOnScreenControls];
         
         [self->_controllerSupport connectionEstablished];
+
+#if !TARGET_OS_TV
+        [self->_mobaOverlayCoordinator start];
+#endif
         
         if (self->_settings.statsOverlay) {
             self->_statsUpdateTimer = [NSTimer scheduledTimerWithTimeInterval:1.0f
@@ -396,6 +415,9 @@
     unsigned int portTestResults = LiTestClientConnectivity(CONN_TEST_SERVER, 443, portFlags);
     
     dispatch_async(dispatch_get_main_queue(), ^{
+#if !TARGET_OS_TV
+        [self->_mobaOverlayCoordinator stop];
+#endif
         // Allow the display to go to sleep now
         [UIApplication sharedApplication].idleTimerDisabled = NO;
         

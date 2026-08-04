@@ -176,6 +176,12 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
     }
 }
 
+- (void) setTraditionalOnScreenControlsSuppressed:(BOOL)suppressed {
+#if !TARGET_OS_TV
+    [onScreenControls setSuppressed:suppressed];
+#endif
+}
+
 - (CGSize) getVideoAreaSize {
     if (self.bounds.size.width > self.bounds.size.height * streamAspectRatio) {
         return CGSizeMake(self.bounds.size.height * streamAspectRatio, self.bounds.size.height);

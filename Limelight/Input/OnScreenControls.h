@@ -31,6 +31,7 @@ typedef NS_ENUM(NSInteger, OnScreenControlsLevel) {
 - (BOOL) handleTouchMovedEvent:(NSSet*)touches;
 - (void) setLevel:(OnScreenControlsLevel)level;
 - (OnScreenControlsLevel) getLevel;
+- (void) setSuppressed:(BOOL)suppressed;
 - (void) show;
 
 @end

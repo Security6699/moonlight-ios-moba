@@ -63,6 +63,7 @@
     CGRect _controlArea;
     UIView* _view;
     OnScreenControlsLevel _level;
+    BOOL _suppressed;
     BOOL _visible;
     
     ControllerSupport *_controllerSupport;
@@ -175,11 +176,23 @@ static float L3_Y;
 }
 
 - (OnScreenControlsLevel) getLevel {
-    return _level;
+    return _suppressed ? OnScreenControlsLevelOff : _level;
+}
+
+- (void) setSuppressed:(BOOL)suppressed {
+    if (_suppressed == suppressed) {
+        return;
+    }
+
+    _suppressed = suppressed;
+    if (_visible) {
+        [self updateControls];
+    }
 }
 
 - (void) updateControls {
-    switch (_level) {
+    OnScreenControlsLevel effectiveLevel = _suppressed ? OnScreenControlsLevelOff : _level;
+    switch (effectiveLevel) {
         case OnScreenControlsLevelOff:
             [self hideButtons];
             [self hideBumpers];
@@ -244,7 +257,7 @@ static float L3_Y;
             [self hideL3R3]; // Full controls don't need these they have the sticks
             break;
         default:
-            Log(LOG_W, @"Unknown on-screen controls level: %d", (int)_level);
+            Log(LOG_W, @"Unknown on-screen controls level: %d", (int)effectiveLevel);
             break;
     }
 }

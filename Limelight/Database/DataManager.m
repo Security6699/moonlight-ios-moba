@@ -67,7 +67,8 @@
                        enableHdr:(BOOL)enableHdr
                   btMouseSupport:(BOOL)btMouseSupport
                absoluteTouchMode:(BOOL)absoluteTouchMode
-                    statsOverlay:(BOOL)statsOverlay {
+                    statsOverlay:(BOOL)statsOverlay
+             mobaControlsEnabled:(BOOL)mobaControlsEnabled {
     
     [_managedObjectContext performBlockAndWait:^{
         Settings* settingsToSave = [self retrieveSettings];
@@ -87,6 +88,7 @@
         settingsToSave.btMouseSupport = btMouseSupport;
         settingsToSave.absoluteTouchMode = absoluteTouchMode;
         settingsToSave.statsOverlay = statsOverlay;
+        settingsToSave.mobaControlsEnabled = mobaControlsEnabled;
         
         [self saveData];
     }];
