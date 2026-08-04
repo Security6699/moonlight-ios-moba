@@ -228,6 +228,29 @@
     XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:62:down", @"mouse:3:down"]));
 }
 
+- (void)testDifferentCallerThreadsPreserveControlledSubmissionOrder {
+    dispatch_queue_t keyQueue = dispatch_queue_create("MobaInputDispatcherTests.key", DISPATCH_QUEUE_SERIAL);
+    dispatch_queue_t pointerQueue = dispatch_queue_create("MobaInputDispatcherTests.pointer", DISPATCH_QUEUE_SERIAL);
+    dispatch_semaphore_t keySubmitted = dispatch_semaphore_create(0);
+    XCTestExpectation *submitted = [self expectationWithDescription:@"submitted from different caller threads"];
+
+    dispatch_async(keyQueue, ^{
+        [self.dispatcher setKeyCode:63 down:YES];
+        dispatch_semaphore_signal(keySubmitted);
+    });
+    dispatch_async(pointerQueue, ^{
+        dispatch_semaphore_wait(keySubmitted, DISPATCH_TIME_FOREVER);
+        [self.dispatcher moveCursorToCanvasPoint:CGPointMake(300, 400)];
+        [self.dispatcher setMouseButton:4 down:YES];
+        [submitted fulfill];
+    });
+
+    [self waitForExpectations:@[submitted] timeout:1.0];
+    [self drainDispatcher];
+    XCTAssertEqualObjects(self.sink.eventSnapshot,
+                          (@[@"key:63:down", @"cursor:300:400", @"mouse:4:down"]));
+}
+
 - (void)testReleaseAllInputsReleasesEveryStateExactlyOnce {
     [self.dispatcher setKeyCode:72 down:YES];
     [self.dispatcher setKeyCode:71 down:YES];
