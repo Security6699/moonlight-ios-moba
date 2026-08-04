@@ -32,6 +32,12 @@
 		A7F000000000000000000001 /* MobaOverlayLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A7F000000000000000000102 /* MobaOverlayLifecycle.m */; };
 		A7F000000000000000000002 /* MobaOverlayLifecycle.m in Sources */ = {isa = PBXBuildFile; fileRef = A7F000000000000000000102 /* MobaOverlayLifecycle.m */; };
 		A7F000000000000000000003 /* MobaOverlayLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A7F000000000000000000103 /* MobaOverlayLifecycleTests.m */; };
+		A8B000000000000000000001 /* MobaAimGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A8B000000000000000000102 /* MobaAimGeometry.m */; };
+		A8B000000000000000000002 /* MobaAimGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = A8B000000000000000000102 /* MobaAimGeometry.m */; };
+		A8B000000000000000000003 /* MobaPointResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = A8B000000000000000000104 /* MobaPointResponse.m */; };
+		A8B000000000000000000004 /* MobaPointResponse.m in Sources */ = {isa = PBXBuildFile; fileRef = A8B000000000000000000104 /* MobaPointResponse.m */; };
+		A8B000000000000000000005 /* MobaAimGeometryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A8B000000000000000000105 /* MobaAimGeometryTests.m */; };
+		A8B000000000000000000006 /* MobaPointResponseTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A8B000000000000000000106 /* MobaPointResponseTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -244,6 +250,12 @@
 		A7F000000000000000000101 /* MobaOverlayLifecycle.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaOverlayLifecycle.h; sourceTree = "<group>"; };
 		A7F000000000000000000102 /* MobaOverlayLifecycle.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaOverlayLifecycle.m; sourceTree = "<group>"; };
 		A7F000000000000000000103 /* MobaOverlayLifecycleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaOverlayLifecycleTests.m; sourceTree = "<group>"; };
+		A8B000000000000000000101 /* MobaAimGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaAimGeometry.h; sourceTree = "<group>"; };
+		A8B000000000000000000102 /* MobaAimGeometry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaAimGeometry.m; sourceTree = "<group>"; };
+		A8B000000000000000000103 /* MobaPointResponse.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaPointResponse.h; sourceTree = "<group>"; };
+		A8B000000000000000000104 /* MobaPointResponse.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointResponse.m; sourceTree = "<group>"; };
+		A8B000000000000000000105 /* MobaAimGeometryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaAimGeometryTests.m; sourceTree = "<group>"; };
+		A8B000000000000000000106 /* MobaPointResponseTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointResponseTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -625,6 +637,10 @@
 				A3C000000000000000000004 /* MobaVideoGeometry.m */,
 				A6E000000000000000000101 /* MobaGameCanvas.h */,
 				A6E000000000000000000102 /* MobaGameCanvas.m */,
+				A8B000000000000000000101 /* MobaAimGeometry.h */,
+				A8B000000000000000000102 /* MobaAimGeometry.m */,
+				A8B000000000000000000103 /* MobaPointResponse.h */,
+				A8B000000000000000000104 /* MobaPointResponse.m */,
 			);
 			path = Geometry;
 			sourceTree = "<group>";
@@ -646,6 +662,8 @@
 				A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */,
 				A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */,
 				A7F000000000000000000103 /* MobaOverlayLifecycleTests.m */,
+				A8B000000000000000000105 /* MobaAimGeometryTests.m */,
+				A8B000000000000000000106 /* MobaPointResponseTests.m */,
 			);
 			path = MoonlightMobaTests;
 			sourceTree = "<group>";
@@ -997,6 +1015,10 @@
 				A6E00000000000000000000C /* MobaVideoGeometry.m in Sources */,
 				A7F000000000000000000002 /* MobaOverlayLifecycle.m in Sources */,
 				A7F000000000000000000003 /* MobaOverlayLifecycleTests.m in Sources */,
+				A8B000000000000000000002 /* MobaAimGeometry.m in Sources */,
+				A8B000000000000000000004 /* MobaPointResponse.m in Sources */,
+				A8B000000000000000000005 /* MobaAimGeometryTests.m in Sources */,
+				A8B000000000000000000006 /* MobaPointResponseTests.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1067,6 +1089,8 @@
 				A6E000000000000000000006 /* MobaCursorDiagnostics.m in Sources */,
 				A6E000000000000000000008 /* MobaCursorDiagnosticPanel.m in Sources */,
 				A7F000000000000000000001 /* MobaOverlayLifecycle.m in Sources */,
+				A8B000000000000000000001 /* MobaAimGeometry.m in Sources */,
+				A8B000000000000000000003 /* MobaPointResponse.m in Sources */,
 				FB290D0719B2C406004C83CF /* Limelight.xcdatamodeld in Sources */,
 				9819CC22254F180F008A7C8E /* AbsoluteTouchHandler.m in Sources */,
 				9819CC14254F107A008A7C8E /* RelativeTouchHandler.m in Sources */,
