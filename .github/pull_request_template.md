@@ -13,10 +13,11 @@ Closes #
 ## Validation
 
 - [ ] `git diff --check`
-- [ ] `xcodebuild -list -project Moonlight.xcodeproj`
-- [ ] Unsigned generic iOS build using an actual listed scheme
-- [ ] Relevant XCTest
-- [ ] Target iPad test, when required
+- [ ] Local `xcodebuild -list` and unsigned generic iOS build, when Xcode is available
+- [ ] `iOS Build` GitHub Actions workflow passed
+- [ ] Relevant XCTest passed, when available
+- [ ] Local environment limitations are documented without claiming compile success
+- [ ] Target iPad test completed, when required
 
 ## Input safety
 

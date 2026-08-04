@@ -2,9 +2,10 @@
 
 ## 1. Test layers
 
+- Windows or other non-Xcode static checks: formatting, JSON, XML, PBX references, and source-level assertions. These checks do not prove that the iOS project compiles.
+- GitHub Actions macOS validation: real Xcode project discovery and unsigned generic iOS compilation on every pull request targeting `master`.
 - Unit tests for geometry, state machines, profile validation, joystick transitions, and input ordering.
 - Integration tests with a fake `MobaInputSink`.
-- Unsigned generic iOS build validation.
 - Manual Windows cursor diagnostics.
 - Real-device gameplay validation on the target iPad.
 
@@ -161,9 +162,9 @@ Verify no touch ownership transfer, no native keyboard gesture, no dropped movem
 - Confirm backup creation before successful replacement.
 - Confirm field-specific error messages.
 
-## 9. Build validation
+## 9. Build and CI validation
 
-Before every PR completion:
+Before every PR completion, run locally where the environment supports it:
 
 ```bash
 git diff --check
@@ -176,7 +177,11 @@ xcodebuild \
   build
 ```
 
-Run relevant XCTest targets when introduced.
+When Xcode is not installed, run the available static checks, report the limitation, and do not claim compilation success. Push the branch so the `iOS Build` GitHub Actions workflow can perform the required macOS/Xcode build.
+
+Every code PR targeting `master` must pass `iOS Build` before merge. CI failures must be fixed on the same task branch and PR unless the failure is confirmed to be unrelated infrastructure breakage.
+
+Run relevant XCTest targets when introduced. A successful compile does not replace XCTest, and neither CI nor XCTest replaces target-iPad touch, lifecycle, latency, layout, or game-calibration testing.
 
 ## 10. MVP exit criteria
 
