@@ -4,10 +4,27 @@
 //
 
 #import "MobaOverlayCoordinator.h"
+#import "MobaCursorDiagnostics.h"
+#import "MobaInputDispatcher.h"
+#import "MoonlightMobaInputAdapter.h"
+#import "MoonlightMobaInputSender.h"
 #import "StreamView.h"
+
+#if DEBUG
+#import "../Debug/MobaCursorDiagnosticPanel.h"
+#endif
+
+@interface MobaOverlayCoordinator () <MobaBattleInputGate>
+- (void)updateDiagnosticPanelVisibility;
+@end
 
 @implementation MobaOverlayCoordinator {
     __weak StreamView *_streamView;
+    MobaInputDispatcher *_inputDispatcher;
+    MobaCursorDiagnostics *_cursorDiagnostics;
+#if DEBUG
+    MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
+#endif
     BOOL _running;
 }
 
@@ -16,6 +33,15 @@
     if (self) {
         _streamView = streamView;
         _mode = [streamView isMobaBattleModeSupported] ? MobaOverlayModeBattle : MobaOverlayModeUI;
+
+        MoonlightMobaInputSender *sender = [[MoonlightMobaInputSender alloc] init];
+        MoonlightMobaInputAdapter *adapter = [[MoonlightMobaInputAdapter alloc] initWithSender:sender];
+        _inputDispatcher = [[MobaInputDispatcher alloc] initWithSink:adapter];
+        _cursorDiagnostics = [[MobaCursorDiagnostics alloc] initWithDispatcher:_inputDispatcher
+                                                                     inputGate:self];
+#if DEBUG
+        _cursorDiagnosticPanel = [[MobaCursorDiagnosticPanel alloc] initWithDiagnostics:_cursorDiagnostics];
+#endif
     }
     return self;
 }
@@ -42,10 +68,12 @@
     }
 
     if (_mode == mode) {
+        [self updateDiagnosticPanelVisibility];
         return YES;
     }
 
     _mode = mode;
+    [self updateDiagnosticPanelVisibility];
     return YES;
 }
 
@@ -56,6 +84,18 @@
 
     _running = YES;
     [_streamView setTraditionalOnScreenControlsSuppressed:YES];
+
+#if DEBUG
+    if (_cursorDiagnosticPanel.superview == nil) {
+        [_streamView addSubview:_cursorDiagnosticPanel];
+        UILayoutGuide *safeArea = _streamView.safeAreaLayoutGuide;
+        [NSLayoutConstraint activateConstraints:@[
+            [_cursorDiagnosticPanel.topAnchor constraintEqualToAnchor:safeArea.topAnchor constant:8.0],
+            [_cursorDiagnosticPanel.centerXAnchor constraintEqualToAnchor:safeArea.centerXAnchor],
+        ]];
+    }
+#endif
+    [self updateDiagnosticPanelVisibility];
 }
 
 - (void)stop {
@@ -64,7 +104,16 @@
     }
 
     _running = NO;
+#if DEBUG
+    [_cursorDiagnosticPanel removeFromSuperview];
+#endif
     [_streamView setTraditionalOnScreenControlsSuppressed:NO];
+}
+
+- (void)updateDiagnosticPanelVisibility {
+#if DEBUG
+    _cursorDiagnosticPanel.hidden = ![self isBattleInputAllowed];
+#endif
 }
 
 - (void)dealloc {
