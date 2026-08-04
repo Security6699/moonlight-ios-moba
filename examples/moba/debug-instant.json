@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "championId": "debug-instant",
+  "displayName": "Debug Instant Cast",
+  "calibrationStatus": "test-only",
+  "skills": {
+    "Q": {
+      "inputAction": "ability1",
+      "castType": "instant",
+      "activation": "onRelease",
+      "tapDurationMs": 30,
+      "allowCancel": false
+    },
+    "W": {
+      "inputAction": "ability2",
+      "castType": "instant",
+      "activation": "onRelease",
+      "tapDurationMs": 30,
+      "allowCancel": false
+    },
+    "E": {
+      "inputAction": "ability3",
+      "castType": "instant",
+      "activation": "onRelease",
+      "tapDurationMs": 30,
+      "allowCancel": false
+    },
+    "R": {
+      "inputAction": "ability4",
+      "castType": "instant",
+      "activation": "onRelease",
+      "tapDurationMs": 30,
+      "allowCancel": false
+    }
+  }
+}
