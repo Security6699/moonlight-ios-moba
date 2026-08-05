@@ -140,12 +140,12 @@ The debug nine-point panel submits only the fixed canvas points documented in th
 
 ## 6. Modes and hit testing
 
-- Battle: controls and a transparent game-area shield consume gameplay touches; native StreamView gestures are disabled.
+- Battle: MOBA controls consume their own hit areas and a StreamView routing gate blocks native direct-touch and Pencil gameplay input after real mouse handling. No full-screen overlay view is added.
 - UI: overlay controls are reduced/noninteractive and native StreamView interaction is enabled.
 - Layout Edit: remote input is disabled; handles edit control properties.
 - Skill Tuning: preview or live-cast behavior with explicit controls.
 
-Mode transitions always release remote input before changing hit testing.
+Mode transitions always close Battle input first. Leaving Battle then enqueues dispatcher release-all and resets local interaction before UI mode restores native StreamView routing. Entering Battle disables native routing before Battle controls become interactive. Layout Edit and Skill Tuning keep native routing disabled.
 
 ## 7. Lifecycle
 
@@ -153,7 +153,7 @@ Coordinator receives app background/inactive, stream teardown, controller disapp
 
 All paths converge on `interruptAndReleaseInputsForReason:`. The ordered boundary is suspend input, disable diagnostics and local interaction, enqueue dispatcher release-all, then reset local participants. Release-all expands tracked state into concrete key-up and mouse-up events exactly once and invalidates pending tap tokens.
 
-App-active, orientation-complete, and profile-reloaded callbacks may clear suspension only when the stream remains connected, the coordinator remains running, the mode is Battle, and the resolution remains exactly 2560x1440. Recovery never recreates a pressed input or cancelled timer. Stop, stream teardown, controller disappearance, destruction, and feature disable remain suspended and restore traditional on-screen controls.
+App-active, orientation-complete, and profile-reloaded callbacks may clear suspension only when the stream remains connected, the coordinator remains running, the mode is Battle, and the resolution remains exactly 2560x1440. Recovery never recreates a pressed input or cancelled timer. Stop, stream teardown, controller disappearance, destruction, and feature disable remain suspended and restore both native StreamView routing and traditional on-screen controls.
 
 ## 8. Extension path
 

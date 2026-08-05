@@ -30,6 +30,7 @@
     CGPoint lastTouchDownLocation;
     UITouch* lastTouchUp;
     CGPoint lastTouchUpLocation;
+    BOOL touchActive;
 }
 
 - (id)initWithView:(StreamView*)view {
@@ -72,6 +73,7 @@
     
     lastTouchDown = touch;
     lastTouchDownLocation = touchLocation;
+    touchActive = YES;
 }
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
@@ -109,12 +111,25 @@
         // Remember this last touch for touch-down deadzoning
         lastTouchUp = [touches anyObject];
         lastTouchUpLocation = [lastTouchUp locationInView:view];
+        touchActive = NO;
     }
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
-    // Treat this as a normal touchesEnded event
-    [self touchesEnded:touches withEvent:event];
+    (void)touches;
+    (void)event;
+    [self cancelAllTouches];
+}
+
+- (void)cancelAllTouches {
+    [longPressTimer invalidate];
+    longPressTimer = nil;
+    if (touchActive) {
+        LiSendMouseButtonEvent(BUTTON_ACTION_RELEASE, BUTTON_LEFT);
+        LiSendMouseButtonEvent(BUTTON_ACTION_RELEASE, BUTTON_RIGHT);
+    }
+    touchActive = NO;
+    lastTouchDown = nil;
 }
 
 @end

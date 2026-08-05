@@ -76,6 +76,10 @@
     (void)suppressed;
 }
 
+- (void)setMobaNativeTouchRoutingEnabled:(BOOL)enabled {
+    (void)enabled;
+}
+
 @end
 
 @interface MobaMovementCancellationDelegate : NSObject <MobaMovementControllerDelegate>

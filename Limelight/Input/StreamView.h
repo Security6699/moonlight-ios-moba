@@ -30,6 +30,7 @@
 // Aspect Fit video area in the StreamView's current bounds coordinate space.
 @property (nonatomic, readonly) CGRect videoRect;
 @property (nonatomic, readonly, getter=isMobaBattleModeSupported) BOOL mobaBattleModeSupported;
+@property (nonatomic, getter=isMobaNativeTouchRoutingEnabled) BOOL mobaNativeTouchRoutingEnabled;
 
 - (void) setupStreamView:(ControllerSupport*)controllerSupport
      interactionDelegate:(id<UserInteractionDelegate>)interactionDelegate

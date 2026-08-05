@@ -98,11 +98,23 @@
 @property (nonatomic, getter=isMobaBattleModeSupported) BOOL mobaBattleModeSupported;
 @property (nonatomic, readonly) BOOL traditionalControlsSuppressed;
 @property (nonatomic, readonly) NSUInteger suppressionChangeCount;
+@property (nonatomic, readonly, getter=isNativeTouchRoutingEnabled) BOOL nativeTouchRoutingEnabled;
+@property (nonatomic, readonly) NSUInteger nativeTouchRoutingChangeCount;
 @end
 
 @implementation MobaLifecycleFakeEnvironment {
     BOOL _traditionalControlsSuppressed;
     NSUInteger _suppressionChangeCount;
+    BOOL _nativeTouchRoutingEnabled;
+    NSUInteger _nativeTouchRoutingChangeCount;
+}
+
+- (instancetype)init {
+    self = [super init];
+    if (self) {
+        _nativeTouchRoutingEnabled = YES;
+    }
+    return self;
 }
 
 - (BOOL)traditionalControlsSuppressed {
@@ -113,10 +125,25 @@
     return _suppressionChangeCount;
 }
 
+- (BOOL)isNativeTouchRoutingEnabled {
+    return _nativeTouchRoutingEnabled;
+}
+
+- (NSUInteger)nativeTouchRoutingChangeCount {
+    return _nativeTouchRoutingChangeCount;
+}
+
 - (void)setTraditionalOnScreenControlsSuppressed:(BOOL)suppressed {
     if (_traditionalControlsSuppressed != suppressed) {
         _traditionalControlsSuppressed = suppressed;
         _suppressionChangeCount++;
+    }
+}
+
+- (void)setMobaNativeTouchRoutingEnabled:(BOOL)enabled {
+    if (_nativeTouchRoutingEnabled != enabled) {
+        _nativeTouchRoutingEnabled = enabled;
+        _nativeTouchRoutingChangeCount++;
     }
 }
 

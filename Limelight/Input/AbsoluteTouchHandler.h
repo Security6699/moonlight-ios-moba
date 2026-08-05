@@ -13,6 +13,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface AbsoluteTouchHandler : UIResponder
 
 -(id)initWithView:(StreamView*)view;
+- (void)cancelAllTouches;
 
 @end
 
