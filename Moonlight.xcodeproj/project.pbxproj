@@ -64,6 +64,14 @@
 		AC1300000000000000000004 /* MobaCastSession.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000104 /* MobaCastSession.m */; };
 		AC1300000000000000000005 /* MobaCastStateMachineTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000105 /* MobaCastStateMachineTests.m */; };
 		AC1300000000000000000006 /* MobaCastSessionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000106 /* MobaCastSessionTests.m */; };
+		AD1400000000000000000001 /* MobaCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000102 /* MobaCastStrategy.m */; };
+		AD1400000000000000000002 /* MobaCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000102 /* MobaCastStrategy.m */; };
+		AD1400000000000000000003 /* MobaInstantCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000104 /* MobaInstantCastStrategy.m */; };
+		AD1400000000000000000004 /* MobaInstantCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000104 /* MobaInstantCastStrategy.m */; };
+		AD1400000000000000000005 /* MobaDirectionalCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000106 /* MobaDirectionalCastStrategy.m */; };
+		AD1400000000000000000006 /* MobaDirectionalCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000106 /* MobaDirectionalCastStrategy.m */; };
+		AD1400000000000000000007 /* MobaInstantCastStrategyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000107 /* MobaInstantCastStrategyTests.m */; };
+		AD1400000000000000000008 /* MobaDirectionalCastStrategyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000108 /* MobaDirectionalCastStrategyTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -306,6 +314,14 @@
 		AC1300000000000000000104 /* MobaCastSession.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastSession.m; sourceTree = "<group>"; };
 		AC1300000000000000000105 /* MobaCastStateMachineTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastStateMachineTests.m; sourceTree = "<group>"; };
 		AC1300000000000000000106 /* MobaCastSessionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastSessionTests.m; sourceTree = "<group>"; };
+		AD1400000000000000000101 /* MobaCastStrategy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCastStrategy.h; sourceTree = "<group>"; };
+		AD1400000000000000000102 /* MobaCastStrategy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastStrategy.m; sourceTree = "<group>"; };
+		AD1400000000000000000103 /* MobaInstantCastStrategy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaInstantCastStrategy.h; sourceTree = "<group>"; };
+		AD1400000000000000000104 /* MobaInstantCastStrategy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaInstantCastStrategy.m; sourceTree = "<group>"; };
+		AD1400000000000000000105 /* MobaDirectionalCastStrategy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaDirectionalCastStrategy.h; sourceTree = "<group>"; };
+		AD1400000000000000000106 /* MobaDirectionalCastStrategy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaDirectionalCastStrategy.m; sourceTree = "<group>"; };
+		AD1400000000000000000107 /* MobaInstantCastStrategyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaInstantCastStrategyTests.m; sourceTree = "<group>"; };
+		AD1400000000000000000108 /* MobaDirectionalCastStrategyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaDirectionalCastStrategyTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -703,10 +719,16 @@
 		AC1300000000000000000107 /* Casting */ = {
 			isa = PBXGroup;
 			children = (
+				AD1400000000000000000101 /* MobaCastStrategy.h */,
+				AD1400000000000000000102 /* MobaCastStrategy.m */,
 				AC1300000000000000000101 /* MobaCastStateMachine.h */,
 				AC1300000000000000000102 /* MobaCastStateMachine.m */,
 				AC1300000000000000000103 /* MobaCastSession.h */,
 				AC1300000000000000000104 /* MobaCastSession.m */,
+				AD1400000000000000000103 /* MobaInstantCastStrategy.h */,
+				AD1400000000000000000104 /* MobaInstantCastStrategy.m */,
+				AD1400000000000000000105 /* MobaDirectionalCastStrategy.h */,
+				AD1400000000000000000106 /* MobaDirectionalCastStrategy.m */,
 			);
 			path = Casting;
 			sourceTree = "<group>";
@@ -743,6 +765,8 @@
 			isa = PBXGroup;
 			children = (
 				AA1000000000000000000105 /* MobaAttackControllerTests.m */,
+				AD1400000000000000000108 /* MobaDirectionalCastStrategyTests.m */,
+				AD1400000000000000000107 /* MobaInstantCastStrategyTests.m */,
 				AC1300000000000000000106 /* MobaCastSessionTests.m */,
 				AC1300000000000000000105 /* MobaCastStateMachineTests.m */,
 				A5D000000000000000000008 /* MobaInputDispatcherTests.m */,
@@ -1098,6 +1122,11 @@
 				AA1000000000000000000002 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000004 /* AttackButtonView.m in Sources */,
 				AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */,
+				AD1400000000000000000002 /* MobaCastStrategy.m in Sources */,
+				AD1400000000000000000004 /* MobaInstantCastStrategy.m in Sources */,
+				AD1400000000000000000006 /* MobaDirectionalCastStrategy.m in Sources */,
+				AD1400000000000000000007 /* MobaInstantCastStrategyTests.m in Sources */,
+				AD1400000000000000000008 /* MobaDirectionalCastStrategyTests.m in Sources */,
 				AC1300000000000000000002 /* MobaCastStateMachine.m in Sources */,
 				AC1300000000000000000004 /* MobaCastSession.m in Sources */,
 				AC1300000000000000000005 /* MobaCastStateMachineTests.m in Sources */,
@@ -1189,6 +1218,9 @@
 			files = (
 				AA1000000000000000000001 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000003 /* AttackButtonView.m in Sources */,
+				AD1400000000000000000001 /* MobaCastStrategy.m in Sources */,
+				AD1400000000000000000003 /* MobaInstantCastStrategy.m in Sources */,
+				AD1400000000000000000005 /* MobaDirectionalCastStrategy.m in Sources */,
 				AC1300000000000000000001 /* MobaCastStateMachine.m in Sources */,
 				AC1300000000000000000003 /* MobaCastSession.m in Sources */,
 				AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */,

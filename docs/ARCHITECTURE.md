@@ -106,6 +106,14 @@ Owns one cast state machine and one active interaction token for a future skill 
 
 Interpret accepted session begin/update/commit/cancel results according to the selected ability profile and own the corresponding remote-input semantics. New future strategies must be addable without changing `SkillButtonView` or the cast state machine. All strategy output must still pass through `MobaInputDispatcher`, which remains the only pressed-input state owner.
 
+`MobaInstantCastStrategy` sends no input on begin or update. It enqueues one configured key tap only when it consumes an accepted committed terminal result. Cancellation and lifecycle interruption never activate the instant skill.
+
+`MobaDirectionalCastStrategy` calculates its configured default target with `MobaAimGeometry`. Begin submits that cursor point followed by the configured skill key-down. Drag updates replace only the strategy's latest target and do not send cursor input. The future display-link coalescing work in Issue #17 will deliver live cursor updates. Commit calls the Dispatcher's atomic final-cursor-plus-skill-key-up operation so the cursor event strictly precedes key-up without an interleaving input event.
+
+An intentional cancel-zone release selects a configured keyboard, right-mouse, or release-only action. Keyboard and mouse cancellation use the Dispatcher's ordered cancellation operations. Lifecycle interruption does not send the configured cancel action. It relies on lifecycle `releaseAllInputs`, then silently resets strategy and Session state.
+
+Strategies consume only accepted `MobaCastSession` transition results and guard each terminal outcome against repeated consumption. They own no pressed-key collection, tap timer, or release-all state and never mutate the Session. After commit or intentional cancellation, the caller explicitly invokes Session `silentReset` before a new interaction can begin.
+
 ### Profiles
 
 Load validated, versioned configuration. Layout, runtime, input, and champion behavior remain separate.
