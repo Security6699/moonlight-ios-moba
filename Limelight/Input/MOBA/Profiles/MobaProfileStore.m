@@ -167,7 +167,8 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
 }
 
 - (BOOL)isMissingItemError:(NSError *)error {
-    return [error.domain isEqualToString:NSCocoaErrorDomain] && error.code == NSFileNoSuchFileError;
+    return [error.domain isEqualToString:NSCocoaErrorDomain] &&
+        (error.code == NSFileNoSuchFileError || error.code == NSFileReadNoSuchFileError);
 }
 
 - (MobaProfileStoreItemKind)itemKindAtURL:(NSURL *)url error:(NSError **)error {
@@ -221,22 +222,25 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
     }
 
     NSURL *standardizedRoot = [self.rootDirectoryURL URLByStandardizingPath];
-    NSURL *destination = [[standardizedRoot URLByAppendingPathComponent:path isDirectory:NO] URLByStandardizingPath];
     NSURL *resolvedRoot = [[standardizedRoot URLByResolvingSymlinksInPath] URLByStandardizingPath];
-    NSURL *resolvedDestination = [[destination URLByResolvingSymlinksInPath] URLByStandardizingPath];
     NSString *rootPath = resolvedRoot.path;
-    NSString *destinationPath = resolvedDestination.path;
     NSString *rootPrefix = [rootPath stringByAppendingString:@"/"];
 
-    if ([destinationPath isEqualToString:rootPath] || ![destinationPath hasPrefix:rootPrefix]) {
-        if (error != NULL) {
-            *error = [self errorWithCode:MobaProfileStoreErrorInvalidPath
-                               operation:@"validate-path"
-                            relativePath:path
-                          underlyingError:nil
-                              description:@"The resolved path escapes the MOBA root directory."];
+    NSURL *destination = standardizedRoot;
+    for (NSString *component in components) {
+        destination = [[destination URLByAppendingPathComponent:component isDirectory:NO] URLByStandardizingPath];
+        NSURL *resolvedComponent = [[destination URLByResolvingSymlinksInPath] URLByStandardizingPath];
+        NSString *resolvedComponentPath = resolvedComponent.path;
+        if ([resolvedComponentPath isEqualToString:rootPath] || ![resolvedComponentPath hasPrefix:rootPrefix]) {
+            if (error != NULL) {
+                *error = [self errorWithCode:MobaProfileStoreErrorInvalidPath
+                                   operation:@"validate-path"
+                                relativePath:path
+                              underlyingError:nil
+                                  description:@"The resolved path escapes the MOBA root directory."];
+            }
+            return nil;
         }
-        return nil;
     }
     return destination;
 }
