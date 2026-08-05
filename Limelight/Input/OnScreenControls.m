@@ -874,6 +874,36 @@ static float L3_Y;
     return updated || touched;
 }
 
+- (void)cancelAllTouches {
+    NSMutableSet *activeTouches = [[NSMutableSet alloc] init];
+    NSArray *trackedTouches = @[
+        _dpadTouch ?: NSNull.null,
+        _lsTouch ?: NSNull.null,
+        _rsTouch ?: NSNull.null,
+        _aTouch ?: NSNull.null,
+        _bTouch ?: NSNull.null,
+        _xTouch ?: NSNull.null,
+        _yTouch ?: NSNull.null,
+        _startTouch ?: NSNull.null,
+        _selectTouch ?: NSNull.null,
+        _l1Touch ?: NSNull.null,
+        _r1Touch ?: NSNull.null,
+        _l2Touch ?: NSNull.null,
+        _r2Touch ?: NSNull.null,
+        _l3Touch ?: NSNull.null,
+        _r3Touch ?: NSNull.null,
+    ];
+    for (id touch in trackedTouches) {
+        if (touch != NSNull.null) {
+            [activeTouches addObject:touch];
+        }
+    }
+    if (activeTouches.count != 0) {
+        [self handleTouchUpEvent:activeTouches];
+    }
+    [_deadTouches removeAllObjects];
+}
+
 - (BOOL) isInDeadZone:(UITouch*) touch {
     // Dynamically evaluate deadzones based on the controls
     // on screen at the time

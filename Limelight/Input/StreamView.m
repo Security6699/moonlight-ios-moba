@@ -15,8 +15,19 @@
 #import "AbsoluteTouchHandler.h"
 #import "KeyboardInputField.h"
 #import "MOBA/Geometry/MobaVideoGeometry.h"
+#import "MOBA/Core/MobaNativeTouchRoutingController.h"
 
 static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
+
+@protocol StreamNativeTouchHandlerCancellation <NSObject>
+- (void)cancelAllTouches;
+@end
+
+@interface StreamView () <MobaNativeTouchSequenceCancelling>
+#if !TARGET_OS_TV
+- (BOOL)sendStylusEvent:(UITouch *)event eventType:(uint8_t)type;
+#endif
+@end
 
 @implementation StreamView {
     OnScreenControls* onScreenControls;
@@ -46,6 +57,22 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
     BOOL hasUserInteracted;
     
     NSDictionary<NSString *, NSNumber *> *dictCodes;
+
+    MobaNativeTouchRoutingController *_mobaNativeTouchRoutingController;
+    NSMutableSet<UITouch *> *_mobaForwardedNativeTouches;
+    NSMutableSet<UITouch *> *_mobaBlockedNativeTouches;
+    NSMutableSet<UITouch *> *_mobaActiveStylusTouches;
+}
+
+- (MobaNativeTouchRoutingController *)mobaNativeTouchRoutingController {
+    if (_mobaNativeTouchRoutingController == nil) {
+        _mobaNativeTouchRoutingController = [[MobaNativeTouchRoutingController alloc]
+            initWithCancellationConsumer:self];
+        _mobaForwardedNativeTouches = [[NSMutableSet alloc] init];
+        _mobaBlockedNativeTouches = [[NSMutableSet alloc] init];
+        _mobaActiveStylusTouches = [[NSMutableSet alloc] init];
+    }
+    return _mobaNativeTouchRoutingController;
 }
 
 - (void) setupStreamView:(ControllerSupport*)controllerSupport
@@ -185,6 +212,82 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
 #endif
 }
 
+- (BOOL)isMobaNativeTouchRoutingEnabled {
+    return self.mobaNativeTouchRoutingController.isNativeTouchRoutingEnabled;
+}
+
+- (void)setMobaNativeTouchRoutingEnabled:(BOOL)enabled {
+    [self.mobaNativeTouchRoutingController setNativeTouchRoutingEnabled:enabled];
+}
+
+- (void)cancelActiveNativeTouchSequence {
+    if (_mobaForwardedNativeTouches.count != 0) {
+        [_mobaBlockedNativeTouches unionSet:_mobaForwardedNativeTouches];
+        [(id<StreamNativeTouchHandlerCancellation>)touchHandler cancelAllTouches];
+        [onScreenControls cancelAllTouches];
+    }
+
+#if !TARGET_OS_TV
+    for (UITouch *touch in _mobaActiveStylusTouches.copy) {
+        [self sendStylusEvent:touch eventType:LI_TOUCH_EVENT_CANCEL];
+    }
+#endif
+
+    [_mobaForwardedNativeTouches removeAllObjects];
+    [_mobaActiveStylusTouches removeAllObjects];
+
+    if (isInputingText) {
+        [keyInputField resignFirstResponder];
+        isInputingText = NO;
+    }
+
+    BOOL interactionWasActive = interactionTimer != nil;
+    [interactionTimer invalidate];
+    interactionTimer = nil;
+    hasUserInteracted = NO;
+    if (interactionWasActive) {
+        [interactionDelegate userInteractionEnded];
+    }
+}
+
+- (BOOL)eventContainsBlockedNativeTouch:(UIEvent *)event {
+    for (UITouch *touch in event.allTouches) {
+        if ([_mobaBlockedNativeTouches containsObject:touch]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
+- (void)addBlockedNativeTouches:(NSSet<UITouch *> *)touches {
+    for (UITouch *touch in touches) {
+        if (@available(iOS 13.4, tvOS 13.4, *)) {
+            if (touch.type == UITouchTypeIndirectPointer) {
+                continue;
+            }
+        }
+        [_mobaBlockedNativeTouches addObject:touch];
+    }
+}
+
+- (BOOL)shouldForwardNativeTouches:(NSSet<UITouch *> *)touches
+                         withEvent:(UIEvent *)event
+                             phase:(UITouchPhase)phase {
+    BOOL routingEnabled = self.mobaNativeTouchRoutingController.isNativeTouchRoutingEnabled;
+    BOOL sequenceBlocked = [self eventContainsBlockedNativeTouch:event];
+    if (routingEnabled && !sequenceBlocked) {
+        return YES;
+    }
+
+    if (phase == UITouchPhaseBegan || phase == UITouchPhaseMoved) {
+        [self addBlockedNativeTouches:touches];
+    }
+    else if (phase == UITouchPhaseEnded || phase == UITouchPhaseCancelled) {
+        [_mobaBlockedNativeTouches minusSet:touches];
+    }
+    return NO;
+}
+
 - (CGSize)streamResolution {
     return _streamResolution;
 }
@@ -287,6 +390,14 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
             return YES;
     }
 
+    return [self sendStylusEvent:event eventType:type];
+}
+
+- (BOOL)sendStylusEvent:(UITouch *)event eventType:(uint8_t)type {
+    if (!(LiGetHostFeatureFlags() & LI_FF_PEN_TOUCH_EVENTS)) {
+        return NO;
+    }
+
     CGPoint location = [self adjustCoordinatesForVideoArea:[event locationInView:self]];
     CGSize videoSize = [self getVideoAreaSize];
     
@@ -298,6 +409,10 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
 }
 
 - (void)sendStylusHoverEvent:(UIHoverGestureRecognizer*)gesture API_AVAILABLE(ios(13.0)) {
+    if (![self.mobaNativeTouchRoutingController allowsTouchKind:MobaNativeTouchKindPencil]) {
+        return;
+    }
+
     uint8_t type;
     
     switch (gesture.state) {
@@ -346,6 +461,11 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
         // If it's a mouse event, we're done
         return;
     }
+
+    if (![self shouldForwardNativeTouches:touches withEvent:event phase:UITouchPhaseBegan]) {
+        return;
+    }
+    [_mobaForwardedNativeTouches unionSet:touches];
     
     Log(LOG_D, @"Touch down");
     
@@ -357,6 +477,7 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
         for (UITouch* touch in touches) {
             if (touch.type == UITouchTypePencil) {
                 if ([self sendStylusEvent:touch]) {
+                    [_mobaActiveStylusTouches addObject:touch];
                     return;
                 }
             }
@@ -372,7 +493,8 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
         // is triggered.
         [touchHandler touchesBegan:touches withEvent:event];
         
-        if ([[event allTouches] count] == 3) {
+        if ([[event allTouches] count] == 3 &&
+            [self.mobaNativeTouchRoutingController allowsThreeFingerKeyboardGesture]) {
             if (isInputingText) {
                 Log(LOG_D, @"Closing the keyboard");
                 [keyInputField resignFirstResponder];
@@ -532,14 +654,6 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
 #if !TARGET_OS_TV
     if (@available(iOS 13.4, *)) {
-        for (UITouch* touch in touches) {
-            if (touch.type == UITouchTypePencil) {
-                if ([self sendStylusEvent:touch]) {
-                    return;
-                }
-            }
-        }
-        
         UITouch *touch = [touches anyObject];
         if (touch.type == UITouchTypeIndirectPointer) {
             if (@available(iOS 14.0, *)) {
@@ -557,6 +671,22 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
             // in pointerInteraction:regionForRequest:defaultRegion.
             [self updateCursorLocation:[touch locationInView:self] isMouse:YES];
             return;
+        }
+    }
+#endif
+
+    if (![self shouldForwardNativeTouches:touches withEvent:event phase:UITouchPhaseMoved]) {
+        return;
+    }
+
+#if !TARGET_OS_TV
+    if (@available(iOS 13.4, *)) {
+        for (UITouch* touch in touches) {
+            if (touch.type == UITouchTypePencil) {
+                if ([self sendStylusEvent:touch]) {
+                    return;
+                }
+            }
         }
     }
 #endif
@@ -613,6 +743,10 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
         // If it's a mouse event, we're done
         return;
     }
+
+    if (![self shouldForwardNativeTouches:touches withEvent:event phase:UITouchPhaseEnded]) {
+        return;
+    }
     
     Log(LOG_D, @"Touch up");
     
@@ -623,6 +757,8 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
         for (UITouch* touch in touches) {
             if (touch.type == UITouchTypePencil) {
                 if ([self sendStylusEvent:touch]) {
+                    [_mobaActiveStylusTouches removeObject:touch];
+                    [_mobaForwardedNativeTouches minusSet:touches];
                     return;
                 }
             }
@@ -633,22 +769,37 @@ static const double X1_MOUSE_SPEED_DIVISOR = 2.5;
     if (![onScreenControls handleTouchUpEvent:touches]) {
         [touchHandler touchesEnded:touches withEvent:event];
     }
+    [_mobaForwardedNativeTouches minusSet:touches];
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
-    [touchHandler touchesCancelled:touches withEvent:event];
-    [self handleMouseButtonEvent:BUTTON_ACTION_RELEASE
-                      forTouches:touches
-                       withEvent:event];
+    if ([self handleMouseButtonEvent:BUTTON_ACTION_RELEASE
+                          forTouches:touches
+                           withEvent:event]) {
+        return;
+    }
+
+    if (![self shouldForwardNativeTouches:touches withEvent:event phase:UITouchPhaseCancelled]) {
+        return;
+    }
 #if !TARGET_OS_TV
     if (@available(iOS 13.4, *)) {
         for (UITouch* touch in touches) {
             if (touch.type == UITouchTypePencil) {
-                [self sendStylusEvent:touch];
+                if ([self sendStylusEvent:touch]) {
+                    [_mobaActiveStylusTouches removeObject:touch];
+                    [_mobaForwardedNativeTouches minusSet:touches];
+                    return;
+                }
             }
         }
     }
 #endif
+
+    if (![onScreenControls handleTouchUpEvent:touches]) {
+        [touchHandler touchesCancelled:touches withEvent:event];
+    }
+    [_mobaForwardedNativeTouches minusSet:touches];
 }
 
 #if !TARGET_OS_TV

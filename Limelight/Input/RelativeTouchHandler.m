@@ -171,6 +171,12 @@ static const int REFERENCE_HEIGHT = 720;
 }
 
 - (void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event {
+    (void)touches;
+    (void)event;
+    [self cancelAllTouches];
+}
+
+- (void)cancelAllTouches {
     [dragTimer invalidate];
     dragTimer = nil;
     if (isDragging) {
@@ -178,6 +184,7 @@ static const int REFERENCE_HEIGHT = 720;
         LiSendMouseButtonEvent(BUTTON_ACTION_RELEASE, BUTTON_LEFT);
     }
     peakTouchCount = 0;
+    touchMoved = true;
 }
 
 #if TARGET_OS_TV

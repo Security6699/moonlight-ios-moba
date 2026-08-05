@@ -106,6 +106,10 @@
     return MobaInputInterruptionReasonTouchCancellation;
 }
 
+- (BOOL)nativeTouchRoutingEnabledForMode:(MobaOverlayMode)mode {
+    return mode == MobaOverlayModeUI;
+}
+
 - (BOOL)transitionToMode:(MobaOverlayMode)mode {
     if (mode == MobaOverlayModeBattle && ![_environment isMobaBattleModeSupported]) {
         return NO;
@@ -119,6 +123,9 @@
         [self interruptAndReleaseInputsForReason:[self interruptionReasonForMode:mode]];
     }
 
+    if (mode == MobaOverlayModeBattle) {
+        [_environment setMobaNativeTouchRoutingEnabled:NO];
+    }
     _mode = mode;
     if (mode == MobaOverlayModeBattle) {
         [self resumeBattleInputIfAllowed];
@@ -126,6 +133,9 @@
     else {
         _inputSuspended = YES;
         [self setLocalInteractionEnabled:NO];
+    }
+    if (mode != MobaOverlayModeBattle) {
+        [_environment setMobaNativeTouchRoutingEnabled:[self nativeTouchRoutingEnabledForMode:mode]];
     }
     return YES;
 }
@@ -138,6 +148,7 @@
     _running = YES;
     _streamConnected = YES;
     [_environment setTraditionalOnScreenControlsSuppressed:YES];
+    [_environment setMobaNativeTouchRoutingEnabled:[self nativeTouchRoutingEnabledForMode:_mode]];
     [self resumeBattleInputIfAllowed];
 }
 
@@ -150,6 +161,7 @@
         [self setLocalInteractionEnabled:NO];
     }
 
+    [_environment setMobaNativeTouchRoutingEnabled:YES];
     [_environment setTraditionalOnScreenControlsSuppressed:NO];
 }
 

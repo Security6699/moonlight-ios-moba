@@ -45,6 +45,7 @@ typedef NS_ENUM(NSInteger, MobaInputInterruptionReason) {
 
 @property (nonatomic, readonly, getter=isMobaBattleModeSupported) BOOL mobaBattleModeSupported;
 - (void)setTraditionalOnScreenControlsSuppressed:(BOOL)suppressed;
+- (void)setMobaNativeTouchRoutingEnabled:(BOOL)enabled;
 
 @end
 

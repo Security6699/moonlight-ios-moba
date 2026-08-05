@@ -12,6 +12,7 @@
 #import "../Controls/AttackButtonView.h"
 #import "../Controls/MobaAttackController.h"
 #import "../Controls/MobaMovementController.h"
+#import "../Controls/MobaModeToolbarView.h"
 #import "../Controls/MoveJoystickView.h"
 
 #if DEBUG
@@ -25,7 +26,8 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
 
 @interface MobaOverlayCoordinator () <MobaAttackControllerDelegate,
                                       MobaBattleInputGate,
-                                      MobaMovementControllerDelegate>
+                                      MobaMovementControllerDelegate,
+                                      MobaModeToolbarViewDelegate>
 @end
 
 @implementation MobaOverlayCoordinator {
@@ -37,6 +39,7 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
     MoveJoystickView *_moveJoystickView;
     MobaAttackController *_attackController;
     AttackButtonView *_attackButtonView;
+    MobaModeToolbarView *_modeToolbarView;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
 #endif
@@ -64,6 +67,10 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
         _attackController.delegate = self;
         _attackButtonView = [[AttackButtonView alloc] initWithAttackController:_attackController];
         [_lifecycle registerLocalInteractionResetParticipant:_attackButtonView];
+        _modeToolbarView = [[MobaModeToolbarView alloc] initWithFrame:CGRectZero];
+        _modeToolbarView.delegate = self;
+        _modeToolbarView.battleModeAvailable = streamView.isMobaBattleModeSupported;
+        [_modeToolbarView setSelectedMode:_lifecycle.mode];
         _cursorDiagnostics = [[MobaCursorDiagnostics alloc] initWithDispatcher:_inputDispatcher
                                                                      inputGate:self];
 #if DEBUG
@@ -90,11 +97,17 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
                                            CGRectGetWidth(safeFrame) * MobaDefaultAttackCenterX,
                                            CGRectGetMinY(safeFrame) +
                                            CGRectGetHeight(safeFrame) * MobaDefaultAttackCenterY);
+
+    CGSize toolbarSize = _modeToolbarView.intrinsicContentSize;
+    _modeToolbarView.bounds = (CGRect){ CGPointZero, toolbarSize };
+    _modeToolbarView.center = CGPointMake(CGRectGetMaxX(safeFrame) - toolbarSize.width * 0.5 - 12.0,
+                                          CGRectGetMinY(safeFrame) + toolbarSize.height * 0.5 + 8.0);
 }
 
 - (void)removeBattleControls {
     [_moveJoystickView removeFromSuperview];
     [_attackButtonView removeFromSuperview];
+    [_modeToolbarView removeFromSuperview];
 }
 
 - (BOOL)isRunning {
@@ -130,7 +143,10 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
 }
 
 - (BOOL)transitionToMode:(MobaOverlayMode)mode {
-    return [_lifecycle transitionToMode:mode];
+    BOOL transitioned = [_lifecycle transitionToMode:mode];
+    _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
+    [_modeToolbarView setSelectedMode:_lifecycle.mode];
+    return transitioned;
 }
 
 - (void)start {
@@ -144,6 +160,11 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
     if (_attackButtonView.superview == nil) {
         [_streamView addSubview:_attackButtonView];
     }
+    if (_modeToolbarView.superview == nil) {
+        [_streamView addSubview:_modeToolbarView];
+    }
+    _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
+    [_modeToolbarView setSelectedMode:_lifecycle.mode];
     [self layoutBattleControls];
 
 #if DEBUG
@@ -208,6 +229,7 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
 }
 
 - (void)orientationDidChange {
+    _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
     [self layoutBattleControls];
     [_lifecycle orientationDidChange];
 }
@@ -236,6 +258,11 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
 - (void)attackControllerDidRequestTouchCancellation:(MobaAttackController *)controller {
     (void)controller;
     [_lifecycle touchesCancelled];
+}
+
+- (BOOL)mobaModeToolbarView:(MobaModeToolbarView *)toolbar requestMode:(MobaOverlayMode)mode {
+    (void)toolbar;
+    return [self transitionToMode:mode];
 }
 
 - (void)dealloc {

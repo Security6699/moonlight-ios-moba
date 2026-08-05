@@ -52,6 +52,12 @@
 		AA1000000000000000000003 /* AttackButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000104 /* AttackButtonView.m */; };
 		AA1000000000000000000004 /* AttackButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000104 /* AttackButtonView.m */; };
 		AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000105 /* MobaAttackControllerTests.m */; };
+		AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
+		AB1100000000000000000002 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
+		AB1100000000000000000003 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
+		AB1100000000000000000004 /* MobaModeToolbarView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000104 /* MobaModeToolbarView.m */; };
+		AB1100000000000000000005 /* MobaModeToolbarView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000104 /* MobaModeToolbarView.m */; };
+		AB1100000000000000000006 /* MobaTouchRoutingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000105 /* MobaTouchRoutingTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -283,6 +289,11 @@
 		AA1000000000000000000103 /* AttackButtonView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AttackButtonView.h; sourceTree = "<group>"; };
 		AA1000000000000000000104 /* AttackButtonView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AttackButtonView.m; sourceTree = "<group>"; };
 		AA1000000000000000000105 /* MobaAttackControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaAttackControllerTests.m; sourceTree = "<group>"; };
+		AB1100000000000000000101 /* MobaNativeTouchRoutingController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaNativeTouchRoutingController.h; sourceTree = "<group>"; };
+		AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaNativeTouchRoutingController.m; sourceTree = "<group>"; };
+		AB1100000000000000000103 /* MobaModeToolbarView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaModeToolbarView.h; sourceTree = "<group>"; };
+		AB1100000000000000000104 /* MobaModeToolbarView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaModeToolbarView.m; sourceTree = "<group>"; };
+		AB1100000000000000000105 /* MobaTouchRoutingTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaTouchRoutingTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -655,6 +666,8 @@
 				A6E000000000000000000108 /* MobaCursorDiagnostics.m */,
 				A7F000000000000000000101 /* MobaOverlayLifecycle.h */,
 				A7F000000000000000000102 /* MobaOverlayLifecycle.m */,
+				AB1100000000000000000101 /* MobaNativeTouchRoutingController.h */,
+				AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -679,6 +692,8 @@
 			children = (
 				AA1000000000000000000103 /* AttackButtonView.h */,
 				AA1000000000000000000104 /* AttackButtonView.m */,
+				AB1100000000000000000103 /* MobaModeToolbarView.h */,
+				AB1100000000000000000104 /* MobaModeToolbarView.m */,
 				AA1000000000000000000101 /* MobaAttackController.h */,
 				AA1000000000000000000102 /* MobaAttackController.m */,
 				A9C000000000000000000101 /* MobaJoystickModel.h */,
@@ -713,6 +728,7 @@
 				A8B000000000000000000106 /* MobaPointResponseTests.m */,
 				A9C000000000000000000107 /* MobaJoystickModelTests.m */,
 				A9C000000000000000000108 /* MobaMovementControllerTests.m */,
+				AB1100000000000000000105 /* MobaTouchRoutingTests.m */,
 			);
 			path = MoonlightMobaTests;
 			sourceTree = "<group>";
@@ -1056,6 +1072,9 @@
 				AA1000000000000000000002 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000004 /* AttackButtonView.m in Sources */,
 				AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */,
+				AB1100000000000000000003 /* MobaNativeTouchRoutingController.m in Sources */,
+				AB1100000000000000000005 /* MobaModeToolbarView.m in Sources */,
+				AB1100000000000000000006 /* MobaTouchRoutingTests.m in Sources */,
 				A5D000000000000000000002 /* MobaInputDispatcher.m in Sources */,
 				A5D000000000000000000003 /* MobaInputDispatcherTests.m in Sources */,
 				A6E000000000000000000002 /* MobaGameCanvas.m in Sources */,
@@ -1083,6 +1102,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AB1100000000000000000002 /* MobaNativeTouchRoutingController.m in Sources */,
 				A3C000000000000000000002 /* MobaVideoGeometry.m in Sources */,
 				9827E7A42514366900F25707 /* HapticContext.m in Sources */,
 				9897B6A62212732C00966419 /* Controller.m in Sources */,
@@ -1139,6 +1159,8 @@
 			files = (
 				AA1000000000000000000001 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000003 /* AttackButtonView.m in Sources */,
+				AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */,
+				AB1100000000000000000004 /* MobaModeToolbarView.m in Sources */,
 				A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */,
 				A3C000000000000000000001 /* MobaVideoGeometry.m in Sources */,
 				A5D000000000000000000001 /* MobaInputDispatcher.m in Sources */,
