@@ -8,6 +8,8 @@
 
 #import "MobaCastStateMachine.h"
 
+@class MobaInputDispatcher;
+
 NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM(NSInteger, MobaCastCancelActionType) {
@@ -52,5 +54,11 @@ FOUNDATION_EXPORT BOOL MobaCastTransitionIsAcceptedBegin(MobaCastTransitionResul
 FOUNDATION_EXPORT BOOL MobaCastTransitionIsAcceptedUpdate(MobaCastTransitionResult result);
 FOUNDATION_EXPORT BOOL MobaCastTransitionIsAcceptedTerminal(MobaCastTransitionResult result,
                                                             MobaCastTerminalOutcome outcome);
+
+// Stateless shared cancellation mapping. The Dispatcher remains the only
+// pressed-input owner and preserves cancel-before-skill-key-up ordering.
+FOUNDATION_EXPORT void MobaCastDispatchCancelAction(MobaInputDispatcher *dispatcher,
+                                                    MobaCastCancelAction *cancelAction,
+                                                    uint16_t skillKeyCode);
 
 NS_ASSUME_NONNULL_END

@@ -110,6 +110,20 @@ Interpret accepted session begin/update/commit/cancel results according to the s
 
 `MobaDirectionalCastStrategy` calculates its configured default target with `MobaAimGeometry`. Begin submits that cursor point followed by the configured skill key-down. Drag updates replace only the strategy's latest target and do not send cursor input. The future display-link coalescing work in Issue #17 will deliver live cursor updates. Commit calls the Dispatcher's atomic final-cursor-plus-skill-key-up operation so the cursor event strictly precedes key-up without an interleaving input event.
 
+Ground and Unit point casts share `MobaPointCastStrategy` and `MobaPointCastGeometry`. For the normalized drag direction `u`, the geometry computes the ray intersections with independently configured minimum and maximum asymmetric ellipses and applies the following radial interpolation.
+
+```text
+minDistance = rayDistance(u, selected minimum radii)
+maxDistance = rayDistance(u, selected maximum radii)
+ratio = clamp(distanceRatio, 0, 1)
+distance = minDistance + (maxDistance - minDistance) * ratio
+target = anchor + u * distance
+```
+
+A selected zero minimum radius degenerates to zero radial distance. Canvas clamping remains the responsibility of `MobaGameCanvas` at the production input boundary.
+
+Point-cast begin uses a configured default direction and default distance ratio, normally the full-range upward target, then submits that cursor point followed by key-down. The default ratio uses the same 0...1 clamp as all point geometry. Each cast retains that default target locally. Returning to `AimingDefault`, including a dragged interaction falling below the meaningful threshold, restores it. A zero Point Response ratio also restores it so a previous drag target cannot survive a dead-zone update. `CancelArmed` updates preserve the current target until the Session returns to either default or dragged aiming. These updates send no cursor event. Commit uses the same atomic final-cursor-plus-skill-key-up Dispatcher operation as directional casts. Unit mode intentionally performs the same direct point mapping as Ground mode. It has no target detection, snapping, legality query, or fallback input. Live cursor coalescing remains deferred to Issue #17.
+
 An intentional cancel-zone release selects a configured keyboard, right-mouse, or release-only action. Keyboard and mouse cancellation use the Dispatcher's ordered cancellation operations. Lifecycle interruption does not send the configured cancel action. It relies on lifecycle `releaseAllInputs`, then silently resets strategy and Session state.
 
 Strategies consume only accepted `MobaCastSession` transition results and guard each terminal outcome against repeated consumption. They own no pressed-key collection, tap timer, or release-all state and never mutate the Session. After commit or intentional cancellation, the caller explicitly invokes Session `silentReset` before a new interaction can begin.
