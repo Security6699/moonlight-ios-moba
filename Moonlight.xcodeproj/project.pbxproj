@@ -106,6 +106,20 @@
 		B01700000000000000000008 /* MobaCADisplayLinkDriverTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B01700000000000000000108 /* MobaCADisplayLinkDriverTests.m */; };
 		B01700000000000000000009 /* MobaCursorCoalescingStrategyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B01700000000000000000109 /* MobaCursorCoalescingStrategyTests.m */; };
 		B0170000000000000000000A /* MobaCursorCoalescerLifecycleTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B0170000000000000000010A /* MobaCursorCoalescerLifecycleTests.m */; };
+		B01800000000000000000001 /* MobaProfileError.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000102 /* MobaProfileError.m */; };
+		B01800000000000000000002 /* MobaProfileError.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000102 /* MobaProfileError.m */; };
+		B01800000000000000000003 /* MobaProfileModels.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000105 /* MobaProfileModels.m */; };
+		B01800000000000000000004 /* MobaProfileModels.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000105 /* MobaProfileModels.m */; };
+		B01800000000000000000005 /* MobaProfileMigrator.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000107 /* MobaProfileMigrator.m */; };
+		B01800000000000000000006 /* MobaProfileMigrator.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000107 /* MobaProfileMigrator.m */; };
+		B01800000000000000000007 /* MobaProfileValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000109 /* MobaProfileValidator.m */; };
+		B01800000000000000000008 /* MobaProfileValidator.m in Sources */ = {isa = PBXBuildFile; fileRef = B01800000000000000000109 /* MobaProfileValidator.m */; };
+		B01800000000000000000009 /* MobaProfileDecoder.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010B /* MobaProfileDecoder.m */; };
+		B0180000000000000000000A /* MobaProfileDecoder.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010B /* MobaProfileDecoder.m */; };
+		B0180000000000000000000B /* MobaProfileRepository.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010D /* MobaProfileRepository.m */; };
+		B0180000000000000000000C /* MobaProfileRepository.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010D /* MobaProfileRepository.m */; };
+		B0180000000000000000000D /* MobaProfileDecoderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010E /* MobaProfileDecoderTests.m */; };
+		B0180000000000000000000E /* MobaProfileRepositoryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010F /* MobaProfileRepositoryTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -390,6 +404,21 @@
 		B01700000000000000000108 /* MobaCADisplayLinkDriverTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCADisplayLinkDriverTests.m; sourceTree = "<group>"; };
 		B01700000000000000000109 /* MobaCursorCoalescingStrategyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCursorCoalescingStrategyTests.m; sourceTree = "<group>"; };
 		B0170000000000000000010A /* MobaCursorCoalescerLifecycleTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCursorCoalescerLifecycleTests.m; sourceTree = "<group>"; };
+		B01800000000000000000101 /* MobaProfileError.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileError.h; sourceTree = "<group>"; };
+		B01800000000000000000102 /* MobaProfileError.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileError.m; sourceTree = "<group>"; };
+		B01800000000000000000103 /* MobaProfileModels.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileModels.h; sourceTree = "<group>"; };
+		B01800000000000000000104 /* MobaProfileModelsInternal.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileModelsInternal.h; sourceTree = "<group>"; };
+		B01800000000000000000105 /* MobaProfileModels.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileModels.m; sourceTree = "<group>"; };
+		B01800000000000000000106 /* MobaProfileMigrator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileMigrator.h; sourceTree = "<group>"; };
+		B01800000000000000000107 /* MobaProfileMigrator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileMigrator.m; sourceTree = "<group>"; };
+		B01800000000000000000108 /* MobaProfileValidator.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileValidator.h; sourceTree = "<group>"; };
+		B01800000000000000000109 /* MobaProfileValidator.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileValidator.m; sourceTree = "<group>"; };
+		B0180000000000000000010A /* MobaProfileDecoder.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileDecoder.h; sourceTree = "<group>"; };
+		B0180000000000000000010B /* MobaProfileDecoder.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileDecoder.m; sourceTree = "<group>"; };
+		B0180000000000000000010C /* MobaProfileRepository.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileRepository.h; sourceTree = "<group>"; };
+		B0180000000000000000010D /* MobaProfileRepository.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileRepository.m; sourceTree = "<group>"; };
+		B0180000000000000000010E /* MobaProfileDecoderTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileDecoderTests.m; sourceTree = "<group>"; };
+		B0180000000000000000010F /* MobaProfileRepositoryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileRepositoryTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -780,8 +809,21 @@
 		B00400000000000000000109 /* Profiles */ = {
 			isa = PBXGroup;
 			children = (
+				B0180000000000000000010A /* MobaProfileDecoder.h */,
+				B0180000000000000000010B /* MobaProfileDecoder.m */,
+				B01800000000000000000101 /* MobaProfileError.h */,
+				B01800000000000000000102 /* MobaProfileError.m */,
+				B01800000000000000000106 /* MobaProfileMigrator.h */,
+				B01800000000000000000107 /* MobaProfileMigrator.m */,
+				B01800000000000000000103 /* MobaProfileModels.h */,
+				B01800000000000000000104 /* MobaProfileModelsInternal.h */,
+				B01800000000000000000105 /* MobaProfileModels.m */,
+				B0180000000000000000010C /* MobaProfileRepository.h */,
+				B0180000000000000000010D /* MobaProfileRepository.m */,
 				B00400000000000000000101 /* MobaProfileStore.h */,
 				B00400000000000000000102 /* MobaProfileStore.m */,
+				B01800000000000000000108 /* MobaProfileValidator.h */,
+				B01800000000000000000109 /* MobaProfileValidator.m */,
 			);
 			path = Profiles;
 			sourceTree = "<group>";
@@ -872,6 +914,8 @@
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
+				B0180000000000000000010E /* MobaProfileDecoderTests.m */,
+				B0180000000000000000010F /* MobaProfileRepositoryTests.m */,
 				B00400000000000000000103 /* MobaProfileStoreTests.m */,
 				B01700000000000000000108 /* MobaCADisplayLinkDriverTests.m */,
 				B0170000000000000000010A /* MobaCursorCoalescerLifecycleTests.m */,
@@ -1243,6 +1287,14 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B0180000000000000000000A /* MobaProfileDecoder.m in Sources */,
+				B0180000000000000000000D /* MobaProfileDecoderTests.m in Sources */,
+				B01800000000000000000002 /* MobaProfileError.m in Sources */,
+				B01800000000000000000006 /* MobaProfileMigrator.m in Sources */,
+				B01800000000000000000004 /* MobaProfileModels.m in Sources */,
+				B0180000000000000000000C /* MobaProfileRepository.m in Sources */,
+				B0180000000000000000000E /* MobaProfileRepositoryTests.m in Sources */,
+				B01800000000000000000008 /* MobaProfileValidator.m in Sources */,
 				B00400000000000000000002 /* MobaProfileStore.m in Sources */,
 				B00400000000000000000003 /* MobaProfileStoreTests.m in Sources */,
 				B01700000000000000000002 /* MobaDisplayLinkDriving.m in Sources */,
@@ -1360,6 +1412,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B01800000000000000000009 /* MobaProfileDecoder.m in Sources */,
+				B01800000000000000000001 /* MobaProfileError.m in Sources */,
+				B01800000000000000000005 /* MobaProfileMigrator.m in Sources */,
+				B01800000000000000000003 /* MobaProfileModels.m in Sources */,
+				B0180000000000000000000B /* MobaProfileRepository.m in Sources */,
+				B01800000000000000000007 /* MobaProfileValidator.m in Sources */,
 				B00400000000000000000001 /* MobaProfileStore.m in Sources */,
 				B01700000000000000000001 /* MobaDisplayLinkDriving.m in Sources */,
 				B01700000000000000000003 /* MobaCADisplayLinkDriver.m in Sources */,
