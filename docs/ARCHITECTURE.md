@@ -160,6 +160,16 @@ Bootstrap creates the root plus `layouts`, `champions`, and `backups`, then atte
 
 The production store is created only inside the existing MOBA coordinator boundary, which itself is created only when `mobaControlsEnabled` is enabled. When the feature is disabled, bootstrap is not run and `Application Support/MOBA` is not created or modified. Normal Moonlight launch, settings, streaming, and file behavior remain unchanged.
 
+Profile interpretation is a separate Foundation-only pipeline. `MobaProfileDecoder` accepts bytes from the Store, parses JSON, checks the root dictionary and strict integer `schemaVersion`, asks `MobaProfileMigrator` for a JSON-dictionary migration, validates the migrated schema-v1 dictionary with `MobaProfileValidator`, and only then constructs immutable model objects. Migration never operates on final models. The current v1 migration is identity-only and does not rewrite a successfully loaded user file.
+
+JSON scalar types are strict. Booleans are not accepted as numbers, numeric zero or one is not accepted as a boolean, fractional values are not truncated into integers, and every number must be finite. Missing, type, enum, range, migration, storage, and cross-profile errors use one profile error domain with profile kind, JSON field path, operation, and an underlying error when one exists. Unknown object fields are ignored for forward compatibility and are retained by the identity migration dictionary. Unknown values in known enum fields remain errors at the specific field path.
+
+Runtime, input, layout, champion, and nested profile objects are immutable after initialization. Strings and collection properties are defensively copied, and mutable JSON containers are never exposed. Layout controls and champion skills remain dynamic dictionaries so a future control or skill name can use the common schema without a parser change. Champion classes and Caitlyn calibration values are not embedded in these model types.
+
+`MobaProfileRepository` forms the transactional activation boundary. It reads runtime, input, active layout, and one caller-selected champion relative path through `MobaProfileStore`. All four profiles are migrated, validated, and constructed locally. Cross-profile validation then confirms every champion skill `inputAction` resolves in the input profile. Only a fully valid candidate becomes one immutable `MobaProfileSnapshot`, which replaces `activeSnapshot` in one synchronized assignment. Any storage, parsing, migration, validation, construction, or reference failure preserves the prior snapshot object and contents.
+
+Issue #19 owns Strategy Factory wiring and active champion selection. Issue #22 owns document picker access, import/export, backup rotation, user confirmation, and migration persistence. This profile layer performs none of those workflows and never mutates Coordinator, Dispatcher, Lifecycle, or active input state.
+
 ## 4. Coordinate spaces
 
 ### Game canvas
