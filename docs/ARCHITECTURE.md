@@ -86,7 +86,7 @@ Translates abstract actions into existing Moonlight calls. Game-canvas points ar
 
 ### MobaInputDispatcher
 
-Serializes all remote input, tracks pressed keys/buttons, prevents duplicate transitions, coalesces cursor movement, commits final cursor+key-up atomically in order, and releases all tracked state.
+Serializes all remote input, tracks pressed keys/buttons, prevents duplicate transitions, commits final cursor+key-up atomically in order, and releases all tracked state.
 
 ### Controls
 
@@ -108,7 +108,7 @@ Interpret accepted session begin/update/commit/cancel results according to the s
 
 `MobaInstantCastStrategy` sends no input on begin or update. It enqueues one configured key tap only when it consumes an accepted committed terminal result. Cancellation and lifecycle interruption never activate the instant skill.
 
-`MobaDirectionalCastStrategy` calculates its configured default target with `MobaAimGeometry`. Begin submits that cursor point followed by the configured skill key-down. Drag updates replace only the strategy's latest target and do not send cursor input. The future display-link coalescing work in Issue #17 will deliver live cursor updates. Commit calls the Dispatcher's atomic final-cursor-plus-skill-key-up operation so the cursor event strictly precedes key-up without an interleaving input event.
+`MobaDirectionalCastStrategy` calculates its configured default target with `MobaAimGeometry`. Begin submits that cursor point followed by the configured skill key-down. Drag updates replace the strategy's latest target and submit it to an optional `MobaCursorCoalescing` boundary. The touch-update call itself does not enqueue a Dispatcher cursor event. Commit calls the Dispatcher's atomic final-cursor-plus-skill-key-up operation so the cursor event strictly precedes key-up without an interleaving input event.
 
 Ground and Unit point casts share `MobaPointCastStrategy` and `MobaPointCastGeometry`. For the normalized drag direction `u`, the geometry computes the ray intersections with independently configured minimum and maximum asymmetric ellipses and applies the following radial interpolation.
 
@@ -122,7 +122,21 @@ target = anchor + u * distance
 
 A selected zero minimum radius degenerates to zero radial distance. Canvas clamping remains the responsibility of `MobaGameCanvas` at the production input boundary.
 
-Point-cast begin uses a configured default direction and default distance ratio, normally the full-range upward target, then submits that cursor point followed by key-down. The default ratio uses the same 0...1 clamp as all point geometry. Each cast retains that default target locally. Returning to `AimingDefault`, including a dragged interaction falling below the meaningful threshold, restores it. A zero Point Response ratio also restores it so a previous drag target cannot survive a dead-zone update. `CancelArmed` updates preserve the current target until the Session returns to either default or dragged aiming. These updates send no cursor event. Commit uses the same atomic final-cursor-plus-skill-key-up Dispatcher operation as directional casts. Unit mode intentionally performs the same direct point mapping as Ground mode. It has no target detection, snapping, legality query, or fallback input. Live cursor coalescing remains deferred to Issue #17.
+Point-cast begin uses a configured default direction and default distance ratio, normally the full-range upward target, then submits that cursor point followed by key-down. The default ratio uses the same 0...1 clamp as all point geometry. Each cast retains that default target locally. Returning to `AimingDefault`, including a dragged interaction falling below the meaningful threshold, restores it and submits that default to the optional coalescer. A zero Point Response ratio follows the same rule so a previous drag target cannot survive a dead-zone update. `CancelArmed` updates preserve the current target without submitting a new point until the Session returns to either default or dragged aiming. Commit uses the same atomic final-cursor-plus-skill-key-up Dispatcher operation as directional casts. Unit mode intentionally performs the same direct point mapping as Ground mode. It has no target detection, snapping, legality query, or fallback input.
+
+### Cursor coalescing
+
+`MobaCursorCoalescer` is a main-thread latest-value buffer between cast strategies and `MobaInputDispatcher`. It depends only on the pure `MobaDisplayLinkDriving` protocol. The production `MobaCADisplayLinkDriver` is the only coalescing component that depends on UIKit and uses `CADisplayLink` in the main run loop common modes.
+
+Coalescer start, submit, stop, and tick entry points stay on the main-thread UIKit boundary. Stop is synchronous and is never delayed through an asynchronous main-queue hop, so commit and cancellation close delivery in their current call stack. The resulting cursor action still enters the Dispatcher's existing asynchronous serial input queue.
+
+The supported update rates are 30, 60, and 120 Hz, with 60 Hz as the default. A touch update stores the Strategy latest target and marks the coalescer point dirty. Several submissions before one display tick collapse to the last point. Each tick sends at most one dirty point through `moveCursorToCanvasPoint:`. A tick with no dirty point sends nothing. Submitting the same coordinates again is treated as new dirty input because it represents a new accepted touch update.
+
+Every start creates a new coalescer generation. Tick callbacks carry the generation they were created for. A stopped or older callback cannot send a later cast's point, clear its dirty state, or change its running state. Driver target ownership uses a weak proxy so the `CADisplayLink` target reference cannot retain the driver or coalescer cycle.
+
+Commit synchronously stops the coalescer and discards pending intermediate points before calling the Dispatcher's atomic final-cursor-plus-skill-key-up API. Cancel and lifecycle interruption also stop and discard without flushing. They never submit a final cursor through the coalescer. The coalescer is a local interaction reset participant. Disabling local interaction synchronously stops its driver before lifecycle enqueues Dispatcher release-all, and recovery only permits a future explicit start.
+
+Strategy initializers continue to support no coalescer for compatibility and tests. Strategies depend on `MobaCursorCoalescing`, not the UIKit driver. A future real `SkillButtonView` owner will create and register the production coalescer. Coordinator intentionally does not create an unused coalescer before that consumer exists.
 
 An intentional cancel-zone release selects a configured keyboard, right-mouse, or release-only action. Keyboard and mouse cancellation use the Dispatcher's ordered cancellation operations. Lifecycle interruption does not send the configured cancel action. It relies on lifecycle `releaseAllInputs`, then silently resets strategy and Session state.
 

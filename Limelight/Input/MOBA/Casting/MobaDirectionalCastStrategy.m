@@ -7,6 +7,7 @@
 
 #import <math.h>
 
+#import "../Core/MobaCursorCoalescer.h"
 #import "../Core/MobaInputDispatcher.h"
 
 static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
@@ -65,6 +66,7 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
 @implementation MobaDirectionalCastStrategy {
     MobaInputDispatcher *_dispatcher;
     MobaDirectionalCastConfiguration *_configuration;
+    id<MobaCursorCoalescing> _cursorCoalescer;
     BOOL _awaitingTerminalOutcome;
     BOOL _hasLatestTarget;
     CGPoint _latestTarget;
@@ -72,6 +74,14 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
 
 - (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
                       configuration:(MobaDirectionalCastConfiguration *)configuration {
+    return [self initWithDispatcher:dispatcher
+                      configuration:configuration
+                    cursorCoalescer:nil];
+}
+
+- (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
+                      configuration:(MobaDirectionalCastConfiguration *)configuration
+                    cursorCoalescer:(id<MobaCursorCoalescing>)cursorCoalescer {
     NSParameterAssert(dispatcher != nil);
     NSParameterAssert(configuration != nil);
 
@@ -79,6 +89,7 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
     if (self) {
         _dispatcher = dispatcher;
         _configuration = configuration;
+        _cursorCoalescer = cursorCoalescer;
     }
     return self;
 }
@@ -102,6 +113,9 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
                                    _configuration.aimRadii,
                                    _configuration.defaultDistanceRatio,
                                    &defaultTarget)) {
+        return NO;
+    }
+    if (_cursorCoalescer != nil && ![_cursorCoalescer start]) {
         return NO;
     }
 
@@ -130,7 +144,7 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
 
     _hasLatestTarget = YES;
     _latestTarget = target;
-    return YES;
+    return _cursorCoalescer == nil || [_cursorCoalescer submitLatestPoint:target];
 }
 
 - (BOOL)commitWithTransitionResult:(MobaCastTransitionResult)result {
@@ -140,6 +154,7 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
     }
 
     CGPoint finalTarget = _latestTarget;
+    [_cursorCoalescer stopAndDiscardPending];
     [self clearLocalCastState];
     [_dispatcher commitFinalCursorPoint:finalTarget
                        releasingKeyCode:_configuration.skillKeyCode];
@@ -152,6 +167,7 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
         return NO;
     }
 
+    [_cursorCoalescer stopAndDiscardPending];
     [self clearLocalCastState];
     MobaCastDispatchCancelAction(_dispatcher,
                                  _configuration.cancelAction,
@@ -166,6 +182,7 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
 }
 
 - (void)silentReset {
+    [_cursorCoalescer stopAndDiscardPending];
     [self clearLocalCastState];
 }
 

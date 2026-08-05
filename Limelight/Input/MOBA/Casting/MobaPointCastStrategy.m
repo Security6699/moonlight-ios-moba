@@ -7,6 +7,7 @@
 
 #import <math.h>
 
+#import "../Core/MobaCursorCoalescer.h"
 #import "../Core/MobaInputDispatcher.h"
 #import "../Geometry/MobaPointCastGeometry.h"
 #import "../Geometry/MobaPointResponse.h"
@@ -114,6 +115,7 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
 @implementation MobaPointCastStrategy {
     MobaInputDispatcher *_dispatcher;
     MobaPointCastConfiguration *_configuration;
+    id<MobaCursorCoalescing> _cursorCoalescer;
     BOOL _awaitingTerminalOutcome;
     BOOL _hasDefaultTarget;
     CGPoint _defaultTarget;
@@ -123,6 +125,14 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
 
 - (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
                       configuration:(MobaPointCastConfiguration *)configuration {
+    return [self initWithDispatcher:dispatcher
+                      configuration:configuration
+                    cursorCoalescer:nil];
+}
+
+- (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
+                      configuration:(MobaPointCastConfiguration *)configuration
+                    cursorCoalescer:(id<MobaCursorCoalescing>)cursorCoalescer {
     NSParameterAssert(dispatcher != nil);
     NSParameterAssert(configuration != nil);
 
@@ -130,6 +140,7 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
     if (self) {
         _dispatcher = dispatcher;
         _configuration = configuration;
+        _cursorCoalescer = cursorCoalescer;
     }
     return self;
 }
@@ -160,6 +171,9 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
                                          &defaultTarget)) {
         return NO;
     }
+    if (_cursorCoalescer != nil && ![_cursorCoalescer start]) {
+        return NO;
+    }
 
     _awaitingTerminalOutcome = YES;
     _hasDefaultTarget = YES;
@@ -181,7 +195,7 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
 
     if (result.currentState == MobaCastStateAimingDefault) {
         [self restoreDefaultTarget];
-        return YES;
+        return [self submitLatestTargetIfNeeded];
     }
     if (result.currentState == MobaCastStateCancelArmed) {
         return YES;
@@ -210,7 +224,7 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
     // differ. A zero response always restores this cast's default target.
     if (distanceRatio <= 0.0) {
         [self restoreDefaultTarget];
-        return YES;
+        return [self submitLatestTargetIfNeeded];
     }
 
     CGPoint target = CGPointZero;
@@ -225,12 +239,16 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
 
     _hasLatestTarget = YES;
     _latestTarget = target;
-    return YES;
+    return [self submitLatestTargetIfNeeded];
 }
 
 - (void)restoreDefaultTarget {
     _hasLatestTarget = YES;
     _latestTarget = _defaultTarget;
+}
+
+- (BOOL)submitLatestTargetIfNeeded {
+    return _cursorCoalescer == nil || [_cursorCoalescer submitLatestPoint:_latestTarget];
 }
 
 - (BOOL)commitWithTransitionResult:(MobaCastTransitionResult)result {
@@ -240,6 +258,7 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
     }
 
     CGPoint finalTarget = _latestTarget;
+    [_cursorCoalescer stopAndDiscardPending];
     [self clearLocalCastState];
     [_dispatcher commitFinalCursorPoint:finalTarget
                        releasingKeyCode:_configuration.skillKeyCode];
@@ -252,6 +271,7 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
         return NO;
     }
 
+    [_cursorCoalescer stopAndDiscardPending];
     [self clearLocalCastState];
     MobaCastDispatchCancelAction(_dispatcher,
                                  _configuration.cancelAction,
@@ -268,6 +288,7 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
 }
 
 - (void)silentReset {
+    [_cursorCoalescer stopAndDiscardPending];
     [self clearLocalCastState];
 }
 
