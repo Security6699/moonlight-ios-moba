@@ -74,9 +74,9 @@ typedef NS_ENUM(NSInteger, MobaPointCastTargetMode) {
                       configuration:(MobaPointCastConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
-// The same displacement supplies both direction and distance. Only an accepted
-// meaningful Session update can replace latestTarget. A zero response ratio
-// preserves the default target established at begin.
+// The same displacement supplies both direction and distance. An accepted
+// AimingDefault update restores the per-cast default target, CancelArmed keeps
+// the current target, and AimingDragged replaces it only with a valid response.
 - (BOOL)updateWithTransitionResult:(MobaCastTransitionResult)result
                   dragDisplacement:(CGVector)dragDisplacement;
 

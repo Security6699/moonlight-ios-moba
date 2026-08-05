@@ -115,6 +115,8 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
     MobaInputDispatcher *_dispatcher;
     MobaPointCastConfiguration *_configuration;
     BOOL _awaitingTerminalOutcome;
+    BOOL _hasDefaultTarget;
+    CGPoint _defaultTarget;
     BOOL _hasLatestTarget;
     CGPoint _latestTarget;
 }
@@ -160,6 +162,8 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
     }
 
     _awaitingTerminalOutcome = YES;
+    _hasDefaultTarget = YES;
+    _defaultTarget = defaultTarget;
     _hasLatestTarget = YES;
     _latestTarget = defaultTarget;
     [_dispatcher moveCursorToCanvasPoint:defaultTarget];
@@ -170,8 +174,19 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
 - (BOOL)updateWithTransitionResult:(MobaCastTransitionResult)result
                   dragDisplacement:(CGVector)dragDisplacement {
     if (!_awaitingTerminalOutcome ||
-        !MobaCastTransitionIsAcceptedUpdate(result) ||
-        result.currentState != MobaCastStateAimingDragged ||
+        !_hasDefaultTarget ||
+        !MobaCastTransitionIsAcceptedUpdate(result)) {
+        return NO;
+    }
+
+    if (result.currentState == MobaCastStateAimingDefault) {
+        [self restoreDefaultTarget];
+        return YES;
+    }
+    if (result.currentState == MobaCastStateCancelArmed) {
+        return YES;
+    }
+    if (result.currentState != MobaCastStateAimingDragged ||
         !MobaPointCastConfigurationScalarIsFinite(dragDisplacement.dx) ||
         !MobaPointCastConfigurationScalarIsFinite(dragDisplacement.dy)) {
         return NO;
@@ -191,9 +206,10 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
         return NO;
     }
 
-    // A dead-zone response is a valid no-op. It must not replace the default
-    // maximum-distance target established at begin.
+    // Session meaningful-drag and Point Response dead-zone thresholds may
+    // differ. A zero response always restores this cast's default target.
     if (distanceRatio <= 0.0) {
+        [self restoreDefaultTarget];
         return YES;
     }
 
@@ -210,6 +226,11 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
     _hasLatestTarget = YES;
     _latestTarget = target;
     return YES;
+}
+
+- (void)restoreDefaultTarget {
+    _hasLatestTarget = YES;
+    _latestTarget = _defaultTarget;
 }
 
 - (BOOL)commitWithTransitionResult:(MobaCastTransitionResult)result {
@@ -240,6 +261,8 @@ static BOOL MobaPointCastConfigurationRadiiAreValid(MobaAimRadii minimumRadii,
 
 - (void)clearLocalCastState {
     _awaitingTerminalOutcome = NO;
+    _hasDefaultTarget = NO;
+    _defaultTarget = CGPointZero;
     _hasLatestTarget = NO;
     _latestTarget = CGPointZero;
 }
