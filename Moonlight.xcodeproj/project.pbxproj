@@ -47,6 +47,11 @@
 		A9C000000000000000000007 /* MobaJoystickModelTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A9C000000000000000000107 /* MobaJoystickModelTests.m */; };
 		A9C000000000000000000008 /* MobaMovementControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = A9C000000000000000000108 /* MobaMovementControllerTests.m */; };
 		A9C000000000000000000009 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FB290CF519B2C406004C83CF /* UIKit.framework */; };
+		AA1000000000000000000001 /* MobaAttackController.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000102 /* MobaAttackController.m */; };
+		AA1000000000000000000002 /* MobaAttackController.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000102 /* MobaAttackController.m */; };
+		AA1000000000000000000003 /* AttackButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000104 /* AttackButtonView.m */; };
+		AA1000000000000000000004 /* AttackButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000104 /* AttackButtonView.m */; };
+		AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000105 /* MobaAttackControllerTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -273,6 +278,11 @@
 		A9C000000000000000000106 /* MoveJoystickView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MoveJoystickView.m; sourceTree = "<group>"; };
 		A9C000000000000000000107 /* MobaJoystickModelTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaJoystickModelTests.m; sourceTree = "<group>"; };
 		A9C000000000000000000108 /* MobaMovementControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaMovementControllerTests.m; sourceTree = "<group>"; };
+		AA1000000000000000000101 /* MobaAttackController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaAttackController.h; sourceTree = "<group>"; };
+		AA1000000000000000000102 /* MobaAttackController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaAttackController.m; sourceTree = "<group>"; };
+		AA1000000000000000000103 /* AttackButtonView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AttackButtonView.h; sourceTree = "<group>"; };
+		AA1000000000000000000104 /* AttackButtonView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AttackButtonView.m; sourceTree = "<group>"; };
+		AA1000000000000000000105 /* MobaAttackControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaAttackControllerTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -667,6 +677,10 @@
 		A9C000000000000000000109 /* Controls */ = {
 			isa = PBXGroup;
 			children = (
+				AA1000000000000000000103 /* AttackButtonView.h */,
+				AA1000000000000000000104 /* AttackButtonView.m */,
+				AA1000000000000000000101 /* MobaAttackController.h */,
+				AA1000000000000000000102 /* MobaAttackController.m */,
 				A9C000000000000000000101 /* MobaJoystickModel.h */,
 				A9C000000000000000000102 /* MobaJoystickModel.m */,
 				A9C000000000000000000103 /* MobaMovementController.h */,
@@ -689,6 +703,7 @@
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
+				AA1000000000000000000105 /* MobaAttackControllerTests.m */,
 				A5D000000000000000000008 /* MobaInputDispatcherTests.m */,
 				A6E00000000000000000010B /* MobaGameCanvasTests.m */,
 				A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */,
@@ -1038,6 +1053,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA1000000000000000000002 /* MobaAttackController.m in Sources */,
+				AA1000000000000000000004 /* AttackButtonView.m in Sources */,
+				AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */,
 				A5D000000000000000000002 /* MobaInputDispatcher.m in Sources */,
 				A5D000000000000000000003 /* MobaInputDispatcherTests.m in Sources */,
 				A6E000000000000000000002 /* MobaGameCanvas.m in Sources */,
@@ -1119,6 +1137,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AA1000000000000000000001 /* MobaAttackController.m in Sources */,
+				AA1000000000000000000003 /* AttackButtonView.m in Sources */,
 				A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */,
 				A3C000000000000000000001 /* MobaVideoGeometry.m in Sources */,
 				A5D000000000000000000001 /* MobaInputDispatcher.m in Sources */,

@@ -9,6 +9,8 @@
 #import "MoonlightMobaInputAdapter.h"
 #import "MoonlightMobaInputSender.h"
 #import "StreamView.h"
+#import "../Controls/AttackButtonView.h"
+#import "../Controls/MobaAttackController.h"
 #import "../Controls/MobaMovementController.h"
 #import "../Controls/MoveJoystickView.h"
 
@@ -18,8 +20,12 @@
 
 static const CGFloat MobaDefaultMoveCenterX = 0.14;
 static const CGFloat MobaDefaultMoveCenterY = 0.82;
+static const CGFloat MobaDefaultAttackCenterX = 0.94;
+static const CGFloat MobaDefaultAttackCenterY = 0.90;
 
-@interface MobaOverlayCoordinator () <MobaBattleInputGate, MobaMovementControllerDelegate>
+@interface MobaOverlayCoordinator () <MobaAttackControllerDelegate,
+                                      MobaBattleInputGate,
+                                      MobaMovementControllerDelegate>
 @end
 
 @implementation MobaOverlayCoordinator {
@@ -29,6 +35,8 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
     MobaCursorDiagnostics *_cursorDiagnostics;
     MobaMovementController *_movementController;
     MoveJoystickView *_moveJoystickView;
+    MobaAttackController *_attackController;
+    AttackButtonView *_attackButtonView;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
 #endif
@@ -52,6 +60,10 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
         _movementController.delegate = self;
         _moveJoystickView = [[MoveJoystickView alloc] initWithMovementController:_movementController];
         [_lifecycle registerLocalInteractionResetParticipant:_moveJoystickView];
+        _attackController = [[MobaAttackController alloc] initWithInputDispatcher:_inputDispatcher];
+        _attackController.delegate = self;
+        _attackButtonView = [[AttackButtonView alloc] initWithAttackController:_attackController];
+        [_lifecycle registerLocalInteractionResetParticipant:_attackButtonView];
         _cursorDiagnostics = [[MobaCursorDiagnostics alloc] initWithDispatcher:_inputDispatcher
                                                                      inputGate:self];
 #if DEBUG
@@ -62,15 +74,27 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
     return self;
 }
 
-- (void)layoutMoveJoystick {
+- (void)layoutBattleControls {
     [_streamView layoutIfNeeded];
     CGRect safeFrame = _streamView.safeAreaLayoutGuide.layoutFrame;
-    CGSize hitAreaSize = _moveJoystickView.intrinsicContentSize;
-    _moveJoystickView.bounds = (CGRect){ CGPointZero, hitAreaSize };
+    CGSize moveHitAreaSize = _moveJoystickView.intrinsicContentSize;
+    _moveJoystickView.bounds = (CGRect){ CGPointZero, moveHitAreaSize };
     _moveJoystickView.center = CGPointMake(CGRectGetMinX(safeFrame) +
                                            CGRectGetWidth(safeFrame) * MobaDefaultMoveCenterX,
                                            CGRectGetMinY(safeFrame) +
                                            CGRectGetHeight(safeFrame) * MobaDefaultMoveCenterY);
+
+    CGSize attackHitAreaSize = _attackButtonView.intrinsicContentSize;
+    _attackButtonView.bounds = (CGRect){ CGPointZero, attackHitAreaSize };
+    _attackButtonView.center = CGPointMake(CGRectGetMinX(safeFrame) +
+                                           CGRectGetWidth(safeFrame) * MobaDefaultAttackCenterX,
+                                           CGRectGetMinY(safeFrame) +
+                                           CGRectGetHeight(safeFrame) * MobaDefaultAttackCenterY);
+}
+
+- (void)removeBattleControls {
+    [_moveJoystickView removeFromSuperview];
+    [_attackButtonView removeFromSuperview];
 }
 
 - (BOOL)isRunning {
@@ -117,7 +141,10 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
     if (_moveJoystickView.superview == nil) {
         [_streamView addSubview:_moveJoystickView];
     }
-    [self layoutMoveJoystick];
+    if (_attackButtonView.superview == nil) {
+        [_streamView addSubview:_attackButtonView];
+    }
+    [self layoutBattleControls];
 
 #if DEBUG
     if (_cursorDiagnosticPanel.superview == nil) {
@@ -134,7 +161,7 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
 
 - (void)stop {
     [_lifecycle stop];
-    [_moveJoystickView removeFromSuperview];
+    [self removeBattleControls];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
@@ -162,7 +189,7 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
 
 - (void)streamDidDisconnect {
     [_lifecycle streamDidDisconnect];
-    [_moveJoystickView removeFromSuperview];
+    [self removeBattleControls];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
@@ -170,7 +197,7 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
 
 - (void)viewControllerWillDisappear {
     [_lifecycle viewControllerWillDisappear];
-    [_moveJoystickView removeFromSuperview];
+    [self removeBattleControls];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
@@ -181,7 +208,7 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
 }
 
 - (void)orientationDidChange {
-    [self layoutMoveJoystick];
+    [self layoutBattleControls];
     [_lifecycle orientationDidChange];
 }
 
@@ -195,7 +222,7 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
 
 - (void)mobaFeatureWillDisable {
     [_lifecycle mobaFeatureWillDisable];
-    [_moveJoystickView removeFromSuperview];
+    [self removeBattleControls];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
@@ -206,9 +233,14 @@ static const CGFloat MobaDefaultMoveCenterY = 0.82;
     [_lifecycle touchesCancelled];
 }
 
+- (void)attackControllerDidRequestTouchCancellation:(MobaAttackController *)controller {
+    (void)controller;
+    [_lifecycle touchesCancelled];
+}
+
 - (void)dealloc {
     [_lifecycle invalidateForDestruction];
-    [_moveJoystickView removeFromSuperview];
+    [self removeBattleControls];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
