@@ -145,6 +145,19 @@
                    MobaProfileSkillCastTypeInstant);
 }
 
+- (void)testChampionWithoutCalibrationStatusTransactionallyReplacesSnapshot {
+    MobaProfileSnapshot *original = [self loadValidCaitlynSnapshot];
+    NSMutableDictionary *champion = [self storedJSONAtPath:@"champions/caitlyn.json"];
+    [champion removeObjectForKey:@"calibrationStatus"];
+    [self writeJSON:champion path:@"champions/caitlyn.json"];
+
+    NSError *error = nil;
+    XCTAssertTrue([self.repository reloadWithChampionRelativePath:@"champions/caitlyn.json" error:&error]);
+    XCTAssertNil(error);
+    XCTAssertFalse(self.repository.activeSnapshot == original);
+    XCTAssertNil(self.repository.activeSnapshot.championProfile.calibrationStatus);
+}
+
 - (void)testInvalidRuntimeReloadPreservesActiveSnapshotIdentity {
     [self assertInvalidReloadAtPath:@"runtime.json" mutation:^(NSMutableDictionary *json) {
         json[@"canvas"][@"width"] = @1920;

@@ -161,6 +161,12 @@ typedef void (^MobaProfileJSONMutation)(NSMutableDictionary *json);
     return error;
 }
 
+- (MobaChampionProfile *)caitlynProfileWithoutCalibrationStatus:(NSError **)error {
+    NSMutableDictionary *json = [self exampleJSON:@"caitlyn.json"];
+    [json removeObjectForKey:@"calibrationStatus"];
+    return [self.decoder decodeChampionProfileData:[self dataForJSON:json] error:error];
+}
+
 - (void)assertError:(NSError *)error
                 code:(MobaProfileErrorCode)code
                 kind:(MobaProfileKind)kind
@@ -184,6 +190,51 @@ typedef void (^MobaProfileJSONMutation)(NSMutableDictionary *json);
     XCTAssertNil(error);
     XCTAssertNotNil([self.decoder decodeChampionProfileData:[self exampleData:@"debug-instant.json"] error:&error]);
     XCTAssertNil(error);
+}
+
+- (void)testChampionWithoutCalibrationStatusDecodes {
+    NSError *error = nil;
+    MobaChampionProfile *profile = [self caitlynProfileWithoutCalibrationStatus:&error];
+    XCTAssertNotNil(profile);
+    XCTAssertNil(error);
+}
+
+- (void)testChampionWithoutCalibrationStatusHasNilMetadata {
+    MobaChampionProfile *profile = [self caitlynProfileWithoutCalibrationStatus:nil];
+    XCTAssertNotNil(profile);
+    XCTAssertNil(profile.calibrationStatus);
+}
+
+- (void)testBundledCaitlynCalibrationMetadataIsPreserved {
+    MobaChampionProfile *caitlyn = [self.decoder decodeChampionProfileData:[self exampleData:@"caitlyn.json"]
+                                                                      error:nil];
+    XCTAssertEqualObjects(caitlyn.calibrationStatus, @"placeholder");
+}
+
+- (void)testBundledDebugInstantCalibrationMetadataIsPreserved {
+    MobaChampionProfile *debug = [self.decoder decodeChampionProfileData:[self exampleData:@"debug-instant.json"]
+                                                                    error:nil];
+    XCTAssertEqualObjects(debug.calibrationStatus, @"test-only");
+}
+
+- (void)testCalibrationStatusNumberReportsTypeMismatchAtExactPath {
+    NSError *typeError = [self championErrorForFile:@"caitlyn.json" mutation:^(NSMutableDictionary *json) {
+        json[@"calibrationStatus"] = @123;
+    }];
+    [self assertError:typeError
+                 code:MobaProfileErrorFieldTypeMismatch
+                 kind:MobaProfileKindChampion
+                 path:@"$.calibrationStatus"];
+}
+
+- (void)testEmptyCalibrationStatusReportsRangeErrorAtExactPath {
+    NSError *emptyError = [self championErrorForFile:@"caitlyn.json" mutation:^(NSMutableDictionary *json) {
+        json[@"calibrationStatus"] = @"";
+    }];
+    [self assertError:emptyError
+                 code:MobaProfileErrorValueOutOfRange
+                 kind:MobaProfileKindChampion
+                 path:@"$.calibrationStatus"];
 }
 
 - (void)testBundledModelsExposeExpectedImmutableValues {

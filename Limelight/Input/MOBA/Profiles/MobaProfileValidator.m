@@ -955,7 +955,7 @@ static BOOL MobaValidatorNumberIsBoolean(NSNumber *number) {
 
 - (BOOL)validateChampion:(NSDictionary *)json error:(NSError **)error {
     MobaProfileKind kind = MobaProfileKindChampion;
-    for (NSString *field in @[@"championId", @"displayName", @"calibrationStatus"]) {
+    for (NSString *field in @[@"championId", @"displayName"]) {
         NSString *path = [@"$." stringByAppendingString:field];
         if ([self requiredStringForKey:field dictionary:json kind:kind path:path error:error] == nil) {
             return NO;
@@ -966,6 +966,14 @@ static BOOL MobaValidatorNumberIsBoolean(NSNumber *number) {
                         dictionary:json
                               kind:kind
                               path:@"$.displayNameZhCN"
+                             error:error] == nil) {
+        return NO;
+    }
+    if (json[@"calibrationStatus"] != nil &&
+        [self requiredStringForKey:@"calibrationStatus"
+                        dictionary:json
+                              kind:kind
+                              path:@"$.calibrationStatus"
                              error:error] == nil) {
         return NO;
     }

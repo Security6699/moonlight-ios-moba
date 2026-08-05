@@ -148,6 +148,8 @@ Supported cast types in v1:
 - `directional`.
 - `point` with `targetMode` = `ground` or `unit`.
 
+`calibrationStatus` is optional non-empty metadata. Its absence is valid in schema v1.
+
 All example skill ranges are calibration placeholders.
 
 ## 6. Point range

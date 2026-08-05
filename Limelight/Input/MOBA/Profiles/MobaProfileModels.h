@@ -181,7 +181,7 @@ typedef NS_ENUM(NSInteger, MobaProfileRangeModel) {
 @property (nonatomic, copy, readonly) NSString *championID;
 @property (nonatomic, copy, readonly) NSString *displayName;
 @property (nonatomic, copy, readonly, nullable) NSString *displayNameZhCN;
-@property (nonatomic, copy, readonly) NSString *calibrationStatus;
+@property (nonatomic, copy, readonly, nullable) NSString *calibrationStatus;
 @property (nonatomic, copy, readonly) NSDictionary<NSString *, MobaChampionSkillProfile *> *skills;
 - (instancetype)init NS_UNAVAILABLE;
 @end
