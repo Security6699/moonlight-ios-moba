@@ -11,6 +11,13 @@
 #import "../Limelight/Input/MOBA/Core/MobaInputDispatcher.h"
 #import "../Limelight/Input/MOBA/Core/MobaOverlayLifecycle.h"
 
+@interface MoveJoystickView (MobaTesting)
+- (BOOL)beginInteractionWithToken:(id)token displacement:(CGVector)displacement;
+- (BOOL)updateInteractionWithToken:(id)token displacement:(CGVector)displacement;
+- (BOOL)endInteractionWithToken:(id)token;
+- (BOOL)cancelInteractionWithToken:(id)token;
+@end
+
 @interface MobaMovementFakeSink : NSObject <MobaInputSink>
 - (NSArray<NSString *> *)eventSnapshot;
 - (void)clearEvents;
@@ -381,6 +388,92 @@
     XCTAssertFalse(view.userInteractionEnabled);
     XCTAssertFalse(customController.isInteractionEnabled);
     XCTAssertEqualWithAccuracy(view.alpha, 0.30, 0.000001);
+}
+
+- (void)testConfigurationDisableReleasesMovementAndClearsLocalInteraction {
+    MoveJoystickView *view = [[MoveJoystickView alloc]
+        initWithMovementController:self.controller
+                        visualSize:MoveJoystickDefaultVisualSize
+                       wheelRadius:100.0
+                      hitAreaScale:MoveJoystickDefaultHitAreaScale];
+    view.frame = CGRectMake(0.0, 0.0, 228.0, 228.0);
+    NSObject *owner = [[NSObject alloc] init];
+    XCTAssertTrue([view beginInteractionWithToken:owner
+                                     displacement:CGVectorMake(100.0, -100.0)]);
+    [view layoutIfNeeded];
+    XCTAssertTrue(view.isPressed);
+    XCTAssertNotEqualWithAccuracy(view.knobDisplacement.dx, 0.0, 0.000001);
+    XCTAssertNotEqualWithAccuracy(view.knobDisplacement.dy, 0.0, 0.000001);
+    [self drainDispatcher];
+    [self.sink clearEvents];
+
+    view.interactionEnabled = NO;
+    [view layoutIfNeeded];
+    [self drainDispatcher];
+
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:87:up", @"key:68:up"]));
+    XCTAssertEqual(self.controller.state, MobaJoystickStateNeutral);
+    XCTAssertNil(self.controller.activeTouchToken);
+    XCTAssertFalse(view.isPressed);
+    XCTAssertEqualWithAccuracy(view.knobDisplacement.dx, 0.0, 0.000001);
+    XCTAssertEqualWithAccuracy(view.knobDisplacement.dy, 0.0, 0.000001);
+    XCTAssertFalse(view.userInteractionEnabled);
+    XCTAssertFalse(view.isInteractionEnabled);
+    XCTAssertFalse(self.controller.isInteractionEnabled);
+    XCTAssertEqualWithAccuracy(view.alpha, view.disabledOpacity, 0.000001);
+}
+
+- (void)testRepeatedConfigurationDisableDoesNotReleaseMovementTwice {
+    MoveJoystickView *view = [[MoveJoystickView alloc]
+        initWithMovementController:self.controller
+                        visualSize:MoveJoystickDefaultVisualSize
+                       wheelRadius:100.0
+                      hitAreaScale:MoveJoystickDefaultHitAreaScale];
+    NSObject *owner = [[NSObject alloc] init];
+    XCTAssertTrue([view beginInteractionWithToken:owner
+                                     displacement:CGVectorMake(100.0, -100.0)]);
+    [self drainDispatcher];
+    [self.sink clearEvents];
+
+    view.interactionEnabled = NO;
+    view.interactionEnabled = NO;
+    [self drainDispatcher];
+
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:87:up", @"key:68:up"]));
+}
+
+- (void)testConfigurationReenableRejectsOldTokenAndAllowsNewOwnership {
+    MoveJoystickView *view = [[MoveJoystickView alloc]
+        initWithMovementController:self.controller
+                        visualSize:MoveJoystickDefaultVisualSize
+                       wheelRadius:100.0
+                      hitAreaScale:MoveJoystickDefaultHitAreaScale];
+    NSObject *oldToken = [[NSObject alloc] init];
+    NSObject *newToken = [[NSObject alloc] init];
+    XCTAssertTrue([view beginInteractionWithToken:oldToken
+                                     displacement:CGVectorMake(0.0, -100.0)]);
+    [self drainDispatcher];
+
+    view.interactionEnabled = NO;
+    [self drainDispatcher];
+    [self.sink clearEvents];
+    view.interactionEnabled = YES;
+
+    XCTAssertFalse([view updateInteractionWithToken:oldToken
+                                       displacement:CGVectorMake(100.0, 0.0)]);
+    XCTAssertFalse([view endInteractionWithToken:oldToken]);
+    XCTAssertFalse([view cancelInteractionWithToken:oldToken]);
+    XCTAssertTrue([view beginInteractionWithToken:newToken
+                                     displacement:CGVectorMake(100.0, 0.0)]);
+    [self drainDispatcher];
+
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:68:down"]));
+    XCTAssertEqual(self.controller.activeTouchToken, newToken);
+    XCTAssertEqual(self.controller.state, MobaJoystickStateRight);
+    XCTAssertTrue(view.isPressed);
+    XCTAssertTrue(view.userInteractionEnabled);
+    XCTAssertTrue(view.isInteractionEnabled);
+    XCTAssertTrue(self.controller.isInteractionEnabled);
 }
 
 @end

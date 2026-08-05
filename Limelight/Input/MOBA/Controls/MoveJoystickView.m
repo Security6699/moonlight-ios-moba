@@ -155,8 +155,20 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
 }
 
 - (void)setInteractionEnabled:(BOOL)interactionEnabled {
+    if (_interactionEnabled == interactionEnabled) {
+        return;
+    }
+
+    if (!interactionEnabled) {
+        [_movementController releaseMovement];
+        [_movementController silentReset];
+        _knobDisplacement = CGVectorMake(0.0, 0.0);
+        _pressed = NO;
+    }
+
     _interactionEnabled = interactionEnabled;
     [self updateInteractionAndAppearance];
+    [self setNeedsLayout];
 }
 
 - (void)updateInteractionAndAppearance {
@@ -210,13 +222,43 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
     [self setNeedsLayout];
 }
 
+- (BOOL)beginInteractionWithToken:(id)token displacement:(CGVector)displacement {
+    if (![_movementController beginInteractionWithToken:token displacement:displacement]) {
+        return NO;
+    }
+
+    [self setVisualDisplacement:displacement];
+    [self setPressedState:YES];
+    return YES;
+}
+
+- (BOOL)updateInteractionWithToken:(id)token displacement:(CGVector)displacement {
+    if (![_movementController updateInteractionWithToken:token displacement:displacement]) {
+        return NO;
+    }
+
+    [self setVisualDisplacement:displacement];
+    return YES;
+}
+
+- (BOOL)endInteractionWithToken:(id)token {
+    if (![_movementController endInteractionWithToken:token]) {
+        return NO;
+    }
+
+    [self resetVisualState];
+    return YES;
+}
+
+- (BOOL)cancelInteractionWithToken:(id)token {
+    return [_movementController cancelInteractionWithToken:token];
+}
+
 - (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     (void)event;
     for (UITouch *touch in touches) {
         CGVector displacement = [self displacementForTouch:touch];
-        if ([_movementController beginInteractionWithToken:touch displacement:displacement]) {
-            [self setVisualDisplacement:displacement];
-            [self setPressedState:YES];
+        if ([self beginInteractionWithToken:touch displacement:displacement]) {
             break;
         }
     }
@@ -226,17 +268,14 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
     (void)event;
     for (UITouch *touch in touches) {
         CGVector displacement = [self displacementForTouch:touch];
-        if ([_movementController updateInteractionWithToken:touch displacement:displacement]) {
-            [self setVisualDisplacement:displacement];
-        }
+        [self updateInteractionWithToken:touch displacement:displacement];
     }
 }
 
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     (void)event;
     for (UITouch *touch in touches) {
-        if ([_movementController endInteractionWithToken:touch]) {
-            [self resetVisualState];
+        if ([self endInteractionWithToken:touch]) {
             break;
         }
     }
@@ -245,7 +284,7 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     (void)event;
     for (UITouch *touch in touches) {
-        if ([_movementController cancelInteractionWithToken:touch]) {
+        if ([self cancelInteractionWithToken:touch]) {
             break;
         }
     }
