@@ -88,6 +88,14 @@
 		AF1600000000000000000008 /* MobaCancelZoneControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000108 /* MobaCancelZoneControllerTests.m */; };
 		AF1600000000000000000009 /* MobaCancelZoneViewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000109 /* MobaCancelZoneViewTests.m */; };
 		AF160000000000000000000A /* MobaCancelZoneIntegrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AF160000000000000000010A /* MobaCancelZoneIntegrationTests.m */; };
+		B00400000000000000000001 /* MobaProfileStore.m in Sources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000102 /* MobaProfileStore.m */; };
+		B00400000000000000000002 /* MobaProfileStore.m in Sources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000102 /* MobaProfileStore.m */; };
+		B00400000000000000000003 /* MobaProfileStoreTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000103 /* MobaProfileStoreTests.m */; };
+		B00400000000000000000004 /* runtime.json in Resources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000104 /* runtime.json */; };
+		B00400000000000000000005 /* input.json in Resources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000105 /* input.json */; };
+		B00400000000000000000006 /* ipad-pro-13-layout.json in Resources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000106 /* ipad-pro-13-layout.json */; };
+		B00400000000000000000007 /* caitlyn.json in Resources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000107 /* caitlyn.json */; };
+		B00400000000000000000008 /* debug-instant.json in Resources */ = {isa = PBXBuildFile; fileRef = B00400000000000000000108 /* debug-instant.json */; };
 		B01700000000000000000001 /* MobaDisplayLinkDriving.m in Sources */ = {isa = PBXBuildFile; fileRef = B01700000000000000000102 /* MobaDisplayLinkDriving.m */; };
 		B01700000000000000000002 /* MobaDisplayLinkDriving.m in Sources */ = {isa = PBXBuildFile; fileRef = B01700000000000000000102 /* MobaDisplayLinkDriving.m */; };
 		B01700000000000000000003 /* MobaCADisplayLinkDriver.m in Sources */ = {isa = PBXBuildFile; fileRef = B01700000000000000000104 /* MobaCADisplayLinkDriver.m */; };
@@ -364,6 +372,14 @@
 		AF1600000000000000000108 /* MobaCancelZoneControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneControllerTests.m; sourceTree = "<group>"; };
 		AF1600000000000000000109 /* MobaCancelZoneViewTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneViewTests.m; sourceTree = "<group>"; };
 		AF160000000000000000010A /* MobaCancelZoneIntegrationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneIntegrationTests.m; sourceTree = "<group>"; };
+		B00400000000000000000101 /* MobaProfileStore.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileStore.h; sourceTree = "<group>"; };
+		B00400000000000000000102 /* MobaProfileStore.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileStore.m; sourceTree = "<group>"; };
+		B00400000000000000000103 /* MobaProfileStoreTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileStoreTests.m; sourceTree = "<group>"; };
+		B00400000000000000000104 /* runtime.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = runtime.json; sourceTree = "<group>"; };
+		B00400000000000000000105 /* input.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = input.json; sourceTree = "<group>"; };
+		B00400000000000000000106 /* ipad-pro-13-layout.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "ipad-pro-13-layout.json"; sourceTree = "<group>"; };
+		B00400000000000000000107 /* caitlyn.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = caitlyn.json; sourceTree = "<group>"; };
+		B00400000000000000000108 /* debug-instant.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = "debug-instant.json"; sourceTree = "<group>"; };
 		B01700000000000000000101 /* MobaDisplayLinkDriving.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaDisplayLinkDriving.h; sourceTree = "<group>"; };
 		B01700000000000000000102 /* MobaDisplayLinkDriving.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaDisplayLinkDriving.m; sourceTree = "<group>"; };
 		B01700000000000000000103 /* MobaCADisplayLinkDriver.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCADisplayLinkDriver.h; sourceTree = "<group>"; };
@@ -589,6 +605,7 @@
 		FB290CE519B2C406004C83CF = {
 			isa = PBXGroup;
 			children = (
+				B0040000000000000000010A /* MOBA Default Resources */,
 				9896219423D15C2900211983 /* X1Kit */,
 				98AB2E7F1CAD46830089BB98 /* moonlight-common.xcodeproj */,
 				FB290CF919B2C406004C83CF /* Moonlight */,
@@ -726,6 +743,7 @@
 				A9C000000000000000000109 /* Controls */,
 				AC1300000000000000000107 /* Casting */,
 				A3C000000000000000000005 /* Geometry */,
+				B00400000000000000000109 /* Profiles */,
 				A6E000000000000000000110 /* Debug */,
 			);
 			path = MOBA;
@@ -757,6 +775,28 @@
 				AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */,
 			);
 			path = Core;
+			sourceTree = "<group>";
+		};
+		B00400000000000000000109 /* Profiles */ = {
+			isa = PBXGroup;
+			children = (
+				B00400000000000000000101 /* MobaProfileStore.h */,
+				B00400000000000000000102 /* MobaProfileStore.m */,
+			);
+			path = Profiles;
+			sourceTree = "<group>";
+		};
+		B0040000000000000000010A /* MOBA Default Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B00400000000000000000104 /* runtime.json */,
+				B00400000000000000000105 /* input.json */,
+				B00400000000000000000106 /* ipad-pro-13-layout.json */,
+				B00400000000000000000107 /* caitlyn.json */,
+				B00400000000000000000108 /* debug-instant.json */,
+			);
+			name = "MOBA Default Resources";
+			path = examples/moba;
 			sourceTree = "<group>";
 		};
 		A3C000000000000000000005 /* Geometry */ = {
@@ -832,6 +872,7 @@
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
+				B00400000000000000000103 /* MobaProfileStoreTests.m */,
 				B01700000000000000000108 /* MobaCADisplayLinkDriverTests.m */,
 				B0170000000000000000010A /* MobaCursorCoalescerLifecycleTests.m */,
 				B01700000000000000000107 /* MobaCursorCoalescerTests.m */,
@@ -1182,6 +1223,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00400000000000000000004 /* runtime.json in Resources */,
+				B00400000000000000000005 /* input.json in Resources */,
+				B00400000000000000000006 /* ipad-pro-13-layout.json in Resources */,
+				B00400000000000000000007 /* caitlyn.json in Resources */,
+				B00400000000000000000008 /* debug-instant.json in Resources */,
 				FB290E7919B37D81004C83CF /* iPad.storyboard in Resources */,
 				FB290CFE19B2C406004C83CF /* InfoPlist.strings in Resources */,
 				FB290E7B19B38036004C83CF /* iPhone.storyboard in Resources */,
@@ -1197,6 +1243,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00400000000000000000002 /* MobaProfileStore.m in Sources */,
+				B00400000000000000000003 /* MobaProfileStoreTests.m in Sources */,
 				B01700000000000000000002 /* MobaDisplayLinkDriving.m in Sources */,
 				B01700000000000000000004 /* MobaCADisplayLinkDriver.m in Sources */,
 				B01700000000000000000006 /* MobaCursorCoalescer.m in Sources */,
@@ -1312,6 +1360,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B00400000000000000000001 /* MobaProfileStore.m in Sources */,
 				B01700000000000000000001 /* MobaDisplayLinkDriving.m in Sources */,
 				B01700000000000000000003 /* MobaCADisplayLinkDriver.m in Sources */,
 				B01700000000000000000005 /* MobaCursorCoalescer.m in Sources */,
