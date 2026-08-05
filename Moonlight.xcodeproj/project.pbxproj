@@ -72,6 +72,12 @@
 		AD1400000000000000000006 /* MobaDirectionalCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000106 /* MobaDirectionalCastStrategy.m */; };
 		AD1400000000000000000007 /* MobaInstantCastStrategyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000107 /* MobaInstantCastStrategyTests.m */; };
 		AD1400000000000000000008 /* MobaDirectionalCastStrategyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AD1400000000000000000108 /* MobaDirectionalCastStrategyTests.m */; };
+		AE1500000000000000000001 /* MobaPointCastGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000102 /* MobaPointCastGeometry.m */; };
+		AE1500000000000000000002 /* MobaPointCastGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000102 /* MobaPointCastGeometry.m */; };
+		AE1500000000000000000003 /* MobaPointCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000104 /* MobaPointCastStrategy.m */; };
+		AE1500000000000000000004 /* MobaPointCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000104 /* MobaPointCastStrategy.m */; };
+		AE1500000000000000000005 /* MobaPointCastGeometryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000105 /* MobaPointCastGeometryTests.m */; };
+		AE1500000000000000000006 /* MobaPointCastStrategyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000106 /* MobaPointCastStrategyTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -322,6 +328,12 @@
 		AD1400000000000000000106 /* MobaDirectionalCastStrategy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaDirectionalCastStrategy.m; sourceTree = "<group>"; };
 		AD1400000000000000000107 /* MobaInstantCastStrategyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaInstantCastStrategyTests.m; sourceTree = "<group>"; };
 		AD1400000000000000000108 /* MobaDirectionalCastStrategyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaDirectionalCastStrategyTests.m; sourceTree = "<group>"; };
+		AE1500000000000000000101 /* MobaPointCastGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaPointCastGeometry.h; sourceTree = "<group>"; };
+		AE1500000000000000000102 /* MobaPointCastGeometry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointCastGeometry.m; sourceTree = "<group>"; };
+		AE1500000000000000000103 /* MobaPointCastStrategy.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaPointCastStrategy.h; sourceTree = "<group>"; };
+		AE1500000000000000000104 /* MobaPointCastStrategy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointCastStrategy.m; sourceTree = "<group>"; };
+		AE1500000000000000000105 /* MobaPointCastGeometryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointCastGeometryTests.m; sourceTree = "<group>"; };
+		AE1500000000000000000106 /* MobaPointCastStrategyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointCastStrategyTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -712,6 +724,8 @@
 				A8B000000000000000000102 /* MobaAimGeometry.m */,
 				A8B000000000000000000103 /* MobaPointResponse.h */,
 				A8B000000000000000000104 /* MobaPointResponse.m */,
+				AE1500000000000000000101 /* MobaPointCastGeometry.h */,
+				AE1500000000000000000102 /* MobaPointCastGeometry.m */,
 			);
 			path = Geometry;
 			sourceTree = "<group>";
@@ -729,6 +743,8 @@
 				AD1400000000000000000104 /* MobaInstantCastStrategy.m */,
 				AD1400000000000000000105 /* MobaDirectionalCastStrategy.h */,
 				AD1400000000000000000106 /* MobaDirectionalCastStrategy.m */,
+				AE1500000000000000000103 /* MobaPointCastStrategy.h */,
+				AE1500000000000000000104 /* MobaPointCastStrategy.m */,
 			);
 			path = Casting;
 			sourceTree = "<group>";
@@ -775,6 +791,8 @@
 				A6E00000000000000000010D /* MobaCursorDiagnosticsTests.m */,
 				A7F000000000000000000103 /* MobaOverlayLifecycleTests.m */,
 				A8B000000000000000000105 /* MobaAimGeometryTests.m */,
+				AE1500000000000000000105 /* MobaPointCastGeometryTests.m */,
+				AE1500000000000000000106 /* MobaPointCastStrategyTests.m */,
 				A8B000000000000000000106 /* MobaPointResponseTests.m */,
 				A9C000000000000000000107 /* MobaJoystickModelTests.m */,
 				A9C000000000000000000108 /* MobaMovementControllerTests.m */,
@@ -1127,6 +1145,10 @@
 				AD1400000000000000000006 /* MobaDirectionalCastStrategy.m in Sources */,
 				AD1400000000000000000007 /* MobaInstantCastStrategyTests.m in Sources */,
 				AD1400000000000000000008 /* MobaDirectionalCastStrategyTests.m in Sources */,
+				AE1500000000000000000002 /* MobaPointCastGeometry.m in Sources */,
+				AE1500000000000000000004 /* MobaPointCastStrategy.m in Sources */,
+				AE1500000000000000000005 /* MobaPointCastGeometryTests.m in Sources */,
+				AE1500000000000000000006 /* MobaPointCastStrategyTests.m in Sources */,
 				AC1300000000000000000002 /* MobaCastStateMachine.m in Sources */,
 				AC1300000000000000000004 /* MobaCastSession.m in Sources */,
 				AC1300000000000000000005 /* MobaCastStateMachineTests.m in Sources */,
@@ -1221,6 +1243,8 @@
 				AD1400000000000000000001 /* MobaCastStrategy.m in Sources */,
 				AD1400000000000000000003 /* MobaInstantCastStrategy.m in Sources */,
 				AD1400000000000000000005 /* MobaDirectionalCastStrategy.m in Sources */,
+				AE1500000000000000000001 /* MobaPointCastGeometry.m in Sources */,
+				AE1500000000000000000003 /* MobaPointCastStrategy.m in Sources */,
 				AC1300000000000000000001 /* MobaCastStateMachine.m in Sources */,
 				AC1300000000000000000003 /* MobaCastSession.m in Sources */,
 				AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */,

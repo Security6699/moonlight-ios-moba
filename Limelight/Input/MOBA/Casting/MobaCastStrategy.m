@@ -5,6 +5,8 @@
 
 #import "MobaCastStrategy.h"
 
+#import "../Core/MobaInputDispatcher.h"
+
 // Existing moonlight-common BUTTON_RIGHT value. This is protocol semantics,
 // not a profile or champion calibration value.
 static const int MobaCastRightMouseButton = 0x03;
@@ -90,4 +92,23 @@ BOOL MobaCastTransitionIsAcceptedTerminal(MobaCastTransitionResult result,
         result.currentState == terminalState &&
         result.producedTerminalOutcome &&
         result.terminalOutcome == outcome;
+}
+
+void MobaCastDispatchCancelAction(MobaInputDispatcher *dispatcher,
+                                  MobaCastCancelAction *cancelAction,
+                                  uint16_t skillKeyCode) {
+    switch (cancelAction.type) {
+        case MobaCastCancelActionTypeKeyboard:
+            [dispatcher cancelWithKeyCode:cancelAction.keyCode
+                               durationMs:cancelAction.tapDurationMs
+                    releasingSkillKeyCode:skillKeyCode];
+            break;
+        case MobaCastCancelActionTypeRightMouse:
+            [dispatcher cancelWithMouseButton:cancelAction.mouseButton
+                        releasingSkillKeyCode:skillKeyCode];
+            break;
+        case MobaCastCancelActionTypeReleaseOnly:
+            [dispatcher setKeyCode:skillKeyCode down:NO];
+            break;
+    }
 }

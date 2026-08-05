@@ -153,20 +153,9 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
     }
 
     [self clearLocalCastState];
-    switch (_configuration.cancelAction.type) {
-        case MobaCastCancelActionTypeKeyboard:
-            [_dispatcher cancelWithKeyCode:_configuration.cancelAction.keyCode
-                                durationMs:_configuration.cancelAction.tapDurationMs
-                     releasingSkillKeyCode:_configuration.skillKeyCode];
-            break;
-        case MobaCastCancelActionTypeRightMouse:
-            [_dispatcher cancelWithMouseButton:_configuration.cancelAction.mouseButton
-                         releasingSkillKeyCode:_configuration.skillKeyCode];
-            break;
-        case MobaCastCancelActionTypeReleaseOnly:
-            [_dispatcher setKeyCode:_configuration.skillKeyCode down:NO];
-            break;
-    }
+    MobaCastDispatchCancelAction(_dispatcher,
+                                 _configuration.cancelAction,
+                                 _configuration.skillKeyCode);
     return YES;
 }
 
