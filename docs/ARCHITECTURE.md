@@ -126,6 +126,12 @@ Point-cast begin uses a configured default direction and default distance ratio,
 
 An intentional cancel-zone release selects a configured keyboard, right-mouse, or release-only action. Keyboard and mouse cancellation use the Dispatcher's ordered cancellation operations. Lifecycle interruption does not send the configured cancel action. It relies on lifecycle `releaseAllInputs`, then silently resets strategy and Session state.
 
+The cancel zone is one shared, fixed `MobaCancelZoneView`. It is a noninteractive presentation view and never owns a skill touch. Future `SkillButtonView` instances retain their touch ownership, convert the owned touch location into StreamView coordinates, and pass that point through `MobaCancelZoneGeometry`. The geometry performs a pure radial circle test using `visualDiameter / 2 - activationInset` as its activation radius.
+
+The geometric inside value is only an input to `MobaCastSession`. It cannot arm the presentation directly. An accepted Session result in `CancelArmed` arms the zone, while accepted `AimingDefault` and `AimingDragged` results restore the normal casting visual. The Strategy alone maps an intentional cancelled terminal result to its configured keyboard, right-mouse, or release-only input. Neither the View nor the cast state machine hard-codes Escape.
+
+Intentional cancellation and lifecycle interruption remain separate paths. A release while Session is armed calls the Strategy cancel operation. Backgrounding, touch cancellation, disconnection, mode exit, and teardown first use lifecycle `releaseAllInputs`, then silently reset the Strategy, Session, and cancel-zone presentation. Cancel-zone lifecycle reset only hides the view and clears local token and armed state. It sends no remote input and recovery does not restore the previous cast presentation.
+
 Strategies consume only accepted `MobaCastSession` transition results and guard each terminal outcome against repeated consumption. They own no pressed-key collection, tap timer, or release-all state and never mutate the Session. After commit or intentional cancellation, the caller explicitly invokes Session `silentReset` before a new interaction can begin.
 
 ### Profiles

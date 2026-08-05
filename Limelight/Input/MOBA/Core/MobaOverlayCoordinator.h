@@ -4,6 +4,9 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <CoreGraphics/CoreGraphics.h>
+
+#import "../Casting/MobaCastStateMachine.h"
 #import "MobaOverlayLifecycle.h"
 
 @class StreamView;
@@ -24,6 +27,18 @@
 - (BOOL)transitionToMode:(MobaOverlayMode)mode;
 - (void)start;
 - (void)stop;
+
+// Fixed cancel-zone boundary for a future SkillButtonView. Points are already
+// converted into StreamView coordinates. Geometry never mutates Session state,
+// while accepted Session results remain the authority for armed presentation.
+- (BOOL)beginCancelZonePresentationForCastToken:(id)token;
+- (BOOL)evaluateCancelZoneAtStreamViewPoint:(CGPoint)point
+                                forCastToken:(id)token
+                           insideCancelZone:(BOOL *)insideCancelZone;
+- (BOOL)applyCancelZoneTransitionResult:(MobaCastTransitionResult)result
+                            forCastToken:(id)token;
+- (BOOL)endCancelZonePresentationForCastToken:(id)token;
+- (void)resetCancelZonePresentation;
 
 - (BOOL)interruptAndReleaseInputsForReason:(MobaInputInterruptionReason)reason;
 - (void)touchesCancelled;

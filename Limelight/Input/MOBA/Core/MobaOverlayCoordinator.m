@@ -11,6 +11,8 @@
 #import "StreamView.h"
 #import "../Controls/AttackButtonView.h"
 #import "../Controls/MobaAttackController.h"
+#import "../Controls/MobaCancelZoneController.h"
+#import "../Controls/MobaCancelZoneView.h"
 #import "../Controls/MobaMovementController.h"
 #import "../Controls/MobaModeToolbarView.h"
 #import "../Controls/MoveJoystickView.h"
@@ -23,6 +25,9 @@ static const CGFloat MobaDefaultMoveCenterX = 0.14;
 static const CGFloat MobaDefaultMoveCenterY = 0.82;
 static const CGFloat MobaDefaultAttackCenterX = 0.94;
 static const CGFloat MobaDefaultAttackCenterY = 0.90;
+static const CGFloat MobaDefaultCancelZoneCenterX = 0.83;
+static const CGFloat MobaDefaultCancelZoneCenterY = 0.48;
+static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 @interface MobaOverlayCoordinator () <MobaAttackControllerDelegate,
                                       MobaBattleInputGate,
@@ -39,6 +44,8 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
     MoveJoystickView *_moveJoystickView;
     MobaAttackController *_attackController;
     AttackButtonView *_attackButtonView;
+    MobaCancelZoneController *_cancelZoneController;
+    MobaCancelZoneView *_cancelZoneView;
     MobaModeToolbarView *_modeToolbarView;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
@@ -67,6 +74,17 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
         _attackController.delegate = self;
         _attackButtonView = [[AttackButtonView alloc] initWithAttackController:_attackController];
         [_lifecycle registerLocalInteractionResetParticipant:_attackButtonView];
+        _cancelZoneView = [[MobaCancelZoneView alloc]
+            initWithVisualDiameter:MobaCancelZoneDefaultVisualDiameter];
+        MobaCancelZoneGeometry cancelZoneGeometry =
+            MobaCancelZoneGeometryMake(CGPointZero,
+                                       MobaCancelZoneDefaultVisualDiameter,
+                                       MobaDefaultCancelZoneActivationInset);
+        _cancelZoneController = [[MobaCancelZoneController alloc]
+            initWithGeometry:cancelZoneGeometry
+                 presentation:_cancelZoneView];
+        _cancelZoneView.controller = _cancelZoneController;
+        [_lifecycle registerLocalInteractionResetParticipant:_cancelZoneView];
         _modeToolbarView = [[MobaModeToolbarView alloc] initWithFrame:CGRectZero];
         _modeToolbarView.delegate = self;
         _modeToolbarView.battleModeAvailable = streamView.isMobaBattleModeSupported;
@@ -98,6 +116,17 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
                                            CGRectGetMinY(safeFrame) +
                                            CGRectGetHeight(safeFrame) * MobaDefaultAttackCenterY);
 
+    CGSize cancelZoneSize = _cancelZoneView.intrinsicContentSize;
+    _cancelZoneView.bounds = (CGRect){ CGPointZero, cancelZoneSize };
+    CGPoint cancelZoneCenter = CGPointMake(CGRectGetMinX(safeFrame) +
+                                           CGRectGetWidth(safeFrame) * MobaDefaultCancelZoneCenterX,
+                                           CGRectGetMinY(safeFrame) +
+                                           CGRectGetHeight(safeFrame) * MobaDefaultCancelZoneCenterY);
+    _cancelZoneView.center = cancelZoneCenter;
+    [_cancelZoneController updateGeometry:MobaCancelZoneGeometryMake(cancelZoneCenter,
+                                                                     MobaCancelZoneDefaultVisualDiameter,
+                                                                     MobaDefaultCancelZoneActivationInset)];
+
     CGSize toolbarSize = _modeToolbarView.intrinsicContentSize;
     _modeToolbarView.bounds = (CGRect){ CGPointZero, toolbarSize };
     _modeToolbarView.center = CGPointMake(CGRectGetMaxX(safeFrame) - toolbarSize.width * 0.5 - 12.0,
@@ -107,6 +136,7 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
 - (void)removeBattleControls {
     [_moveJoystickView removeFromSuperview];
     [_attackButtonView removeFromSuperview];
+    [_cancelZoneView removeFromSuperview];
     [_modeToolbarView removeFromSuperview];
 }
 
@@ -160,6 +190,9 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
     if (_attackButtonView.superview == nil) {
         [_streamView addSubview:_attackButtonView];
     }
+    if (_cancelZoneView.superview == nil) {
+        [_streamView addSubview:_cancelZoneView];
+    }
     if (_modeToolbarView.superview == nil) {
         [_streamView addSubview:_modeToolbarView];
     }
@@ -178,6 +211,40 @@ static const CGFloat MobaDefaultAttackCenterY = 0.90;
     }
 #endif
     [_lifecycle start];
+}
+
+- (BOOL)beginCancelZonePresentationForCastToken:(id)token {
+    if (!self.isBattleInputAllowed) {
+        return NO;
+    }
+    return [_cancelZoneController beginCastingWithToken:token];
+}
+
+- (BOOL)evaluateCancelZoneAtStreamViewPoint:(CGPoint)point
+                                forCastToken:(id)token
+                           insideCancelZone:(BOOL *)insideCancelZone {
+    if (!self.isBattleInputAllowed) {
+        return NO;
+    }
+    return [_cancelZoneController evaluatePoint:point
+                                       forToken:token
+                               insideCancelZone:insideCancelZone];
+}
+
+- (BOOL)applyCancelZoneTransitionResult:(MobaCastTransitionResult)result
+                            forCastToken:(id)token {
+    if (!self.isBattleInputAllowed) {
+        return NO;
+    }
+    return [_cancelZoneController applyAcceptedTransitionResult:result forToken:token];
+}
+
+- (BOOL)endCancelZonePresentationForCastToken:(id)token {
+    return [_cancelZoneController endCastingWithToken:token];
+}
+
+- (void)resetCancelZonePresentation {
+    [_cancelZoneController silentReset];
 }
 
 - (void)stop {
