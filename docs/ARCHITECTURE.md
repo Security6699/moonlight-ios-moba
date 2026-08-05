@@ -150,7 +150,15 @@ Strategies consume only accepted `MobaCastSession` transition results and guard 
 
 ### Profiles
 
-Load validated, versioned configuration. Layout, runtime, input, and champion behavior remain separate.
+`MobaProfileStore` owns only the `Application Support/MOBA` directory structure, bundled-default seeding, path containment, and atomic byte reads and writes. It does not parse JSON or create runtime, input, layout, or champion models. Those models, schema validation, and migration belong to #18. Import/export, user confirmation, and backup workflows belong to #22.
+
+The immutable default-resource manifest maps the bundled `runtime.json`, `input.json`, `ipad-pro-13-layout.json`, `caitlyn.json`, and `debug-instant.json` resources to their storage destinations. The default layout independently seeds both `layouts/ipad-pro-13-layout.json` and `active-layout.json`. Each missing destination is filled separately. An existing regular file is always preserved, including when a newer bundled default exists. Directories, symbolic links, and other conflicting destination types fail safely without deletion or replacement.
+
+All public read and write paths are relative to the standardized `Application Support/MOBA` root. Absolute paths, empty or dot components, parent traversal, the root itself, and resolved paths outside the root are rejected. `replaceExisting = YES` uses Foundation atomic replacement. For `replaceExisting = NO`, complete bytes are first written atomically to a uniquely named file beside the destination, then published with an atomic same-filesystem hard link that fails if the destination already exists. Only the temporary link is removed. The destination is never deleted or exposed partially. Reads and writes accept arbitrary bytes and deliberately perform no schema inspection.
+
+Bootstrap creates the root plus `layouts`, `champions`, and `backups`, then attempts every missing manifest destination. It is idempotent and retryable. A failure returns an error containing the operation and related relative path, but already completed safe copies remain intact. The running stream treats storage failure as nonfatal and logs it.
+
+The production store is created only inside the existing MOBA coordinator boundary, which itself is created only when `mobaControlsEnabled` is enabled. When the feature is disabled, bootstrap is not run and `Application Support/MOBA` is not created or modified. Normal Moonlight launch, settings, streaming, and file behavior remain unchanged.
 
 ## 4. Coordinate spaces
 

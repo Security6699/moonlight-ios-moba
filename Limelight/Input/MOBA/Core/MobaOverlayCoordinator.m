@@ -16,6 +16,7 @@
 #import "../Controls/MobaMovementController.h"
 #import "../Controls/MobaModeToolbarView.h"
 #import "../Controls/MoveJoystickView.h"
+#import "../Profiles/MobaProfileStore.h"
 
 #if DEBUG
 #import "../Debug/MobaCursorDiagnosticPanel.h"
@@ -37,6 +38,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 @implementation MobaOverlayCoordinator {
     __weak StreamView *_streamView;
+    MobaProfileStore *_profileStore;
     MobaInputDispatcher *_inputDispatcher;
     MobaOverlayLifecycle *_lifecycle;
     MobaCursorDiagnostics *_cursorDiagnostics;
@@ -56,6 +58,13 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     self = [super init];
     if (self) {
         _streamView = streamView;
+        _profileStore = [[MobaProfileStore alloc] init];
+        NSError *profileStoreError = nil;
+        if (![_profileStore bootstrapDefaultsIfFeatureEnabled:YES error:&profileStoreError]) {
+            // Profile storage is optional infrastructure. A failure must not
+            // prevent the existing Moonlight stream from being initialized.
+            NSLog(@"MOBA profile defaults bootstrap failed: %@", profileStoreError);
+        }
         MoonlightMobaInputSender *sender = [[MoonlightMobaInputSender alloc] init];
         MoonlightMobaInputAdapter *adapter = [[MoonlightMobaInputAdapter alloc] initWithSender:sender];
         _inputDispatcher = [[MobaInputDispatcher alloc] initWithSink:adapter];
