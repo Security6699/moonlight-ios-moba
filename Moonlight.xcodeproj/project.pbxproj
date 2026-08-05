@@ -58,6 +58,12 @@
 		AB1100000000000000000004 /* MobaModeToolbarView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000104 /* MobaModeToolbarView.m */; };
 		AB1100000000000000000005 /* MobaModeToolbarView.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000104 /* MobaModeToolbarView.m */; };
 		AB1100000000000000000006 /* MobaTouchRoutingTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000105 /* MobaTouchRoutingTests.m */; };
+		AC1300000000000000000001 /* MobaCastStateMachine.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000102 /* MobaCastStateMachine.m */; };
+		AC1300000000000000000002 /* MobaCastStateMachine.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000102 /* MobaCastStateMachine.m */; };
+		AC1300000000000000000003 /* MobaCastSession.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000104 /* MobaCastSession.m */; };
+		AC1300000000000000000004 /* MobaCastSession.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000104 /* MobaCastSession.m */; };
+		AC1300000000000000000005 /* MobaCastStateMachineTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000105 /* MobaCastStateMachineTests.m */; };
+		AC1300000000000000000006 /* MobaCastSessionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AC1300000000000000000106 /* MobaCastSessionTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -294,6 +300,12 @@
 		AB1100000000000000000103 /* MobaModeToolbarView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaModeToolbarView.h; sourceTree = "<group>"; };
 		AB1100000000000000000104 /* MobaModeToolbarView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaModeToolbarView.m; sourceTree = "<group>"; };
 		AB1100000000000000000105 /* MobaTouchRoutingTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaTouchRoutingTests.m; sourceTree = "<group>"; };
+		AC1300000000000000000101 /* MobaCastStateMachine.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCastStateMachine.h; sourceTree = "<group>"; };
+		AC1300000000000000000102 /* MobaCastStateMachine.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastStateMachine.m; sourceTree = "<group>"; };
+		AC1300000000000000000103 /* MobaCastSession.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCastSession.h; sourceTree = "<group>"; };
+		AC1300000000000000000104 /* MobaCastSession.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastSession.m; sourceTree = "<group>"; };
+		AC1300000000000000000105 /* MobaCastStateMachineTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastStateMachineTests.m; sourceTree = "<group>"; };
+		AC1300000000000000000106 /* MobaCastSessionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastSessionTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -644,6 +656,7 @@
 			children = (
 				A2B000000000000000000005 /* Core */,
 				A9C000000000000000000109 /* Controls */,
+				AC1300000000000000000107 /* Casting */,
 				A3C000000000000000000005 /* Geometry */,
 				A6E000000000000000000110 /* Debug */,
 			);
@@ -687,6 +700,17 @@
 			path = Geometry;
 			sourceTree = "<group>";
 		};
+		AC1300000000000000000107 /* Casting */ = {
+			isa = PBXGroup;
+			children = (
+				AC1300000000000000000101 /* MobaCastStateMachine.h */,
+				AC1300000000000000000102 /* MobaCastStateMachine.m */,
+				AC1300000000000000000103 /* MobaCastSession.h */,
+				AC1300000000000000000104 /* MobaCastSession.m */,
+			);
+			path = Casting;
+			sourceTree = "<group>";
+		};
 		A9C000000000000000000109 /* Controls */ = {
 			isa = PBXGroup;
 			children = (
@@ -719,6 +743,8 @@
 			isa = PBXGroup;
 			children = (
 				AA1000000000000000000105 /* MobaAttackControllerTests.m */,
+				AC1300000000000000000106 /* MobaCastSessionTests.m */,
+				AC1300000000000000000105 /* MobaCastStateMachineTests.m */,
 				A5D000000000000000000008 /* MobaInputDispatcherTests.m */,
 				A6E00000000000000000010B /* MobaGameCanvasTests.m */,
 				A6E00000000000000000010C /* MoonlightMobaInputAdapterTests.m */,
@@ -1072,6 +1098,10 @@
 				AA1000000000000000000002 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000004 /* AttackButtonView.m in Sources */,
 				AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */,
+				AC1300000000000000000002 /* MobaCastStateMachine.m in Sources */,
+				AC1300000000000000000004 /* MobaCastSession.m in Sources */,
+				AC1300000000000000000005 /* MobaCastStateMachineTests.m in Sources */,
+				AC1300000000000000000006 /* MobaCastSessionTests.m in Sources */,
 				AB1100000000000000000003 /* MobaNativeTouchRoutingController.m in Sources */,
 				AB1100000000000000000005 /* MobaModeToolbarView.m in Sources */,
 				AB1100000000000000000006 /* MobaTouchRoutingTests.m in Sources */,
@@ -1159,6 +1189,8 @@
 			files = (
 				AA1000000000000000000001 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000003 /* AttackButtonView.m in Sources */,
+				AC1300000000000000000001 /* MobaCastStateMachine.m in Sources */,
+				AC1300000000000000000003 /* MobaCastSession.m in Sources */,
 				AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */,
 				AB1100000000000000000004 /* MobaModeToolbarView.m in Sources */,
 				A2B000000000000000000001 /* MobaOverlayCoordinator.m in Sources */,

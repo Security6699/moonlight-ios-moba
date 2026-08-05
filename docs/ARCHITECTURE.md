@@ -92,9 +92,19 @@ Serializes all remote input, tracks pressed keys/buttons, prevents duplicate tra
 
 UIKit views own visual state and one active `UITouch`. Controls emit semantic gestures to the coordinator or cast strategy; they do not contain champion-specific logic.
 
+`SkillButtonView` converts UIKit touch locations and visual state into semantic cast events such as meaningful drag and cancel-zone membership. It does not own cast transitions or remote-input ordering.
+
+### MobaCastStateMachine
+
+Owns only the transitions between Idle, AimingDefault, AimingDragged, CancelArmed, Committed, and Cancelled. It accepts semantic booleans rather than view or canvas geometry and returns an explicit transition result containing acceptance, previous state, current state, and terminal outcome.
+
+### MobaCastSession
+
+Owns one cast state machine and one active interaction token for a future skill instance. Ownership uses object identity, never transfers during an active session, and is cleared on commit, cancellation, interruption, or silent reset. Lifecycle interruption changes an active session to Cancelled. A later silent reset returns local state to Idle without calling Dispatcher or emitting another input action.
+
 ### Cast strategies
 
-Interpret begin/update/commit/cancel according to the selected ability profile. New future strategies must be addable without changing `SkillButtonView`.
+Interpret accepted session begin/update/commit/cancel results according to the selected ability profile and own the corresponding remote-input semantics. New future strategies must be addable without changing `SkillButtonView` or the cast state machine. All strategy output must still pass through `MobaInputDispatcher`, which remains the only pressed-input state owner.
 
 ### Profiles
 
