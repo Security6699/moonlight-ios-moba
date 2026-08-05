@@ -28,7 +28,7 @@
 
 @interface MobaFakeAtomicWriter : NSObject <MobaProfileAtomicWriting>
 @property (nonatomic) NSUInteger writeCount;
-@property (nonatomic) NSDataWritingOptions lastOptions;
+@property (nonatomic) BOOL lastReplaceExisting;
 @property (nonatomic) BOOL failNextWrite;
 @property (nonatomic, copy, nullable) NSString *failingPathSuffix;
 @end
@@ -37,10 +37,10 @@
 
 - (BOOL)writeData:(NSData *)data
              toURL:(NSURL *)url
-           options:(NSDataWritingOptions)options
+   replaceExisting:(BOOL)replaceExisting
              error:(NSError **)error {
     self.writeCount += 1;
-    self.lastOptions = options;
+    self.lastReplaceExisting = replaceExisting;
     BOOL shouldFail = self.failNextWrite ||
         (self.failingPathSuffix != nil && [url.path hasSuffix:self.failingPathSuffix]);
     self.failNextWrite = NO;
@@ -52,7 +52,13 @@
         }
         return NO;
     }
-    return [data writeToURL:url options:options error:error];
+    if (!replaceExisting && [NSFileManager.defaultManager fileExistsAtPath:url.path]) {
+        if (error != NULL) {
+            *error = [NSError errorWithDomain:NSCocoaErrorDomain code:NSFileWriteFileExistsError userInfo:nil];
+        }
+        return NO;
+    }
+    return [data writeToURL:url options:NSDataWritingAtomic error:error];
 }
 
 @end
@@ -302,21 +308,27 @@
 
 - (void)testAtomicWriteThenReadReturnsIdenticalBytes {
     NSData *expected = [self dataForString:@"complete-binary-data"];
-    XCTAssertTrue([self.store writeData:expected
-                         toRelativePath:@"custom/nested/data.bin"
-                        replaceExisting:NO
-                                  error:nil]);
-    XCTAssertNotEqual(self.atomicWriter.lastOptions & NSDataWritingAtomic, 0u);
-    XCTAssertNotEqual(self.atomicWriter.lastOptions & NSDataWritingWithoutOverwriting, 0u);
-    XCTAssertEqualObjects([self.store readDataAtRelativePath:@"custom/nested/data.bin" error:nil], expected);
+    MobaProfileStore *productionStore = [[MobaProfileStore alloc]
+        initWithRootDirectoryURL:self.rootURL
+                resourceProvider:self.resourceProvider
+                     fileManager:self.fileManager];
+    XCTAssertTrue([productionStore writeData:expected
+                              toRelativePath:@"custom/nested/data.bin"
+                             replaceExisting:NO
+                                       error:nil]);
+    XCTAssertEqualObjects([productionStore readDataAtRelativePath:@"custom/nested/data.bin" error:nil], expected);
 }
 
 - (void)testReplaceExistingNoPreservesOldData {
     NSData *oldData = [self dataForString:@"old"];
     NSData *newData = [self dataForString:@"new"];
-    XCTAssertTrue([self.store writeData:oldData toRelativePath:@"runtime.json" replaceExisting:NO error:nil]);
+    MobaProfileStore *productionStore = [[MobaProfileStore alloc]
+        initWithRootDirectoryURL:self.rootURL
+                resourceProvider:self.resourceProvider
+                     fileManager:self.fileManager];
+    XCTAssertTrue([productionStore writeData:oldData toRelativePath:@"runtime.json" replaceExisting:NO error:nil]);
     NSError *error = nil;
-    XCTAssertFalse([self.store writeData:newData toRelativePath:@"runtime.json" replaceExisting:NO error:&error]);
+    XCTAssertFalse([productionStore writeData:newData toRelativePath:@"runtime.json" replaceExisting:NO error:&error]);
     XCTAssertEqual(error.code, MobaProfileStoreErrorDestinationExists);
     XCTAssertEqualObjects([self dataAtRelativePath:@"runtime.json"], oldData);
 }
@@ -324,10 +336,12 @@
 - (void)testReplaceExistingYesAtomicallyReplacesWithNewData {
     NSData *oldData = [self dataForString:@"old"];
     NSData *newData = [self dataForString:@"new-complete-data"];
-    XCTAssertTrue([self.store writeData:oldData toRelativePath:@"runtime.json" replaceExisting:NO error:nil]);
-    XCTAssertTrue([self.store writeData:newData toRelativePath:@"runtime.json" replaceExisting:YES error:nil]);
-    XCTAssertNotEqual(self.atomicWriter.lastOptions & NSDataWritingAtomic, 0u);
-    XCTAssertEqual(self.atomicWriter.lastOptions & NSDataWritingWithoutOverwriting, 0u);
+    MobaProfileStore *productionStore = [[MobaProfileStore alloc]
+        initWithRootDirectoryURL:self.rootURL
+                resourceProvider:self.resourceProvider
+                     fileManager:self.fileManager];
+    XCTAssertTrue([productionStore writeData:oldData toRelativePath:@"runtime.json" replaceExisting:NO error:nil]);
+    XCTAssertTrue([productionStore writeData:newData toRelativePath:@"runtime.json" replaceExisting:YES error:nil]);
     XCTAssertEqualObjects([self dataAtRelativePath:@"runtime.json"], newData);
 }
 

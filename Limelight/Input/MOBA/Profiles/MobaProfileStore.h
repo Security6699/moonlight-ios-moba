@@ -34,7 +34,7 @@ typedef NS_ERROR_ENUM(MobaProfileStoreErrorDomain, MobaProfileStoreErrorCode) {
 
 - (BOOL)writeData:(NSData *)data
              toURL:(NSURL *)url
-           options:(NSDataWritingOptions)options
+   replaceExisting:(BOOL)replaceExisting
              error:(NSError **)error;
 
 @end
@@ -59,6 +59,10 @@ typedef NS_ERROR_ENUM(MobaProfileStoreErrorDomain, MobaProfileStoreErrorCode) {
 // Production convenience initializer. Resolves <Application Support>/MOBA
 // without creating it. Creation happens only when bootstrap is explicitly run.
 - (instancetype)init;
+
+- (instancetype)initWithRootDirectoryURL:(NSURL *)rootDirectoryURL
+                         resourceProvider:(id<MobaProfileResourceProviding>)resourceProvider
+                              fileManager:(NSFileManager *)fileManager;
 
 - (instancetype)initWithRootDirectoryURL:(NSURL *)rootDirectoryURL
                          resourceProvider:(id<MobaProfileResourceProviding>)resourceProvider

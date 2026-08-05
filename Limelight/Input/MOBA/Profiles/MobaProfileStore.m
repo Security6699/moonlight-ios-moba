@@ -48,15 +48,51 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
 @end
 
 @interface MobaFoundationAtomicWriter : NSObject <MobaProfileAtomicWriting>
+
+- (instancetype)initWithFileManager:(NSFileManager *)fileManager;
+
 @end
 
-@implementation MobaFoundationAtomicWriter
+@implementation MobaFoundationAtomicWriter {
+    NSFileManager *_fileManager;
+}
+
+- (instancetype)initWithFileManager:(NSFileManager *)fileManager {
+    self = [super init];
+    if (self) {
+        _fileManager = fileManager;
+    }
+    return self;
+}
 
 - (BOOL)writeData:(NSData *)data
              toURL:(NSURL *)url
-           options:(NSDataWritingOptions)options
+   replaceExisting:(BOOL)replaceExisting
              error:(NSError **)error {
-    return [data writeToURL:url options:options error:error];
+    if (replaceExisting) {
+        return [data writeToURL:url options:NSDataWritingAtomic error:error];
+    }
+
+    NSURL *parentURL = [url URLByDeletingLastPathComponent];
+    NSString *temporaryName = [NSString stringWithFormat:@".%@.%@.tmp",
+                               url.lastPathComponent,
+                               NSUUID.UUID.UUIDString];
+    NSURL *temporaryURL = [parentURL URLByAppendingPathComponent:temporaryName isDirectory:NO];
+    NSError *temporaryWriteError = nil;
+    if (![data writeToURL:temporaryURL options:NSDataWritingAtomic error:&temporaryWriteError]) {
+        if (error != NULL) {
+            *error = temporaryWriteError;
+        }
+        return NO;
+    }
+
+    NSError *linkError = nil;
+    BOOL linked = [_fileManager linkItemAtURL:temporaryURL toURL:url error:&linkError];
+    [_fileManager removeItemAtURL:temporaryURL error:nil];
+    if (!linked && error != NULL) {
+        *error = linkError;
+    }
+    return linked;
 }
 
 @end
@@ -112,13 +148,13 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
         return [self initWithRootDirectoryURL:rootURL
                             resourceProvider:(id<MobaProfileResourceProviding>)[NSBundle mainBundle]
                                  fileManager:fileManager
-                                atomicWriter:[[MobaFoundationAtomicWriter alloc] init]];
+                                atomicWriter:[[MobaFoundationAtomicWriter alloc] initWithFileManager:fileManager]];
     }
 
     self = [self initWithRootDirectoryURL:[NSURL fileURLWithPath:@"/" isDirectory:YES]
                          resourceProvider:(id<MobaProfileResourceProviding>)[NSBundle mainBundle]
                               fileManager:fileManager
-                             atomicWriter:[[MobaFoundationAtomicWriter alloc] init]];
+                             atomicWriter:[[MobaFoundationAtomicWriter alloc] initWithFileManager:fileManager]];
     if (self) {
         _rootDirectoryURL = nil;
         _initializationError = [self errorWithCode:MobaProfileStoreErrorApplicationSupportUnavailable
@@ -128,6 +164,15 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
                                         description:@"Unable to resolve the Application Support directory."];
     }
     return self;
+}
+
+- (instancetype)initWithRootDirectoryURL:(NSURL *)rootDirectoryURL
+                         resourceProvider:(id<MobaProfileResourceProviding>)resourceProvider
+                              fileManager:(NSFileManager *)fileManager {
+    return [self initWithRootDirectoryURL:rootDirectoryURL
+                         resourceProvider:resourceProvider
+                              fileManager:fileManager
+                             atomicWriter:[[MobaFoundationAtomicWriter alloc] initWithFileManager:fileManager]];
 }
 
 - (instancetype)initWithRootDirectoryURL:(NSURL *)rootDirectoryURL
@@ -517,12 +562,11 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
         return NO;
     }
 
-    NSDataWritingOptions options = NSDataWritingAtomic;
-    if (!replaceExisting) {
-        options |= NSDataWritingWithoutOverwriting;
-    }
     NSError *writeError = nil;
-    if (![_atomicWriter writeData:data toURL:destinationURL options:options error:&writeError]) {
+    if (![_atomicWriter writeData:data
+                           toURL:destinationURL
+                 replaceExisting:replaceExisting
+                           error:&writeError]) {
         if (error != NULL) {
             *error = [self errorWithCode:MobaProfileStoreErrorWriteFailed
                                operation:@"write"
