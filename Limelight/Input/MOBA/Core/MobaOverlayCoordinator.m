@@ -9,12 +9,17 @@
 #import "MoonlightMobaInputAdapter.h"
 #import "MoonlightMobaInputSender.h"
 #import "StreamView.h"
+#import "../Controls/MobaMovementController.h"
+#import "../Controls/MoveJoystickView.h"
 
 #if DEBUG
 #import "../Debug/MobaCursorDiagnosticPanel.h"
 #endif
 
-@interface MobaOverlayCoordinator () <MobaBattleInputGate>
+static const CGFloat MobaDefaultMoveCenterX = 0.14;
+static const CGFloat MobaDefaultMoveCenterY = 0.82;
+
+@interface MobaOverlayCoordinator () <MobaBattleInputGate, MobaMovementControllerDelegate>
 @end
 
 @implementation MobaOverlayCoordinator {
@@ -22,6 +27,8 @@
     MobaInputDispatcher *_inputDispatcher;
     MobaOverlayLifecycle *_lifecycle;
     MobaCursorDiagnostics *_cursorDiagnostics;
+    MobaMovementController *_movementController;
+    MoveJoystickView *_moveJoystickView;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
 #endif
@@ -36,6 +43,15 @@
         _inputDispatcher = [[MobaInputDispatcher alloc] initWithSink:adapter];
         _lifecycle = [[MobaOverlayLifecycle alloc] initWithEnvironment:(id<MobaOverlayLifecycleEnvironment>)streamView
                                                        inputDispatcher:_inputDispatcher];
+        _movementController = [[MobaMovementController alloc]
+            initWithInputDispatcher:_inputDispatcher
+                         keyMapping:MobaDefaultMovementKeyMapping()
+                        wheelRadius:MoveJoystickDefaultWheelRadius
+                      deadZoneRatio:MobaJoystickDefaultDeadZoneRatio
+         directionHysteresisDegrees:MobaJoystickDefaultDirectionHysteresisDegrees];
+        _movementController.delegate = self;
+        _moveJoystickView = [[MoveJoystickView alloc] initWithMovementController:_movementController];
+        [_lifecycle registerLocalInteractionResetParticipant:_moveJoystickView];
         _cursorDiagnostics = [[MobaCursorDiagnostics alloc] initWithDispatcher:_inputDispatcher
                                                                      inputGate:self];
 #if DEBUG
@@ -44,6 +60,17 @@
 #endif
     }
     return self;
+}
+
+- (void)layoutMoveJoystick {
+    [_streamView layoutIfNeeded];
+    CGRect safeFrame = _streamView.safeAreaLayoutGuide.layoutFrame;
+    CGSize hitAreaSize = _moveJoystickView.intrinsicContentSize;
+    _moveJoystickView.bounds = (CGRect){ CGPointZero, hitAreaSize };
+    _moveJoystickView.center = CGPointMake(CGRectGetMinX(safeFrame) +
+                                           CGRectGetWidth(safeFrame) * MobaDefaultMoveCenterX,
+                                           CGRectGetMinY(safeFrame) +
+                                           CGRectGetHeight(safeFrame) * MobaDefaultMoveCenterY);
 }
 
 - (BOOL)isRunning {
@@ -87,6 +114,11 @@
         return;
     }
 
+    if (_moveJoystickView.superview == nil) {
+        [_streamView addSubview:_moveJoystickView];
+    }
+    [self layoutMoveJoystick];
+
 #if DEBUG
     if (_cursorDiagnosticPanel.superview == nil) {
         [_streamView addSubview:_cursorDiagnosticPanel];
@@ -102,6 +134,7 @@
 
 - (void)stop {
     [_lifecycle stop];
+    [_moveJoystickView removeFromSuperview];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
@@ -129,6 +162,7 @@
 
 - (void)streamDidDisconnect {
     [_lifecycle streamDidDisconnect];
+    [_moveJoystickView removeFromSuperview];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
@@ -136,6 +170,7 @@
 
 - (void)viewControllerWillDisappear {
     [_lifecycle viewControllerWillDisappear];
+    [_moveJoystickView removeFromSuperview];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
@@ -146,6 +181,7 @@
 }
 
 - (void)orientationDidChange {
+    [self layoutMoveJoystick];
     [_lifecycle orientationDidChange];
 }
 
@@ -159,13 +195,20 @@
 
 - (void)mobaFeatureWillDisable {
     [_lifecycle mobaFeatureWillDisable];
+    [_moveJoystickView removeFromSuperview];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
 }
 
+- (void)movementControllerDidRequestTouchCancellation:(MobaMovementController *)controller {
+    (void)controller;
+    [_lifecycle touchesCancelled];
+}
+
 - (void)dealloc {
     [_lifecycle invalidateForDestruction];
+    [_moveJoystickView removeFromSuperview];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];
 #endif
