@@ -11,6 +11,7 @@
 #import "../Geometry/MobaAimGeometry.h"
 
 @class MobaInputDispatcher;
+@protocol MobaCursorCoalescing;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -71,12 +72,15 @@ typedef NS_ENUM(NSInteger, MobaPointCastTargetMode) {
 @property (nonatomic, readonly) CGPoint latestTarget;
 
 - (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
-                      configuration:(MobaPointCastConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
+                      configuration:(MobaPointCastConfiguration *)configuration;
+- (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
+                      configuration:(MobaPointCastConfiguration *)configuration
+                    cursorCoalescer:(nullable id<MobaCursorCoalescing>)cursorCoalescer NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 // The same displacement supplies both direction and distance. An accepted
-// AimingDefault update restores the per-cast default target, CancelArmed keeps
-// the current target, and AimingDragged replaces it only with a valid response.
+// AimingDefault update restores and coalesces the per-cast default target,
+// CancelArmed keeps it unsent, and AimingDragged coalesces a valid response.
 - (BOOL)updateWithTransitionResult:(MobaCastTransitionResult)result
                   dragDisplacement:(CGVector)dragDisplacement;
 

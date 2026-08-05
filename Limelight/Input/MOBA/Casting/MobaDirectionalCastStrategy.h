@@ -11,6 +11,7 @@
 #import "../Geometry/MobaAimGeometry.h"
 
 @class MobaInputDispatcher;
+@protocol MobaCursorCoalescing;
 
 NS_ASSUME_NONNULL_BEGIN
 
@@ -40,15 +41,18 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 // Directional casts send the default cursor and skill down at begin. Updates
-// only replace latestTarget. Commit uses the Dispatcher's atomic final-cursor
-// plus skill-key-up operation.
+// replace latestTarget and optionally submit it to a coalescer. Commit stops
+// coalescing before the Dispatcher's atomic final-cursor plus key-up operation.
 @interface MobaDirectionalCastStrategy : NSObject <MobaCastStrategy>
 
 @property (nonatomic, readonly) BOOL hasLatestTarget;
 @property (nonatomic, readonly) CGPoint latestTarget;
 
 - (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
-                      configuration:(MobaDirectionalCastConfiguration *)configuration NS_DESIGNATED_INITIALIZER;
+                      configuration:(MobaDirectionalCastConfiguration *)configuration;
+- (instancetype)initWithDispatcher:(MobaInputDispatcher *)dispatcher
+                      configuration:(MobaDirectionalCastConfiguration *)configuration
+                    cursorCoalescer:(nullable id<MobaCursorCoalescing>)cursorCoalescer NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;
 
 - (BOOL)updateWithTransitionResult:(MobaCastTransitionResult)result
