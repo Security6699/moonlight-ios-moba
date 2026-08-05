@@ -78,6 +78,16 @@
 		AE1500000000000000000004 /* MobaPointCastStrategy.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000104 /* MobaPointCastStrategy.m */; };
 		AE1500000000000000000005 /* MobaPointCastGeometryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000105 /* MobaPointCastGeometryTests.m */; };
 		AE1500000000000000000006 /* MobaPointCastStrategyTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AE1500000000000000000106 /* MobaPointCastStrategyTests.m */; };
+		AF1600000000000000000001 /* MobaCancelZoneGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000102 /* MobaCancelZoneGeometry.m */; };
+		AF1600000000000000000002 /* MobaCancelZoneGeometry.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000102 /* MobaCancelZoneGeometry.m */; };
+		AF1600000000000000000003 /* MobaCancelZoneController.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000104 /* MobaCancelZoneController.m */; };
+		AF1600000000000000000004 /* MobaCancelZoneController.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000104 /* MobaCancelZoneController.m */; };
+		AF1600000000000000000005 /* MobaCancelZoneView.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000106 /* MobaCancelZoneView.m */; };
+		AF1600000000000000000006 /* MobaCancelZoneView.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000106 /* MobaCancelZoneView.m */; };
+		AF1600000000000000000007 /* MobaCancelZoneGeometryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000107 /* MobaCancelZoneGeometryTests.m */; };
+		AF1600000000000000000008 /* MobaCancelZoneControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000108 /* MobaCancelZoneControllerTests.m */; };
+		AF1600000000000000000009 /* MobaCancelZoneViewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AF1600000000000000000109 /* MobaCancelZoneViewTests.m */; };
+		AF160000000000000000000A /* MobaCancelZoneIntegrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AF160000000000000000010A /* MobaCancelZoneIntegrationTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -334,6 +344,16 @@
 		AE1500000000000000000104 /* MobaPointCastStrategy.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointCastStrategy.m; sourceTree = "<group>"; };
 		AE1500000000000000000105 /* MobaPointCastGeometryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointCastGeometryTests.m; sourceTree = "<group>"; };
 		AE1500000000000000000106 /* MobaPointCastStrategyTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaPointCastStrategyTests.m; sourceTree = "<group>"; };
+		AF1600000000000000000101 /* MobaCancelZoneGeometry.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCancelZoneGeometry.h; sourceTree = "<group>"; };
+		AF1600000000000000000102 /* MobaCancelZoneGeometry.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneGeometry.m; sourceTree = "<group>"; };
+		AF1600000000000000000103 /* MobaCancelZoneController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCancelZoneController.h; sourceTree = "<group>"; };
+		AF1600000000000000000104 /* MobaCancelZoneController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneController.m; sourceTree = "<group>"; };
+		AF1600000000000000000105 /* MobaCancelZoneView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCancelZoneView.h; sourceTree = "<group>"; };
+		AF1600000000000000000106 /* MobaCancelZoneView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneView.m; sourceTree = "<group>"; };
+		AF1600000000000000000107 /* MobaCancelZoneGeometryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneGeometryTests.m; sourceTree = "<group>"; };
+		AF1600000000000000000108 /* MobaCancelZoneControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneControllerTests.m; sourceTree = "<group>"; };
+		AF1600000000000000000109 /* MobaCancelZoneViewTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneViewTests.m; sourceTree = "<group>"; };
+		AF160000000000000000010A /* MobaCancelZoneIntegrationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCancelZoneIntegrationTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -716,6 +736,8 @@
 		A3C000000000000000000005 /* Geometry */ = {
 			isa = PBXGroup;
 			children = (
+				AF1600000000000000000101 /* MobaCancelZoneGeometry.h */,
+				AF1600000000000000000102 /* MobaCancelZoneGeometry.m */,
 				A3C000000000000000000003 /* MobaVideoGeometry.h */,
 				A3C000000000000000000004 /* MobaVideoGeometry.m */,
 				A6E000000000000000000101 /* MobaGameCanvas.h */,
@@ -752,6 +774,10 @@
 		A9C000000000000000000109 /* Controls */ = {
 			isa = PBXGroup;
 			children = (
+				AF1600000000000000000103 /* MobaCancelZoneController.h */,
+				AF1600000000000000000104 /* MobaCancelZoneController.m */,
+				AF1600000000000000000105 /* MobaCancelZoneView.h */,
+				AF1600000000000000000106 /* MobaCancelZoneView.m */,
 				AA1000000000000000000103 /* AttackButtonView.h */,
 				AA1000000000000000000104 /* AttackButtonView.m */,
 				AB1100000000000000000103 /* MobaModeToolbarView.h */,
@@ -780,6 +806,10 @@
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
+				AF1600000000000000000108 /* MobaCancelZoneControllerTests.m */,
+				AF1600000000000000000107 /* MobaCancelZoneGeometryTests.m */,
+				AF160000000000000000010A /* MobaCancelZoneIntegrationTests.m */,
+				AF1600000000000000000109 /* MobaCancelZoneViewTests.m */,
 				AA1000000000000000000105 /* MobaAttackControllerTests.m */,
 				AD1400000000000000000108 /* MobaDirectionalCastStrategyTests.m */,
 				AD1400000000000000000107 /* MobaInstantCastStrategyTests.m */,
@@ -1137,6 +1167,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF1600000000000000000002 /* MobaCancelZoneGeometry.m in Sources */,
+				AF1600000000000000000004 /* MobaCancelZoneController.m in Sources */,
+				AF1600000000000000000006 /* MobaCancelZoneView.m in Sources */,
+				AF1600000000000000000007 /* MobaCancelZoneGeometryTests.m in Sources */,
+				AF1600000000000000000008 /* MobaCancelZoneControllerTests.m in Sources */,
+				AF1600000000000000000009 /* MobaCancelZoneViewTests.m in Sources */,
+				AF160000000000000000000A /* MobaCancelZoneIntegrationTests.m in Sources */,
 				AA1000000000000000000002 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000004 /* AttackButtonView.m in Sources */,
 				AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */,
@@ -1238,6 +1275,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AF1600000000000000000001 /* MobaCancelZoneGeometry.m in Sources */,
+				AF1600000000000000000003 /* MobaCancelZoneController.m in Sources */,
+				AF1600000000000000000005 /* MobaCancelZoneView.m in Sources */,
 				AA1000000000000000000001 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000003 /* AttackButtonView.m in Sources */,
 				AD1400000000000000000001 /* MobaCastStrategy.m in Sources */,
