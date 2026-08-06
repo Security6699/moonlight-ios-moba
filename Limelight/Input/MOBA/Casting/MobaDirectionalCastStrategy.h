@@ -45,6 +45,8 @@ NS_ASSUME_NONNULL_BEGIN
 // coalescing before the Dispatcher's atomic final-cursor plus key-up operation.
 @interface MobaDirectionalCastStrategy : NSObject <MobaCastStrategy>
 
+@property (nonatomic, readonly) BOOL hasDefaultTarget;
+@property (nonatomic, readonly) CGPoint defaultTarget;
 @property (nonatomic, readonly) BOOL hasLatestTarget;
 @property (nonatomic, readonly) CGPoint latestTarget;
 

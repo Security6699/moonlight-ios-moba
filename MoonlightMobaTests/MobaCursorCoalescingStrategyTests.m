@@ -276,6 +276,8 @@ static CGPoint MobaStrategyCoalescingPointFromValue(NSValue *value) {
     XCTAssertFalse([strategy beginWithTransitionResult:begin]);
     [self drainDispatcher];
     XCTAssertEqual(self.sink.events.count, 0u);
+    XCTAssertFalse(strategy.hasDefaultTarget);
+    XCTAssertFalse(strategy.hasLatestTarget);
 }
 
 - (void)testDirectionalUpdateWithoutTickSendsNoCursor {
@@ -315,6 +317,114 @@ static CGPoint MobaStrategyCoalescingPointFromValue(NSValue *value) {
     [self drainDispatcher];
     XCTAssertEqual(self.sink.cursorPoints.count, 2u);
     [self assertLastPoint:CGPointMake(1000.0, 1100.0)];
+}
+
+- (void)testDirectionalAimingDefaultFallbackSubmitsDefaultOnNextTick {
+    MobaDirectionalCastStrategy *strategy = [self directionalStrategy];
+    [self beginStrategy:strategy];
+    [self directionalUpdate:strategy direction:CGVectorMake(1.0, 0.0) insideCancelZone:NO];
+    [self.driver fireCurrentTick];
+    [self drainDispatcher];
+    [self.sink clear];
+
+    MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
+                                                                    meaningfulDrag:NO
+                                                                   insideCancelZone:NO];
+    XCTAssertEqual(fallback.currentState, MobaCastStateAimingDefault);
+    NSUInteger cursorCallsBeforeFallback = self.dispatcher.cursorMethodCallCount;
+    XCTAssertTrue([strategy updateWithTransitionResult:fallback
+                                         dragDirection:CGVectorMake(NAN, INFINITY)]);
+    XCTAssertEqual(self.dispatcher.cursorMethodCallCount, cursorCallsBeforeFallback);
+    XCTAssertTrue(self.coalescer.hasPendingPoint);
+    [self drainDispatcher];
+    XCTAssertEqual(self.sink.events.count, 0u);
+
+    [self.driver fireCurrentTick];
+    [self drainDispatcher];
+    XCTAssertEqualObjects(self.sink.events, (@[@"cursor"]));
+    [self assertLastPoint:CGPointMake(1000.0, 400.0)];
+}
+
+- (void)testDirectionalMultipleDraggedUpdatesThenFallbackCoalesceToDefault {
+    MobaDirectionalCastStrategy *strategy = [self directionalStrategy];
+    [self beginStrategy:strategy];
+    [self drainDispatcher];
+    [self.sink clear];
+    [self directionalUpdate:strategy direction:CGVectorMake(1.0, 0.0) insideCancelZone:NO];
+    [self directionalUpdate:strategy direction:CGVectorMake(0.0, 1.0) insideCancelZone:NO];
+    [self directionalUpdate:strategy direction:CGVectorMake(-1.0, 0.0) insideCancelZone:NO];
+    MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
+                                                                    meaningfulDrag:NO
+                                                                   insideCancelZone:NO];
+    XCTAssertTrue([strategy updateWithTransitionResult:fallback
+                                         dragDirection:CGVectorMake(0.0, 0.0)]);
+
+    [self.driver fireCurrentTick];
+    [self drainDispatcher];
+    XCTAssertEqual(self.sink.cursorPoints.count, 1u);
+    [self assertLastPoint:CGPointMake(1000.0, 400.0)];
+}
+
+- (void)testDirectionalCancelArmedPreservesTargetWithoutNewPendingPoint {
+    MobaDirectionalCastStrategy *strategy = [self directionalStrategy];
+    [self beginStrategy:strategy];
+    [self directionalUpdate:strategy direction:CGVectorMake(1.0, 0.0) insideCancelZone:NO];
+    [self.driver fireCurrentTick];
+    XCTAssertFalse(self.coalescer.hasPendingPoint);
+    CGPoint draggedTarget = strategy.latestTarget;
+
+    MobaCastTransitionResult armed = [self.session updateInteractionWithToken:self.token
+                                                                 meaningfulDrag:YES
+                                                                insideCancelZone:YES];
+    XCTAssertEqual(armed.currentState, MobaCastStateCancelArmed);
+    XCTAssertTrue([strategy updateWithTransitionResult:armed
+                                         dragDirection:CGVectorMake(-1.0, 0.0)]);
+    XCTAssertFalse(self.coalescer.hasPendingPoint);
+    XCTAssertEqualWithAccuracy(strategy.latestTarget.x, draggedTarget.x, 0.000001);
+    XCTAssertEqualWithAccuracy(strategy.latestTarget.y, draggedTarget.y, 0.000001);
+}
+
+- (void)testDirectionalExitCancelArmedToDefaultSubmitsDefaultTarget {
+    MobaDirectionalCastStrategy *strategy = [self directionalStrategy];
+    [self beginStrategy:strategy];
+    [self directionalUpdate:strategy direction:CGVectorMake(1.0, 0.0) insideCancelZone:YES];
+    MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
+                                                                    meaningfulDrag:NO
+                                                                   insideCancelZone:NO];
+    XCTAssertEqual(fallback.currentState, MobaCastStateAimingDefault);
+    XCTAssertTrue([strategy updateWithTransitionResult:fallback
+                                         dragDirection:CGVectorMake(0.0, 0.0)]);
+    XCTAssertTrue(self.coalescer.hasPendingPoint);
+    [self.driver fireCurrentTick];
+    [self drainDispatcher];
+    [self assertLastPoint:CGPointMake(1000.0, 400.0)];
+}
+
+- (void)testDirectionalCommitDiscardsDraggedPointAndBypassesWithRestoredDefault {
+    MobaDirectionalCastStrategy *strategy = [self directionalStrategy];
+    [self beginStrategy:strategy];
+    [self drainDispatcher];
+    [self.sink clear];
+    [self directionalUpdate:strategy direction:CGVectorMake(1.0, 0.0) insideCancelZone:NO];
+    MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
+                                                                    meaningfulDrag:NO
+                                                                   insideCancelZone:NO];
+    XCTAssertTrue([strategy updateWithTransitionResult:fallback
+                                         dragDirection:CGVectorMake(0.0, 0.0)]);
+    XCTAssertTrue(self.coalescer.hasPendingPoint);
+
+    XCTAssertTrue([strategy commitWithTransitionResult:
+        [self.session releaseInteractionWithToken:self.token]]);
+    [self drainDispatcher];
+    XCTAssertEqualObjects(self.sink.events, (@[@"cursor", @"key:81:up"]));
+    [self assertLastPoint:CGPointMake(1000.0, 400.0)];
+    XCTAssertFalse(strategy.hasDefaultTarget);
+    XCTAssertFalse(strategy.hasLatestTarget);
+
+    NSArray *eventsAfterCommit = self.sink.events;
+    [self.driver fireTickAtIndex:0];
+    [self drainDispatcher];
+    XCTAssertEqualObjects(self.sink.events, eventsAfterCommit);
 }
 
 - (void)testDirectionalCommitDiscardsPendingAndOrdersFinalBeforeSkillUp {
@@ -382,6 +492,8 @@ static CGPoint MobaStrategyCoalescingPointFromValue(NSValue *value) {
     XCTAssertEqualObjects(self.sink.events,
                           (@[@"mouse:3:down", @"mouse:3:up", @"key:81:up"]));
     XCTAssertFalse([self.sink.events containsObject:@"cursor"]);
+    XCTAssertFalse(strategy.hasDefaultTarget);
+    XCTAssertFalse(strategy.hasLatestTarget);
 }
 
 - (void)testDirectionalSilentResetStopsDriverAndDiscardsPending {
@@ -391,6 +503,8 @@ static CGPoint MobaStrategyCoalescingPointFromValue(NSValue *value) {
     [strategy silentReset];
     XCTAssertFalse(self.driver.isRunning);
     XCTAssertFalse(self.coalescer.hasPendingPoint);
+    XCTAssertFalse(strategy.hasDefaultTarget);
+    XCTAssertFalse(strategy.hasLatestTarget);
     [self.driver fireTickAtIndex:0];
     [self drainDispatcher];
     XCTAssertEqual(self.sink.cursorPoints.count, 1u);
