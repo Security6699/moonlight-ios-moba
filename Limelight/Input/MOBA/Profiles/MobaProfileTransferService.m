@@ -210,7 +210,7 @@
                     targetRelativePath:(NSString *)targetRelativePath
                          switchChampion:(BOOL)switchChampion {
     NSMutableArray<NSString *> *lines = [NSMutableArray arrayWithArray:@[
-        [NSString stringWithFormat:@"Detected Type: %@", kind],
+        [NSString stringWithFormat:@"Detected Type: %@", kind.capitalizedString],
         [NSString stringWithFormat:@"Schema Version: %lu", (unsigned long)snapshot.runtimeProfile.schemaVersion],
         [NSString stringWithFormat:@"Replace: %@", targetRelativePath],
         [NSString stringWithFormat:@"Current: %@", replacedIdentifier],
