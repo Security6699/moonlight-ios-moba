@@ -6,6 +6,7 @@
 
 #import <UIKit/UIKit.h>
 
+#import "MobaControlLayoutPresentation.h"
 #import "../Core/MobaOverlayLifecycle.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -19,7 +20,8 @@ FOUNDATION_EXPORT const CGFloat MoveJoystickDefaultNormalOpacity;
 FOUNDATION_EXPORT const CGFloat MoveJoystickDefaultPressedOpacity;
 FOUNDATION_EXPORT const CGFloat MoveJoystickDefaultDisabledOpacity;
 
-@interface MoveJoystickView : UIView <MobaLocalInteractionResetParticipant>
+@interface MoveJoystickView : UIView <MobaLayoutEditableControlPresenting,
+                                      MobaLocalInteractionResetParticipant>
 
 @property (nonatomic, readonly) CGSize visualSize;
 @property (nonatomic, readonly) CGFloat wheelRadius;

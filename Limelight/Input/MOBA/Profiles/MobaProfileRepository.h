@@ -18,6 +18,11 @@ FOUNDATION_EXPORT NSString *const MobaActiveLayoutProfileRelativePath;
 typedef BOOL (^MobaProfileCandidateValidator)(MobaProfileSnapshot *candidate,
                                                NSError **error);
 
+@interface MobaProfileRepositoryCandidate : NSObject
+@property (nonatomic, strong, readonly) MobaProfileSnapshot *snapshot;
+- (instancetype)init NS_UNAVAILABLE;
+@end
+
 // Owns only candidate loading and transactional active-snapshot replacement.
 // It never writes profiles and never mutates Coordinator or input state.
 @interface MobaProfileRepository : NSObject
@@ -48,6 +53,17 @@ typedef BOOL (^MobaProfileCandidateValidator)(MobaProfileSnapshot *candidate,
            championRelativePath:(NSString *)championRelativePath
              candidateValidator:(nullable MobaProfileCandidateValidator)candidateValidator
                           error:(NSError **)error;
+
+// Narrow layout-save seam. A candidate always reuses the current immutable
+// input and champion profiles and can only replace the exact snapshot it was
+// prepared from. Rollback can only restore that same snapshot.
+- (nullable MobaProfileRepositoryCandidate *)prepareLayoutCandidateWithRuntimeData:(NSData *)runtimeData
+                                                                         layoutData:(NSData *)layoutData
+                                                                              error:(NSError **)error;
+- (BOOL)commitLayoutCandidate:(MobaProfileRepositoryCandidate *)candidate
+                         error:(NSError **)error;
+- (BOOL)rollbackLayoutCandidate:(MobaProfileRepositoryCandidate *)candidate
+                           error:(NSError **)error;
 
 @end
 

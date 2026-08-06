@@ -58,6 +58,17 @@
 		C05100000000000000000004 /* MobaSkillButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000104 /* MobaSkillButtonView.m */; };
 		C05200000000000000000001 /* MobaSkillControlPackage.m in Sources */ = {isa = PBXBuildFile; fileRef = C05200000000000000000102 /* MobaSkillControlPackage.m */; };
 		C05200000000000000000002 /* MobaSkillControlPackage.m in Sources */ = {isa = PBXBuildFile; fileRef = C05200000000000000000102 /* MobaSkillControlPackage.m */; };
+		C02000000000000000000001 /* MobaControlLayoutPresentation.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000102 /* MobaControlLayoutPresentation.m */; };
+		C02000000000000000000002 /* MobaControlLayoutPresentation.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000102 /* MobaControlLayoutPresentation.m */; };
+		C02000000000000000000003 /* MobaLayoutEditorOverlayView.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000104 /* MobaLayoutEditorOverlayView.m */; };
+		C02000000000000000000004 /* MobaLayoutEditorOverlayView.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000104 /* MobaLayoutEditorOverlayView.m */; };
+		C02000000000000000000005 /* MobaLayoutEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000106 /* MobaLayoutEditor.m */; };
+		C02000000000000000000006 /* MobaLayoutEditor.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000106 /* MobaLayoutEditor.m */; };
+		C02000000000000000000007 /* MobaLayoutSaveTransaction.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000108 /* MobaLayoutSaveTransaction.m */; };
+		C02000000000000000000008 /* MobaLayoutSaveTransaction.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000108 /* MobaLayoutSaveTransaction.m */; };
+		C02000000000000000000009 /* MobaLayoutEditorTests.m in Sources */ = {isa = PBXBuildFile; fileRef = C02000000000000000000109 /* MobaLayoutEditorTests.m */; };
+		C0200000000000000000000A /* MobaLayoutPresentationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = C0200000000000000000010A /* MobaLayoutPresentationTests.m */; };
+		C0200000000000000000000B /* MobaLayoutSaveTransactionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = C0200000000000000000010B /* MobaLayoutSaveTransactionTests.m */; };
 		C05100000000000000000005 /* MobaSkillCastOrchestrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000105 /* MobaSkillCastOrchestrationTests.m */; };
 		AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
 		AB1100000000000000000002 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
@@ -298,6 +309,17 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		C02000000000000000000101 /* MobaControlLayoutPresentation.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaControlLayoutPresentation.h; sourceTree = "<group>"; };
+		C02000000000000000000102 /* MobaControlLayoutPresentation.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaControlLayoutPresentation.m; sourceTree = "<group>"; };
+		C02000000000000000000103 /* MobaLayoutEditorOverlayView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaLayoutEditorOverlayView.h; sourceTree = "<group>"; };
+		C02000000000000000000104 /* MobaLayoutEditorOverlayView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaLayoutEditorOverlayView.m; sourceTree = "<group>"; };
+		C02000000000000000000105 /* MobaLayoutEditor.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaLayoutEditor.h; sourceTree = "<group>"; };
+		C02000000000000000000106 /* MobaLayoutEditor.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaLayoutEditor.m; sourceTree = "<group>"; };
+		C02000000000000000000107 /* MobaLayoutSaveTransaction.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaLayoutSaveTransaction.h; sourceTree = "<group>"; };
+		C02000000000000000000108 /* MobaLayoutSaveTransaction.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaLayoutSaveTransaction.m; sourceTree = "<group>"; };
+		C02000000000000000000109 /* MobaLayoutEditorTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaLayoutEditorTests.m; sourceTree = "<group>"; };
+		C0200000000000000000010A /* MobaLayoutPresentationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaLayoutPresentationTests.m; sourceTree = "<group>"; };
+		C0200000000000000000010B /* MobaLayoutSaveTransactionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaLayoutSaveTransactionTests.m; sourceTree = "<group>"; };
 		566E9D2B2770B23A00EF7BFE /* Moonlight v1.7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.7.xcdatamodel"; sourceTree = "<group>"; };
 		693B3A9A218638CD00982F7B /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		9803CCAB254F9EAF00EE185E /* ConnectionCallbacks.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConnectionCallbacks.h; sourceTree = "<group>"; };
@@ -841,6 +863,10 @@
 		B00400000000000000000109 /* Profiles */ = {
 			isa = PBXGroup;
 			children = (
+				C02000000000000000000105 /* MobaLayoutEditor.h */,
+				C02000000000000000000106 /* MobaLayoutEditor.m */,
+				C02000000000000000000107 /* MobaLayoutSaveTransaction.h */,
+				C02000000000000000000108 /* MobaLayoutSaveTransaction.m */,
 				B01900000000000000000103 /* MobaChampionSelectionController.h */,
 				B01900000000000000000104 /* MobaChampionSelectionController.m */,
 				B0180000000000000000010A /* MobaProfileDecoder.h */,
@@ -918,6 +944,10 @@
 		A9C000000000000000000109 /* Controls */ = {
 			isa = PBXGroup;
 			children = (
+				C02000000000000000000101 /* MobaControlLayoutPresentation.h */,
+				C02000000000000000000102 /* MobaControlLayoutPresentation.m */,
+				C02000000000000000000103 /* MobaLayoutEditorOverlayView.h */,
+				C02000000000000000000104 /* MobaLayoutEditorOverlayView.m */,
 				B01900000000000000000105 /* MobaChampionSelectorView.h */,
 				B01900000000000000000106 /* MobaChampionSelectorView.m */,
 				AF1600000000000000000103 /* MobaCancelZoneController.h */,
@@ -958,6 +988,9 @@
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
+				C02000000000000000000109 /* MobaLayoutEditorTests.m */,
+				C0200000000000000000010A /* MobaLayoutPresentationTests.m */,
+				C0200000000000000000010B /* MobaLayoutSaveTransactionTests.m */,
 				B01900000000000000000107 /* MobaCastStrategyFactoryTests.m */,
 				B01900000000000000000108 /* MobaChampionSelectionControllerTests.m */,
 				B01900000000000000000109 /* MobaChampionSelectorViewTests.m */,
@@ -1335,6 +1368,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C02000000000000000000002 /* MobaControlLayoutPresentation.m in Sources */,
+				C02000000000000000000004 /* MobaLayoutEditorOverlayView.m in Sources */,
+				C02000000000000000000006 /* MobaLayoutEditor.m in Sources */,
+				C02000000000000000000008 /* MobaLayoutSaveTransaction.m in Sources */,
+				C02000000000000000000009 /* MobaLayoutEditorTests.m in Sources */,
+				C0200000000000000000000A /* MobaLayoutPresentationTests.m in Sources */,
+				C0200000000000000000000B /* MobaLayoutSaveTransactionTests.m in Sources */,
 				B01900000000000000000002 /* MobaCastStrategyFactory.m in Sources */,
 				B01900000000000000000004 /* MobaChampionSelectionController.m in Sources */,
 				B01900000000000000000006 /* MobaChampionSelectorView.m in Sources */,
@@ -1470,6 +1510,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C02000000000000000000001 /* MobaControlLayoutPresentation.m in Sources */,
+				C02000000000000000000003 /* MobaLayoutEditorOverlayView.m in Sources */,
+				C02000000000000000000005 /* MobaLayoutEditor.m in Sources */,
+				C02000000000000000000007 /* MobaLayoutSaveTransaction.m in Sources */,
 				B01900000000000000000001 /* MobaCastStrategyFactory.m in Sources */,
 				B01900000000000000000003 /* MobaChampionSelectionController.m in Sources */,
 				B01900000000000000000005 /* MobaChampionSelectorView.m in Sources */,

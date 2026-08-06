@@ -111,6 +111,17 @@ static MobaMovementKeyMask MobaMovementKeyMaskForState(MobaJoystickState state) 
     _interactionEnabled = interactionEnabled;
 }
 
+- (BOOL)updateWheelRadiusForCommittedProfile:(CGFloat)wheelRadius {
+    if (_interactionEnabled || _state != MobaJoystickStateNeutral || _activeTouchToken != nil ||
+        !MobaJoystickConfigurationIsValid(wheelRadius,
+                                          _deadZoneRatio,
+                                          _directionHysteresisDegrees)) {
+        return NO;
+    }
+    _wheelRadius = wheelRadius;
+    return YES;
+}
+
 - (NSArray<NSNumber *> *)orderedKeyCodes {
     return @[@(_keyMapping.upKeyCode),
              @(_keyMapping.leftKeyCode),

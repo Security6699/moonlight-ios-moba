@@ -21,6 +21,7 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
     MobaChampionSelectionErrorRuntimeMissing,
     MobaChampionSelectionErrorUnexpectedException,
     MobaChampionSelectionErrorControlPackageBuildFailed,
+    MobaChampionSelectionErrorPreparedCommitRejected,
 };
 
 @interface MobaChampionCatalogEntry : NSObject
@@ -80,6 +81,17 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
 
 - (nullable MobaChampionCatalogEntry *)catalogEntryForChampionID:(NSString *)championID;
 - (BOOL)selectChampionID:(NSString *)championID error:(NSError **)error;
+
+// Explicit same-champion reload for committed profile changes. Unlike manual
+// selection, this never short-circuits when the selected ID is unchanged.
+- (BOOL)reloadSelectedChampionWithError:(NSError **)error;
+
+// Transaction-only prepared install seam. Repository state must already be the
+// supplied snapshot and the champion ID must remain unchanged.
+- (BOOL)commitPreparedProfileSnapshot:(MobaProfileSnapshot *)snapshot
+                               runtime:(MobaChampionRuntime *)runtime
+                    skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                                 error:(NSError **)error;
 - (void)invalidate;
 
 @end

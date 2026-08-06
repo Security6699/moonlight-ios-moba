@@ -22,6 +22,10 @@ const CGFloat MobaCancelZoneDefaultDisabledOpacity = 0.30;
     BOOL _castingVisible;
     BOOL _armed;
     BOOL _mobaLocalInteractionEnabled;
+    CGFloat _globalOpacityMultiplier;
+    BOOL _visibleOnlyWhileCasting;
+    BOOL _editorPreview;
+    MobaControlOpacityPreviewState _opacityPreviewState;
 }
 
 - (instancetype)initWithVisualDiameter:(CGFloat)visualDiameter {
@@ -36,6 +40,9 @@ const CGFloat MobaCancelZoneDefaultDisabledOpacity = 0.30;
         _armedOpacity = MobaCancelZoneDefaultArmedOpacity;
         _disabledOpacity = MobaCancelZoneDefaultDisabledOpacity;
         _mobaLocalInteractionEnabled = YES;
+        _globalOpacityMultiplier = 1.0;
+        _visibleOnlyWhileCasting = YES;
+        _opacityPreviewState = MobaControlOpacityPreviewStateAutomatic;
 
         self.backgroundColor = UIColor.clearColor;
         self.userInteractionEnabled = NO;
@@ -92,6 +99,14 @@ const CGFloat MobaCancelZoneDefaultDisabledOpacity = 0.30;
 }
 
 - (MobaCancelZoneVisualState)visualState {
+    if (_editorPreview) {
+        switch (_opacityPreviewState) {
+            case MobaControlOpacityPreviewStateNormal: return MobaCancelZoneVisualStateNormal;
+            case MobaControlOpacityPreviewStatePressed: return MobaCancelZoneVisualStateArmed;
+            case MobaControlOpacityPreviewStateDisabled: return MobaCancelZoneVisualStateDisabled;
+            case MobaControlOpacityPreviewStateAutomatic: break;
+        }
+    }
     if (!_mobaLocalInteractionEnabled) {
         return MobaCancelZoneVisualStateDisabled;
     }
@@ -136,25 +151,44 @@ const CGFloat MobaCancelZoneDefaultDisabledOpacity = 0.30;
             _circleView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.65].CGColor;
             _circleView.layer.borderWidth = 2.0;
             _circleView.transform = CGAffineTransformIdentity;
-            self.alpha = _normalOpacity;
+            self.alpha = MobaEffectiveControlOpacity(_normalOpacity, _globalOpacityMultiplier);
             break;
         case MobaCancelZoneVisualStateArmed:
             _circleView.backgroundColor = [UIColor colorWithRed:0.82 green:0.06 blue:0.04 alpha:1.0];
             _circleView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.95].CGColor;
             _circleView.layer.borderWidth = 4.0;
             _circleView.transform = CGAffineTransformMakeScale(1.08, 1.08);
-            self.alpha = _armedOpacity;
+            self.alpha = MobaEffectiveControlOpacity(_armedOpacity, _globalOpacityMultiplier);
             break;
         case MobaCancelZoneVisualStateDisabled:
             _circleView.backgroundColor = [UIColor colorWithWhite:0.28 alpha:1.0];
             _circleView.layer.borderColor = [UIColor colorWithWhite:0.75 alpha:0.55].CGColor;
             _circleView.layer.borderWidth = 2.0;
             _circleView.transform = CGAffineTransformIdentity;
-            self.alpha = _disabledOpacity;
+            self.alpha = MobaEffectiveControlOpacity(_disabledOpacity, _globalOpacityMultiplier);
             break;
     }
-    self.hidden = !_castingVisible || !_mobaLocalInteractionEnabled;
+    BOOL normalVisibility = !_visibleOnlyWhileCasting || _castingVisible;
+    self.hidden = !_editorPreview && (!normalVisibility || !_mobaLocalInteractionEnabled);
     self.userInteractionEnabled = NO;
+}
+
+- (void)applyCancelZoneLayoutPresentation:(MobaCancelZoneLayoutPresentation *)presentation
+                  globalOpacityMultiplier:(CGFloat)globalOpacityMultiplier
+                            editorPreview:(BOOL)editorPreview
+                             previewState:(MobaControlOpacityPreviewState)previewState {
+    if (presentation == nil) {
+        return;
+    }
+    _visualDiameter = presentation.diameterPt;
+    _normalOpacity = presentation.opacity;
+    _visibleOnlyWhileCasting = presentation.visibleOnlyWhileCasting;
+    _globalOpacityMultiplier = MobaEffectiveControlOpacity(1.0, globalOpacityMultiplier);
+    _editorPreview = editorPreview;
+    _opacityPreviewState = previewState;
+    [self invalidateIntrinsicContentSize];
+    [self updatePresentation];
+    [self setNeedsLayout];
 }
 
 - (void)setCancelZoneCastingVisible:(BOOL)visible {

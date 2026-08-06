@@ -31,6 +31,8 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
     BOOL _mobaLocalInteractionEnabled;
     BOOL _pressed;
     CGVector _knobDisplacement;
+    CGFloat _globalOpacityMultiplier;
+    MobaControlOpacityPreviewState _opacityPreviewState;
 }
 
 - (instancetype)initWithMovementController:(MobaMovementController *)movementController {
@@ -68,6 +70,8 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
         _disabledOpacity = MoveJoystickDefaultDisabledOpacity;
         _interactionEnabled = YES;
         _mobaLocalInteractionEnabled = movementController.isInteractionEnabled;
+        _globalOpacityMultiplier = 1.0;
+        _opacityPreviewState = MobaControlOpacityPreviewStateAutomatic;
 
         self.backgroundColor = UIColor.clearColor;
         self.multipleTouchEnabled = YES;
@@ -175,7 +179,45 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
     BOOL enabled = _interactionEnabled && _mobaLocalInteractionEnabled;
     [_movementController setInteractionEnabled:enabled];
     self.userInteractionEnabled = enabled;
-    self.alpha = enabled ? (_pressed ? _pressedOpacity : _normalOpacity) : _disabledOpacity;
+    CGFloat perStateOpacity;
+    switch (_opacityPreviewState) {
+        case MobaControlOpacityPreviewStateNormal:
+            perStateOpacity = _normalOpacity;
+            break;
+        case MobaControlOpacityPreviewStatePressed:
+            perStateOpacity = _pressedOpacity;
+            break;
+        case MobaControlOpacityPreviewStateDisabled:
+            perStateOpacity = _disabledOpacity;
+            break;
+        case MobaControlOpacityPreviewStateAutomatic:
+            perStateOpacity = enabled ? (_pressed ? _pressedOpacity : _normalOpacity) : _disabledOpacity;
+            break;
+    }
+    self.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
+}
+
+- (void)applyControlLayoutPresentation:(MobaControlLayoutPresentation *)presentation
+               globalOpacityMultiplier:(CGFloat)globalOpacityMultiplier
+                          previewState:(MobaControlOpacityPreviewState)previewState {
+    if (presentation == nil) {
+        return;
+    }
+    _visualSize = presentation.visualSize;
+    _hitAreaScale = presentation.hitAreaScale;
+    if (presentation.wheelRadiusPt != nil) {
+        _wheelRadius = presentation.wheelRadiusPt.doubleValue;
+    }
+    _normalOpacity = presentation.normalOpacity;
+    _pressedOpacity = presentation.pressedOpacity;
+    _disabledOpacity = presentation.disabledOpacity;
+    _interactionEnabled = presentation.isInteractionEnabled;
+    _globalOpacityMultiplier = [self validatedOpacity:globalOpacityMultiplier fallback:_globalOpacityMultiplier];
+    _opacityPreviewState = previewState;
+    self.layer.zPosition = presentation.zIndex;
+    [self invalidateIntrinsicContentSize];
+    [self updateInteractionAndAppearance];
+    [self setNeedsLayout];
 }
 
 - (void)layoutSubviews {

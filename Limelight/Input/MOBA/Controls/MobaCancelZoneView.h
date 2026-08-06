@@ -5,6 +5,7 @@
 
 #import <UIKit/UIKit.h>
 
+#import "MobaControlLayoutPresentation.h"
 #import "MobaCancelZoneController.h"
 #import "../Core/MobaOverlayLifecycle.h"
 
@@ -24,6 +25,7 @@ typedef NS_ENUM(NSInteger, MobaCancelZoneVisualState) {
 // A shared, non-interactive presentation. Skill touch ownership always remains
 // with the future SkillButtonView.
 @interface MobaCancelZoneView : UIView <MobaCancelZonePresenting,
+                                       MobaLayoutEditableCancelZonePresenting,
                                        MobaLocalInteractionResetParticipant>
 
 @property (nonatomic, weak, nullable) MobaCancelZoneController *controller;

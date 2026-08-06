@@ -682,11 +682,11 @@ static BOOL MobaValidatorNumberIsBoolean(NSNumber *number) {
         return NO;
     }
     double diameter = [cancelZone[@"diameterPt"] doubleValue];
-    if (inset.doubleValue > diameter / 2.0) {
+    if (inset.doubleValue >= diameter / 2.0) {
         return [self failWithCode:MobaProfileErrorValueOutOfRange
                              kind:kind
                              path:@"$.cancelZone.activationInsetPt"
-                      description:@"Cancel-zone activation inset exceeds its radius."
+                      description:@"Cancel-zone activation inset must be smaller than its radius."
                             error:error];
     }
     return [self requiredBooleanForKey:@"visibleOnlyWhileCasting"
