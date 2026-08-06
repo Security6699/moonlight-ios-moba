@@ -32,6 +32,7 @@ FOUNDATION_EXPORT const CGFloat MoveJoystickDefaultDisabledOpacity;
 @property (nonatomic, getter=isInteractionEnabled) BOOL interactionEnabled;
 @property (nonatomic, readonly, getter=isPressed) BOOL pressed;
 @property (nonatomic, readonly) CGVector knobDisplacement;
+@property (nonatomic, readonly) CGFloat effectiveVisualOpacity;
 
 - (nullable instancetype)initWithMovementController:(MobaMovementController *)movementController;
 - (nullable instancetype)initWithMovementController:(MobaMovementController *)movementController

@@ -86,6 +86,8 @@
 - (CGFloat)normalOpacity { return _layoutPresentation.normalOpacity; }
 - (CGFloat)pressedOpacity { return _layoutPresentation.pressedOpacity; }
 - (CGFloat)disabledOpacity { return _layoutPresentation.disabledOpacity; }
+- (CGFloat)effectiveVisualOpacity { return _buttonView.alpha; }
+- (NSString *)displayLabel { return _label.text ?: @""; }
 
 - (CGSize)intrinsicContentSize {
     CGSize visualSize = self.visualSize;
@@ -115,6 +117,7 @@
         _layoutPresentation.isInteractionEnabled;
     self.hidden = !visible;
     self.userInteractionEnabled = enabled;
+    self.alpha = 1.0;
     [_controller setInteractionEnabled:enabled];
     CGFloat perStateOpacity;
     switch (_opacityPreviewState) {
@@ -132,7 +135,7 @@
                                       : self.disabledOpacity;
             break;
     }
-    self.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
+    _buttonView.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
 }
 
 - (void)applyControlLayoutPresentation:(MobaControlLayoutPresentation *)presentation

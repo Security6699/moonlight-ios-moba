@@ -195,6 +195,28 @@
     XCTAssertEqual(move.disabledOpacity, 0.1);
 }
 
+- (void)testAttackWidthEditPreservesIndependentHeight {
+    MobaLayoutEditorController *controller = self.controller;
+    [controller selectControlNamed:@"attack"];
+    MobaLayoutEditorControlDraft *attack = [controller.draft controlNamed:@"attack"];
+    double originalHeight = attack.visualHeightPt;
+    XCTAssertTrue([controller setSelectedControlValue:140
+                                             forField:MobaLayoutEditorControlFieldVisualWidth]);
+    XCTAssertEqual(attack.visualWidthPt, 140);
+    XCTAssertEqual(attack.visualHeightPt, originalHeight);
+}
+
+- (void)testAttackHeightEditPreservesIndependentWidth {
+    MobaLayoutEditorController *controller = self.controller;
+    [controller selectControlNamed:@"attack"];
+    MobaLayoutEditorControlDraft *attack = [controller.draft controlNamed:@"attack"];
+    double originalWidth = attack.visualWidthPt;
+    XCTAssertTrue([controller setSelectedControlValue:140
+                                             forField:MobaLayoutEditorControlFieldVisualHeight]);
+    XCTAssertEqual(attack.visualWidthPt, originalWidth);
+    XCTAssertEqual(attack.visualHeightPt, 140);
+}
+
 - (void)testWheelRadiusCannotBeAddedToAttack {
     MobaLayoutEditorController *controller = self.controller;
     [controller selectControlNamed:@"attack"];

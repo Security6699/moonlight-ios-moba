@@ -19,6 +19,7 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
 
 @implementation MoveJoystickView {
     MobaMovementController *_movementController;
+    UIView *_visualContainerView;
     UIView *_baseView;
     UIView *_knobView;
     CGSize _visualSize;
@@ -76,19 +77,24 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
         self.backgroundColor = UIColor.clearColor;
         self.multipleTouchEnabled = YES;
 
+        _visualContainerView = [[UIView alloc] initWithFrame:CGRectZero];
+        _visualContainerView.userInteractionEnabled = NO;
+        _visualContainerView.backgroundColor = UIColor.clearColor;
+        [self addSubview:_visualContainerView];
+
         _baseView = [[UIView alloc] initWithFrame:CGRectZero];
         _baseView.userInteractionEnabled = NO;
         _baseView.backgroundColor = [UIColor colorWithWhite:0.10 alpha:1.0];
         _baseView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.55].CGColor;
         _baseView.layer.borderWidth = 2.0;
-        [self addSubview:_baseView];
+        [_visualContainerView addSubview:_baseView];
 
         _knobView = [[UIView alloc] initWithFrame:CGRectZero];
         _knobView.userInteractionEnabled = NO;
         _knobView.backgroundColor = [UIColor colorWithWhite:0.82 alpha:1.0];
         _knobView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.75].CGColor;
         _knobView.layer.borderWidth = 2.0;
-        [self addSubview:_knobView];
+        [_visualContainerView addSubview:_knobView];
 
         [self updateInteractionAndAppearance];
     }
@@ -136,6 +142,10 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
     return _knobDisplacement;
 }
 
+- (CGFloat)effectiveVisualOpacity {
+    return _visualContainerView.alpha;
+}
+
 - (CGFloat)validatedOpacity:(CGFloat)opacity fallback:(CGFloat)fallback {
     if (!isfinite(opacity)) {
         return fallback;
@@ -179,6 +189,7 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
     BOOL enabled = _interactionEnabled && _mobaLocalInteractionEnabled;
     [_movementController setInteractionEnabled:enabled];
     self.userInteractionEnabled = enabled;
+    self.alpha = 1.0;
     CGFloat perStateOpacity;
     switch (_opacityPreviewState) {
         case MobaControlOpacityPreviewStateNormal:
@@ -194,7 +205,7 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
             perStateOpacity = enabled ? (_pressed ? _pressedOpacity : _normalOpacity) : _disabledOpacity;
             break;
     }
-    self.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
+    _visualContainerView.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
 }
 
 - (void)applyControlLayoutPresentation:(MobaControlLayoutPresentation *)presentation
@@ -223,6 +234,7 @@ const CGFloat MoveJoystickDefaultDisabledOpacity = 0.30;
 - (void)layoutSubviews {
     [super layoutSubviews];
 
+    _visualContainerView.frame = self.bounds;
     CGPoint center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
     _baseView.bounds = (CGRect){ CGPointZero, _visualSize };
     _baseView.center = center;

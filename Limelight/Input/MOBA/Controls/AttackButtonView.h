@@ -29,6 +29,8 @@ FOUNDATION_EXPORT const CGFloat AttackButtonDefaultDisabledOpacity;
 @property (nonatomic) CGFloat disabledOpacity;
 @property (nonatomic, getter=isInteractionEnabled) BOOL interactionEnabled;
 @property (nonatomic, readonly, getter=isPressed) BOOL pressed;
+@property (nonatomic, readonly) CGFloat effectiveVisualOpacity;
+@property (nonatomic, readonly) CGSize renderedVisualSize;
 
 - (nullable instancetype)initWithAttackController:(MobaAttackController *)attackController;
 - (nullable instancetype)initWithAttackController:(MobaAttackController *)attackController

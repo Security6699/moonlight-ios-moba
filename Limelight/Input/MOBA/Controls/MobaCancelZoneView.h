@@ -36,6 +36,7 @@ typedef NS_ENUM(NSInteger, MobaCancelZoneVisualState) {
 @property (nonatomic, readonly, getter=isCastingVisible) BOOL castingVisible;
 @property (nonatomic, readonly, getter=isArmed) BOOL armed;
 @property (nonatomic, readonly) MobaCancelZoneVisualState visualState;
+@property (nonatomic, readonly) CGFloat effectiveVisualOpacity;
 
 - (nullable instancetype)initWithVisualDiameter:(CGFloat)visualDiameter NS_DESIGNATED_INITIALIZER;
 - (instancetype)initWithFrame:(CGRect)frame NS_UNAVAILABLE;

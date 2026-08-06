@@ -5,7 +5,18 @@
 
 #import <XCTest/XCTest.h>
 
+#import "../Limelight/Input/MOBA/Controls/AttackButtonView.h"
+#import "../Limelight/Input/MOBA/Controls/MobaAttackController.h"
+#import "../Limelight/Input/MOBA/Core/MobaInputDispatcher.h"
 #import "../Limelight/Input/MOBA/Profiles/MobaLayoutSaveTransaction.h"
+
+@interface MobaSaveInputSink : NSObject <MobaInputSink>
+@end
+@implementation MobaSaveInputSink
+- (void)setKeyCode:(uint16_t)keyCode down:(BOOL)down { (void)keyCode; (void)down; }
+- (void)moveCursorToCanvasPoint:(CGPoint)point { (void)point; }
+- (void)sendMouseButton:(int)button down:(BOOL)down { (void)button; (void)down; }
+@end
 
 @interface MobaSaveNoopProvider : NSObject <MobaProfileResourceProviding>
 @end
@@ -205,6 +216,40 @@
     MobaLayoutSaveResult *result = [self.transaction saveDraft:self.editor.draft error:nil];
     XCTAssertEqualObjects(result.snapshot.championProfile.championID, @"caitlyn");
     XCTAssertTrue(result.snapshot.championProfile == self.repository.activeSnapshot.championProfile);
+}
+
+- (void)testSavedAttackWidthAndHeightRebuildExactVisualBounds {
+    [self.editor selectControlNamed:@"attack"];
+    XCTAssertTrue([self.editor setSelectedControlValue:140
+                                              forField:MobaLayoutEditorControlFieldVisualWidth]);
+    XCTAssertTrue([self.editor setSelectedControlValue:90
+                                              forField:MobaLayoutEditorControlFieldVisualHeight]);
+    MobaLayoutSaveResult *result = [self.transaction saveDraft:self.editor.draft error:nil];
+    XCTAssertNotNil(result);
+
+    MobaLayoutControlProfile *profile = result.snapshot.layoutProfile.controls[@"attack"];
+    XCTAssertEqual(profile.visualWidthPt, 140);
+    XCTAssertEqual(profile.visualHeightPt, 90);
+    MobaControlLayoutPresentation *presentation = [[MobaControlLayoutPresentation alloc]
+        initWithCenterX:profile.centerX centerY:profile.centerY
+        visualSize:CGSizeMake(profile.visualWidthPt, profile.visualHeightPt)
+        hitAreaScale:profile.hitAreaScale wheelRadiusPt:profile.wheelRadiusPt
+        normalOpacity:profile.opacity pressedOpacity:profile.pressedOpacity
+        disabledOpacity:profile.disabledOpacity zIndex:profile.zIndex
+        interactionEnabled:profile.isInteractionEnabled];
+    MobaInputDispatcher *dispatcher = [[MobaInputDispatcher alloc]
+        initWithSink:[[MobaSaveInputSink alloc] init]];
+    MobaAttackController *controller = [[MobaAttackController alloc]
+        initWithInputDispatcher:dispatcher];
+    AttackButtonView *view = [[AttackButtonView alloc] initWithAttackController:controller];
+    [view applyControlLayoutPresentation:presentation
+                 globalOpacityMultiplier:result.snapshot.runtimeProfile.globalOpacityMultiplier
+                            previewState:MobaControlOpacityPreviewStateAutomatic];
+    CGSize hitSize = view.intrinsicContentSize;
+    view.frame = (CGRect){ CGPointZero, hitSize };
+    [view setNeedsLayout];
+    [view layoutIfNeeded];
+    XCTAssertTrue(CGSizeEqualToSize(view.renderedVisualSize, CGSizeMake(140, 90)));
 }
 
 - (void)testLifecycleReloadBoundaryIsPairedOnce {

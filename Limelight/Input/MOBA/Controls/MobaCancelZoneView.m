@@ -113,6 +113,10 @@ const CGFloat MobaCancelZoneDefaultDisabledOpacity = 0.30;
     return _armed ? MobaCancelZoneVisualStateArmed : MobaCancelZoneVisualStateNormal;
 }
 
+- (CGFloat)effectiveVisualOpacity {
+    return _circleView.alpha;
+}
+
 - (CGFloat)validatedOpacity:(CGFloat)opacity fallback:(CGFloat)fallback {
     if (!isfinite(opacity)) {
         return fallback;
@@ -144,6 +148,7 @@ const CGFloat MobaCancelZoneDefaultDisabledOpacity = 0.30;
 }
 
 - (void)updatePresentation {
+    self.alpha = 1.0;
     MobaCancelZoneVisualState state = self.visualState;
     switch (state) {
         case MobaCancelZoneVisualStateNormal:
@@ -151,21 +156,21 @@ const CGFloat MobaCancelZoneDefaultDisabledOpacity = 0.30;
             _circleView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.65].CGColor;
             _circleView.layer.borderWidth = 2.0;
             _circleView.transform = CGAffineTransformIdentity;
-            self.alpha = MobaEffectiveControlOpacity(_normalOpacity, _globalOpacityMultiplier);
+            _circleView.alpha = MobaEffectiveControlOpacity(_normalOpacity, _globalOpacityMultiplier);
             break;
         case MobaCancelZoneVisualStateArmed:
             _circleView.backgroundColor = [UIColor colorWithRed:0.82 green:0.06 blue:0.04 alpha:1.0];
             _circleView.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.95].CGColor;
             _circleView.layer.borderWidth = 4.0;
             _circleView.transform = CGAffineTransformMakeScale(1.08, 1.08);
-            self.alpha = MobaEffectiveControlOpacity(_armedOpacity, _globalOpacityMultiplier);
+            _circleView.alpha = MobaEffectiveControlOpacity(_armedOpacity, _globalOpacityMultiplier);
             break;
         case MobaCancelZoneVisualStateDisabled:
             _circleView.backgroundColor = [UIColor colorWithWhite:0.28 alpha:1.0];
             _circleView.layer.borderColor = [UIColor colorWithWhite:0.75 alpha:0.55].CGColor;
             _circleView.layer.borderWidth = 2.0;
             _circleView.transform = CGAffineTransformIdentity;
-            self.alpha = MobaEffectiveControlOpacity(_disabledOpacity, _globalOpacityMultiplier);
+            _circleView.alpha = MobaEffectiveControlOpacity(_disabledOpacity, _globalOpacityMultiplier);
             break;
     }
     BOOL normalVisibility = !_visibleOnlyWhileCasting || _castingVisible;

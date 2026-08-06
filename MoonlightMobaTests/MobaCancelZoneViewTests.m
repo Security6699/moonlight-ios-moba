@@ -51,7 +51,8 @@
     XCTAssertTrue(self.view.isCastingVisible);
     XCTAssertFalse(self.view.isArmed);
     XCTAssertEqual(self.view.visualState, MobaCancelZoneVisualStateNormal);
-    XCTAssertEqualWithAccuracy(self.view.alpha, 0.58, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, 0.58, 0.000001);
 }
 
 - (void)testAcceptedCancelArmedStateUsesArmedPresentation {
@@ -62,7 +63,8 @@
     XCTAssertTrue([self.controller applyAcceptedTransitionResult:result forToken:self.token]);
     XCTAssertTrue(self.view.isArmed);
     XCTAssertEqual(self.view.visualState, MobaCancelZoneVisualStateArmed);
-    XCTAssertEqualWithAccuracy(self.view.alpha, 0.86, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, 0.86, 0.000001);
 }
 
 - (void)testExitingZoneRestoresNormalCastingPresentation {
@@ -108,7 +110,8 @@
     [self.view setMobaLocalInteractionEnabled:NO];
     XCTAssertTrue(self.view.hidden);
     XCTAssertEqual(self.view.visualState, MobaCancelZoneVisualStateDisabled);
-    XCTAssertEqualWithAccuracy(self.view.alpha, 0.30, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, 0.30, 0.000001);
     XCTAssertTrue(self.controller.isCastingActive);
     XCTAssertTrue(self.controller.activeCastToken == self.token);
 }
@@ -117,7 +120,8 @@
     self.view.normalOpacity = 0.0;
     self.view.armedOpacity = 0.0;
     [self beginCasting];
-    XCTAssertEqualWithAccuracy(self.view.alpha, 0.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, 0.0, 0.000001);
 
     BOOL inside = NO;
     XCTAssertTrue([self.controller evaluatePoint:CGPointZero
@@ -130,7 +134,8 @@
     XCTAssertTrue([self.controller applyAcceptedTransitionResult:armed forToken:self.token]);
     XCTAssertTrue(self.controller.isArmed);
     XCTAssertTrue(self.view.isArmed);
-    XCTAssertEqualWithAccuracy(self.view.alpha, 0.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, 0.0, 0.000001);
 }
 
 @end

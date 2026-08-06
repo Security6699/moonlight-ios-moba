@@ -120,6 +120,14 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
     return _pressed;
 }
 
+- (CGFloat)effectiveVisualOpacity {
+    return _buttonView.alpha;
+}
+
+- (CGSize)renderedVisualSize {
+    return _buttonView.bounds.size;
+}
+
 - (CGFloat)validatedOpacity:(CGFloat)opacity fallback:(CGFloat)fallback {
     if (!isfinite(opacity)) {
         return fallback;
@@ -160,6 +168,7 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
     BOOL enabled = _interactionEnabled && _mobaLocalInteractionEnabled;
     [_attackController setInteractionEnabled:enabled];
     self.userInteractionEnabled = enabled;
+    self.alpha = 1.0;
     CGFloat perStateOpacity;
     switch (_opacityPreviewState) {
         case MobaControlOpacityPreviewStateNormal:
@@ -175,7 +184,7 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
             perStateOpacity = enabled ? (_pressed ? _pressedOpacity : _normalOpacity) : _disabledOpacity;
             break;
     }
-    self.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
+    _buttonView.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
 }
 
 - (void)applyControlLayoutPresentation:(MobaControlLayoutPresentation *)presentation
@@ -202,10 +211,9 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
     [super layoutSubviews];
 
     CGPoint center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
-    CGFloat diameter = MIN(_visualSize.width, _visualSize.height);
-    _buttonView.bounds = CGRectMake(0.0, 0.0, diameter, diameter);
+    _buttonView.bounds = (CGRect){ CGPointZero, _visualSize };
     _buttonView.center = center;
-    _buttonView.layer.cornerRadius = diameter * 0.5;
+    _buttonView.layer.cornerRadius = MIN(_visualSize.width, _visualSize.height) * 0.5;
     _label.frame = _buttonView.bounds;
 }
 

@@ -369,7 +369,8 @@
     XCTAssertEqualWithAccuracy(view.disabledOpacity, 0.30, 0.000001);
 
     view.normalOpacity = 0.0;
-    XCTAssertEqualWithAccuracy(view.alpha, 0.0, 0.000001);
+    XCTAssertEqualWithAccuracy(view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(view.effectiveVisualOpacity, 0.0, 0.000001);
     XCTAssertTrue(view.userInteractionEnabled);
     XCTAssertTrue(view.isInteractionEnabled);
 }
@@ -391,7 +392,8 @@
     view.interactionEnabled = NO;
     XCTAssertFalse(view.userInteractionEnabled);
     XCTAssertFalse(customController.isInteractionEnabled);
-    XCTAssertEqualWithAccuracy(view.alpha, 0.30, 0.000001);
+    XCTAssertEqualWithAccuracy(view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(view.effectiveVisualOpacity, 0.30, 0.000001);
 }
 
 - (void)testConfigurationDisableReleasesMovementAndClearsLocalInteraction {
@@ -424,7 +426,8 @@
     XCTAssertFalse(view.userInteractionEnabled);
     XCTAssertFalse(view.isInteractionEnabled);
     XCTAssertFalse(self.controller.isInteractionEnabled);
-    XCTAssertEqualWithAccuracy(view.alpha, view.disabledOpacity, 0.000001);
+    XCTAssertEqualWithAccuracy(view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(view.effectiveVisualOpacity, view.disabledOpacity, 0.000001);
 }
 
 - (void)testRepeatedConfigurationDisableDoesNotReleaseMovementTwice {

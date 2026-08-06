@@ -167,7 +167,8 @@ Verify no touch ownership transfer, no native keyboard gesture, no dropped movem
 
 - Move and resize each control.
 - Adjust per-control and global opacity.
-- Confirm opacity zero does not disable hit testing.
+- Confirm normal, pressed, disabled, and global opacity zero affect only noninteractive visual descendants. Verify the alpha-1 hit-area container with UIKit `hitTest:withEvent:`.
+- Verify Attack renders independent profile width and height before and after Save and runtime reconstruction.
 - Disable interaction explicitly and verify no hit.
 - Persist, restart, and reload.
 - Switch landscape directions and verify safe-area placement.
