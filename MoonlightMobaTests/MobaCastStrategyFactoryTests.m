@@ -375,8 +375,8 @@ typedef void (^MobaFactoryJSONMutation)(NSMutableDictionary *json);
         NSError *error = nil;
         XCTAssertNil([self.factory runtimeFromSnapshot:snapshot error:&error]);
         XCTAssertEqual(error.code, MobaCastStrategyFactoryErrorMissingCanonicalSkill);
-        XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryFieldPathKey],
-                              [NSString stringWithFormat:@"$.skills.%@", slot]);
+        NSString *expectedPath = [NSString stringWithFormat:@"$.skills.%@", slot];
+        XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryFieldPathKey], expectedPath);
     }
 }
 
