@@ -49,7 +49,8 @@
     MobaSkillTuningDraft *draft = self.draft;
     XCTAssertTrue([draft setHeroAnchorX:1400 y:700 error:nil]);
     XCTAssertTrue(draft.isDirty);
-    XCTAssertEqual([self JSON:self.runtimeData][@"camera"][@"heroAnchorPx"][@"x"].integerValue, 1280);
+    NSNumber *originalX = [self JSON:self.runtimeData][@"camera"][@"heroAnchorPx"][@"x"];
+    XCTAssertEqual(originalX.integerValue, 1280);
     [draft revert];
     XCTAssertEqual(draft.heroAnchorX, 1280);
     XCTAssertFalse(draft.isDirty);
@@ -69,7 +70,8 @@
     NSArray *fields = @[@(MobaSkillTuningFieldDirectionalLeftPx), @(MobaSkillTuningFieldDirectionalRightPx),
                         @(MobaSkillTuningFieldDirectionalUpPx), @(MobaSkillTuningFieldDirectionalDownPx)];
     for (NSUInteger index = 0; index < fields.count; index++) {
-        XCTAssertTrue([draft setValue:@(501 + index) forField:fields[index].integerValue
+        NSNumber *field = fields[index];
+        XCTAssertTrue([draft setValue:@(501 + index) forField:field.integerValue
                              skillSlot:MobaCanonicalSkillSlotQ error:nil]);
     }
     MobaSkillTuningSkillValue *value = [draft skillValueForSlot:MobaCanonicalSkillSlotQ];
