@@ -29,10 +29,12 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
 @implementation MobaChampionSelectionController {
     MobaProfileRepository *_repository;
     id<MobaChampionRuntimeBuilding> _runtimeBuilder;
+    id<MobaSkillControlPackageBuilding> _controlPackageBuilder;
     id<MobaChampionSelectionLifecycle> _lifecycle;
     NSArray<MobaChampionCatalogEntry *> *_catalogEntries;
     NSString *_selectedChampionID;
     MobaChampionRuntime *_activeChampionRuntime;
+    MobaSkillControlPackage *_activeSkillControlPackage;
     BOOL _invalidated;
 }
 
@@ -57,12 +59,36 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
                            lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle {
     return [self initWithRepository:repository
                       runtimeBuilder:runtimeBuilder
+              controlPackageBuilder:nil
                            lifecycle:lifecycle
                       catalogEntries:MobaChampionSelectionController.defaultCatalogEntries];
 }
 
 - (instancetype)initWithRepository:(MobaProfileRepository *)repository
                       runtimeBuilder:(id<MobaChampionRuntimeBuilding>)runtimeBuilder
+             controlPackageBuilder:(nullable id<MobaSkillControlPackageBuilding>)controlPackageBuilder
+                           lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle {
+    return [self initWithRepository:repository
+                      runtimeBuilder:runtimeBuilder
+             controlPackageBuilder:controlPackageBuilder
+                           lifecycle:lifecycle
+                      catalogEntries:MobaChampionSelectionController.defaultCatalogEntries];
+}
+
+- (instancetype)initWithRepository:(MobaProfileRepository *)repository
+                      runtimeBuilder:(id<MobaChampionRuntimeBuilding>)runtimeBuilder
+                           lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle
+                      catalogEntries:(NSArray<MobaChampionCatalogEntry *> *)catalogEntries {
+    return [self initWithRepository:repository
+                      runtimeBuilder:runtimeBuilder
+             controlPackageBuilder:nil
+                           lifecycle:lifecycle
+                      catalogEntries:catalogEntries];
+}
+
+- (instancetype)initWithRepository:(MobaProfileRepository *)repository
+                      runtimeBuilder:(id<MobaChampionRuntimeBuilding>)runtimeBuilder
+             controlPackageBuilder:(nullable id<MobaSkillControlPackageBuilding>)controlPackageBuilder
                            lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle
                       catalogEntries:(NSArray<MobaChampionCatalogEntry *> *)catalogEntries {
     if (repository == nil || runtimeBuilder == nil || lifecycle == nil || catalogEntries.count == 0) {
@@ -79,6 +105,7 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
     if (self) {
         _repository = repository;
         _runtimeBuilder = runtimeBuilder;
+        _controlPackageBuilder = controlPackageBuilder;
         _lifecycle = lifecycle;
         _catalogEntries = [catalogEntries copy];
     }
@@ -98,6 +125,12 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
 - (MobaChampionRuntime *)activeChampionRuntime {
     @synchronized (self) {
         return _activeChampionRuntime;
+    }
+}
+
+- (nullable MobaSkillControlPackage *)activeSkillControlPackage {
+    @synchronized (self) {
+        return _activeSkillControlPackage;
     }
 }
 
@@ -135,6 +168,10 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
     }
 }
 
+- (void)discardControlPackage:(nullable MobaSkillControlPackage *)controlPackage {
+    [controlPackage silentResetForReason:MobaInputInterruptionReasonProfileReload];
+}
+
 - (BOOL)selectChampionID:(NSString *)championID error:(NSError **)error {
     if (error != NULL) {
         *error = nil;
@@ -167,6 +204,7 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
     }
 
     __block MobaChampionRuntime *candidateRuntime = nil;
+    __block MobaSkillControlPackage *candidateControlPackage = nil;
     __block BOOL repositoryAccepted = NO;
     [_lifecycle profileWillReload];
     @try {
@@ -174,10 +212,30 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
                                                         candidateValidator:^BOOL(MobaProfileSnapshot *candidate,
                                                                                  NSError **candidateError) {
             candidateRuntime = [self->_runtimeBuilder runtimeFromSnapshot:candidate error:candidateError];
-            return candidateRuntime != nil;
+            if (candidateRuntime == nil) {
+                return NO;
+            }
+            if (self->_controlPackageBuilder == nil) {
+                return YES;
+            }
+
+            candidateControlPackage = [self->_controlPackageBuilder controlPackageForRuntime:candidateRuntime
+                                                                                         error:candidateError];
+            if (candidateControlPackage != nil && candidateControlPackage.isComplete) {
+                return YES;
+            }
+            if (candidateError != NULL && *candidateError == nil) {
+                *candidateError = [self selectionErrorWithCode:MobaChampionSelectionErrorControlPackageBuildFailed
+                                                     championID:championID
+                                                      operation:@"build-candidate-skill-controls"
+                                                    description:@"The candidate skill-control package is incomplete."
+                                                underlyingError:nil];
+            }
+            return NO;
         }
                                                                      error:error];
         if (!repositoryAccepted || candidateRuntime == nil) {
+            [self discardControlPackage:candidateControlPackage];
             [self discardRuntime:candidateRuntime];
             if (repositoryAccepted && error != NULL && *error == nil) {
                 *error = [self selectionErrorWithCode:MobaChampionSelectionErrorRuntimeMissing
@@ -199,11 +257,15 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
         @synchronized (self) {
             _selectedChampionID = [championID copy];
             _activeChampionRuntime = candidateRuntime;
+            _activeSkillControlPackage = candidateControlPackage;
         }
-        [self.delegate championSelectionController:self didSelectRuntime:candidateRuntime];
+        [self.delegate championSelectionController:self
+                                   didSelectRuntime:candidateRuntime
+                                skillControlPackage:candidateControlPackage];
         return YES;
     }
     @catch (NSException *exception) {
+        [self discardControlPackage:candidateControlPackage];
         [self discardRuntime:candidateRuntime];
         if (error != NULL) {
             NSDictionary *details = @{NSLocalizedDescriptionKey: exception.reason ?: @"Runtime selection raised an exception."};

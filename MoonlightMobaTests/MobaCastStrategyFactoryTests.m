@@ -5,6 +5,8 @@
 
 #import <XCTest/XCTest.h>
 
+#import <math.h>
+
 #import "../Limelight/Input/MOBA/Casting/MobaCastStrategyFactory.h"
 #import "../Limelight/Input/MOBA/Core/MobaInputDispatcher.h"
 #import "../Limelight/Input/MOBA/Profiles/MobaProfileDecoder.h"
@@ -402,6 +404,60 @@ typedef void (^MobaFactoryJSONMutation)(NSMutableDictionary *json);
     XCTAssertNil([self.factory runtimeFromSnapshot:snapshot error:&error]);
     XCTAssertEqual(error.code, MobaCastStrategyFactoryErrorMissingAimedWheelRadius);
     XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryFieldPathKey], @"$.controls.abilityW.wheelRadiusPt");
+}
+
+- (void)testDirectionalMissingWheelRadiusFailsWithCompleteStructuredContext {
+    MobaProfileSnapshot *snapshot = [self snapshotForChampionFile:@"caitlyn.json"
+                                                  runtimeMutation:nil inputMutation:nil
+                                                   layoutMutation:^(NSMutableDictionary *json) {
+        [json[@"controls"][@"abilityQ"] removeObjectForKey:@"wheelRadiusPt"];
+    } championMutation:nil];
+    NSError *error = nil;
+    XCTAssertNil([self.factory runtimeFromSnapshot:snapshot error:&error]);
+    XCTAssertEqual(error.code, MobaCastStrategyFactoryErrorMissingAimedWheelRadius);
+    XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryChampionIDKey], @"caitlyn");
+    XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactorySkillSlotKey], MobaCanonicalSkillSlotQ);
+    XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryOperationKey], @"resolve-aimed-wheel-radius");
+    XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryFieldPathKey], @"$.controls.abilityQ.wheelRadiusPt");
+}
+
+- (void)testDirectionalRejectsZeroNaNAndInfiniteWheelRadius {
+    for (NSNumber *invalidRadius in @[@0.0, @(NAN), @(INFINITY)]) {
+        MobaProfileSnapshot *snapshot = self.caitlynSnapshot;
+        [snapshot.layoutProfile.controls[@"abilityQ"] setValue:invalidRadius forKey:@"wheelRadiusPt"];
+        NSError *error = nil;
+        XCTAssertNil([self.factory runtimeFromSnapshot:snapshot error:&error]);
+        XCTAssertEqual(error.code, MobaCastStrategyFactoryErrorMissingAimedWheelRadius);
+        XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryFieldPathKey], @"$.controls.abilityQ.wheelRadiusPt");
+    }
+}
+
+- (void)testPointStillRejectsNonPositiveAndNonfiniteWheelRadiusAtFactoryBoundary {
+    for (NSNumber *invalidRadius in @[@0.0, @(NAN), @(INFINITY)]) {
+        MobaProfileSnapshot *snapshot = self.caitlynSnapshot;
+        [snapshot.layoutProfile.controls[@"abilityW"] setValue:invalidRadius forKey:@"wheelRadiusPt"];
+        NSError *error = nil;
+        XCTAssertNil([self.factory runtimeFromSnapshot:snapshot error:&error]);
+        XCTAssertEqual(error.code, MobaCastStrategyFactoryErrorMissingAimedWheelRadius);
+        XCTAssertEqualObjects(error.userInfo[MobaCastStrategyFactoryFieldPathKey], @"$.controls.abilityW.wheelRadiusPt");
+    }
+}
+
+- (void)testInstantRuntimeAllowsEverySkillWheelRadiusToBeAbsent {
+    MobaProfileSnapshot *snapshot = [self snapshotForChampionFile:@"debug-instant.json"
+                                                  runtimeMutation:nil inputMutation:nil
+                                                   layoutMutation:^(NSMutableDictionary *json) {
+        for (NSString *controlName in @[@"abilityQ", @"abilityW", @"abilityE", @"abilityR"]) {
+            [json[@"controls"][controlName] removeObjectForKey:@"wheelRadiusPt"];
+        }
+    } championMutation:nil];
+    NSError *error = nil;
+    MobaChampionRuntime *runtime = [self.factory runtimeFromSnapshot:snapshot error:&error];
+    XCTAssertNotNil(runtime);
+    XCTAssertNil(error);
+    for (MobaCanonicalSkillSlot slot in MobaCanonicalSkillSlots()) {
+        XCTAssertEqual([runtime descriptorForSkillSlot:slot].castType, MobaProfileSkillCastTypeInstant);
+    }
 }
 
 - (void)testUnresolvedInputActionFailsAtSkillPath {

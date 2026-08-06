@@ -6,6 +6,7 @@
 #import <XCTest/XCTest.h>
 
 #import "../Limelight/Input/MOBA/Casting/MobaCastStrategyFactory.h"
+#import "../Limelight/Input/MOBA/Controls/MobaSkillControlPackage.h"
 #import "../Limelight/Input/MOBA/Core/MobaInputDispatcher.h"
 #import "../Limelight/Input/MOBA/Core/MobaOverlayLifecycle.h"
 #import "../Limelight/Input/MOBA/Profiles/MobaChampionSelectionController.h"
@@ -110,19 +111,93 @@
 - (void)setMobaNativeTouchRoutingEnabled:(BOOL)enabled { (void)enabled; }
 @end
 
+@interface MobaSelectionFakeSkillController : NSObject
+@property (nonatomic) NSUInteger silentResetCount;
+- (void)silentReset;
+@end
+@implementation MobaSelectionFakeSkillController
+- (void)silentReset { self.silentResetCount += 1; }
+@end
+
+@interface MobaSelectionFakeSkillView : NSObject <MobaLocalInteractionResetParticipant>
+@property (nonatomic) NSUInteger resetCount;
+@property (nonatomic) NSUInteger disableCount;
+@end
+@implementation MobaSelectionFakeSkillView
+- (void)setMobaLocalInteractionEnabled:(BOOL)enabled {
+    if (!enabled) self.disableCount += 1;
+}
+- (void)resetMobaLocalInteractionForReason:(MobaInputInterruptionReason)reason {
+    (void)reason;
+    self.resetCount += 1;
+}
+@end
+
+@interface MobaSelectionControlPackageBuilder : NSObject <MobaSkillControlPackageBuilding>
+@property (nonatomic) BOOL failNextBuild;
+@property (nonatomic) NSUInteger buildCount;
+@property (nonatomic, strong, nullable) MobaSkillControlPackage *lastBuiltPackage;
+@property (nonatomic, strong, nullable) MobaSelectionFakeSkillController *lastPartialController;
+@end
+@implementation MobaSelectionControlPackageBuilder
+- (nullable MobaSkillControlPackage *)controlPackageForRuntime:(MobaChampionRuntime *)runtime
+                                                         error:(NSError **)error {
+    (void)runtime;
+    self.buildCount += 1;
+    NSMutableDictionary *controllers = [NSMutableDictionary dictionary];
+    NSMutableDictionary *views = [NSMutableDictionary dictionary];
+    NSArray<NSString *> *slots = self.failNextBuild ? @[MobaCanonicalSkillSlotQ] : MobaCanonicalSkillSlots();
+    for (MobaCanonicalSkillSlot slot in slots) {
+        MobaSelectionFakeSkillController *controller = [[MobaSelectionFakeSkillController alloc] init];
+        controllers[slot] = controller;
+        if (self.failNextBuild) {
+            self.lastPartialController = controller;
+            break;
+        }
+        views[slot] = [[MobaSelectionFakeSkillView alloc] init];
+    }
+    self.failNextBuild = NO;
+    self.lastBuiltPackage = [[MobaSkillControlPackage alloc]
+        initWithControllers:(NSDictionary *)controllers skillButtonViews:(NSDictionary *)views];
+    if (!self.lastBuiltPackage.isComplete && error != NULL) {
+        *error = [NSError errorWithDomain:MobaChampionSelectionErrorDomain
+                                     code:MobaChampionSelectionErrorControlPackageBuildFailed
+                                 userInfo:@{NSLocalizedDescriptionKey: @"Injected package build failure."}];
+    }
+    return self.lastBuiltPackage;
+}
+@end
+
 @interface MobaSelectionRuntimeDelegate : NSObject <MobaChampionSelectionControllerDelegate>
 @property (nonatomic, strong) NSMutableArray<MobaChampionRuntime *> *runtimes;
+@property (nonatomic, strong) NSMutableArray<MobaSkillControlPackage *> *packages;
+@property (nonatomic, weak, nullable) MobaSelectionLifecycle *lifecycle;
+@property (nonatomic, strong, nullable) MobaSkillControlPackage *installedPackage;
 @end
 @implementation MobaSelectionRuntimeDelegate
 - (instancetype)init {
     self = [super init];
-    if (self) _runtimes = [[NSMutableArray alloc] init];
+    if (self) {
+        _runtimes = [[NSMutableArray alloc] init];
+        _packages = [[NSMutableArray alloc] init];
+    }
     return self;
 }
 - (void)championSelectionController:(MobaChampionSelectionController *)controller
-                    didSelectRuntime:(MobaChampionRuntime *)runtime {
+                    didSelectRuntime:(MobaChampionRuntime *)runtime
+                 skillControlPackage:(nullable MobaSkillControlPackage *)skillControlPackage {
     (void)controller;
     [self.runtimes addObject:runtime];
+    if (skillControlPackage != nil) {
+        [self.packages addObject:skillControlPackage];
+    }
+    for (id<MobaLocalInteractionResetParticipant> participant in self.installedPackage.localInteractionResetParticipants) {
+        [self.lifecycle unregisterLocalInteractionResetParticipant:participant];
+    }
+    self.installedPackage = skillControlPackage;
+    for (id<MobaLocalInteractionResetParticipant> participant in skillControlPackage.localInteractionResetParticipants) {
+        [self.lifecycle registerLocalInteractionResetParticipant:participant];
+    }
 }
 @end
 
@@ -303,6 +378,86 @@
     XCTAssertTrue([self.selection selectChampionID:@"debug-instant" error:nil]);
     XCTAssertEqual(delegate.runtimes.count, 2u);
     XCTAssertEqual(delegate.runtimes.lastObject, self.selection.activeChampionRuntime);
+}
+
+- (void)testCandidateControlPackageFailurePreservesAllCommittedStateAndCleansCandidate {
+    MobaSelectionControlPackageBuilder *packageBuilder = [[MobaSelectionControlPackageBuilder alloc] init];
+    MobaSelectionRuntimeDelegate *delegate = [[MobaSelectionRuntimeDelegate alloc] init];
+    delegate.lifecycle = self.lifecycle;
+    MobaChampionSelectionController *selection = [[MobaChampionSelectionController alloc]
+        initWithRepository:self.repository
+             runtimeBuilder:self.factory
+    controlPackageBuilder:packageBuilder
+                  lifecycle:self.lifecycle];
+    selection.delegate = delegate;
+    XCTAssertTrue([selection selectChampionID:@"caitlyn" error:nil]);
+
+    MobaProfileSnapshot *snapshot = self.repository.activeSnapshot;
+    MobaChampionRuntime *runtime = selection.activeChampionRuntime;
+    MobaSkillControlPackage *package = selection.activeSkillControlPackage;
+    NSDictionary *views = package.skillButtonViews;
+    NSArray *participants = [self.lifecycle.participants copy];
+    NSUInteger didCount = self.lifecycle.didCount;
+    [self.sink.events removeAllObjects];
+
+    packageBuilder.failNextBuild = YES;
+    NSError *error = nil;
+    XCTAssertFalse([selection selectChampionID:@"debug-instant" error:&error]);
+    XCTAssertEqual(error.code, MobaChampionSelectionErrorControlPackageBuildFailed);
+    XCTAssertTrue(snapshot == self.repository.activeSnapshot);
+    XCTAssertTrue(runtime == selection.activeChampionRuntime);
+    XCTAssertEqualObjects(selection.selectedChampionID, @"caitlyn");
+    XCTAssertTrue(package == selection.activeSkillControlPackage);
+    for (MobaCanonicalSkillSlot slot in MobaCanonicalSkillSlots()) {
+        XCTAssertTrue(views[slot] == selection.activeSkillControlPackage.skillButtonViews[slot]);
+    }
+    XCTAssertEqualObjects(self.lifecycle.participants, participants);
+    XCTAssertEqual(packageBuilder.lastPartialController.silentResetCount, 1u);
+    XCTAssertEqual(self.sink.events.count, 0u);
+    XCTAssertEqual(self.lifecycle.didCount, didCount + 1);
+    XCTAssertEqual(delegate.packages.count, 1u);
+    [selection invalidate];
+}
+
+- (void)testSuccessfulSelectionInstallsOnePrebuiltPackageAndSwapsViewParticipantsOnce {
+    MobaSelectionControlPackageBuilder *packageBuilder = [[MobaSelectionControlPackageBuilder alloc] init];
+    MobaSelectionRuntimeDelegate *delegate = [[MobaSelectionRuntimeDelegate alloc] init];
+    delegate.lifecycle = self.lifecycle;
+    MobaChampionSelectionController *selection = [[MobaChampionSelectionController alloc]
+        initWithRepository:self.repository
+             runtimeBuilder:self.factory
+    controlPackageBuilder:packageBuilder
+                  lifecycle:self.lifecycle];
+    selection.delegate = delegate;
+    XCTAssertTrue([selection selectChampionID:@"caitlyn" error:nil]);
+    MobaSkillControlPackage *oldPackage = selection.activeSkillControlPackage;
+    NSArray *oldViewParticipants = oldPackage.localInteractionResetParticipants;
+    [self.lifecycle.events removeAllObjects];
+    NSUInteger buildsBefore = packageBuilder.buildCount;
+
+    XCTAssertTrue([selection selectChampionID:@"debug-instant" error:nil]);
+    MobaSkillControlPackage *newPackage = selection.activeSkillControlPackage;
+    XCTAssertTrue(newPackage == packageBuilder.lastBuiltPackage);
+    XCTAssertTrue(newPackage == delegate.installedPackage);
+    XCTAssertEqual(packageBuilder.buildCount, buildsBefore + 1);
+    XCTAssertEqual(newPackage.skillButtonViews.count, 4u);
+    for (id participant in oldViewParticipants) {
+        XCTAssertFalse([self.lifecycle.participants containsObject:participant]);
+    }
+    for (id participant in newPackage.localInteractionResetParticipants) {
+        XCTAssertTrue([self.lifecycle.participants containsObject:participant]);
+        NSUInteger occurrences = 0;
+        for (id registeredParticipant in self.lifecycle.participants) {
+            if (registeredParticipant == participant) occurrences += 1;
+        }
+        XCTAssertEqual(occurrences, 1u);
+    }
+    NSPredicate *unregisterEvent = [NSPredicate predicateWithFormat:@"SELF == 'unregister'"];
+    NSPredicate *registerEvent = [NSPredicate predicateWithFormat:@"SELF == 'register'"];
+    XCTAssertEqual([[self.lifecycle.events filteredArrayUsingPredicate:unregisterEvent] count], 8u);
+    XCTAssertEqual([[self.lifecycle.events filteredArrayUsingPredicate:registerEvent] count], 4u);
+    XCTAssertEqual(delegate.packages.count, 2u);
+    [selection invalidate];
 }
 
 - (void)testFailedSelectionDoesNotNotifyRuntimeDelegate {

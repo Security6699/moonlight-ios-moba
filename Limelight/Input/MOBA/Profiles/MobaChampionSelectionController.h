@@ -7,6 +7,7 @@
 
 #import "MobaProfileRepository.h"
 #import "../Casting/MobaCastStrategyFactory.h"
+#import "../Controls/MobaSkillControlPackage.h"
 #import "../Core/MobaOverlayLifecycle.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -19,6 +20,7 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
     MobaChampionSelectionErrorUnknownChampion = 1,
     MobaChampionSelectionErrorRuntimeMissing,
     MobaChampionSelectionErrorUnexpectedException,
+    MobaChampionSelectionErrorControlPackageBuildFailed,
 };
 
 @interface MobaChampionCatalogEntry : NSObject
@@ -45,7 +47,8 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
 
 @protocol MobaChampionSelectionControllerDelegate <NSObject>
 - (void)championSelectionController:(MobaChampionSelectionController *)controller
-                    didSelectRuntime:(MobaChampionRuntime *)runtime;
+                    didSelectRuntime:(MobaChampionRuntime *)runtime
+                 skillControlPackage:(nullable MobaSkillControlPackage *)skillControlPackage;
 @end
 
 @interface MobaChampionSelectionController : NSObject
@@ -55,12 +58,22 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
 @property (nonatomic, copy, readonly) NSArray<MobaChampionCatalogEntry *> *catalogEntries;
 @property (atomic, copy, readonly, nullable) NSString *selectedChampionID;
 @property (atomic, strong, readonly, nullable) MobaChampionRuntime *activeChampionRuntime;
+@property (atomic, strong, readonly, nullable) MobaSkillControlPackage *activeSkillControlPackage;
 
 - (nullable instancetype)initWithRepository:(MobaProfileRepository *)repository
                               runtimeBuilder:(id<MobaChampionRuntimeBuilding>)runtimeBuilder
                                    lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle;
 - (nullable instancetype)initWithRepository:(MobaProfileRepository *)repository
                               runtimeBuilder:(id<MobaChampionRuntimeBuilding>)runtimeBuilder
+                         controlPackageBuilder:(nullable id<MobaSkillControlPackageBuilding>)controlPackageBuilder
+                                   lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle;
+- (nullable instancetype)initWithRepository:(MobaProfileRepository *)repository
+                              runtimeBuilder:(id<MobaChampionRuntimeBuilding>)runtimeBuilder
+                                   lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle
+                              catalogEntries:(NSArray<MobaChampionCatalogEntry *> *)catalogEntries;
+- (nullable instancetype)initWithRepository:(MobaProfileRepository *)repository
+                              runtimeBuilder:(id<MobaChampionRuntimeBuilding>)runtimeBuilder
+                         controlPackageBuilder:(nullable id<MobaSkillControlPackageBuilding>)controlPackageBuilder
                                    lifecycle:(id<MobaChampionSelectionLifecycle>)lifecycle
                               catalogEntries:(NSArray<MobaChampionCatalogEntry *> *)catalogEntries NS_DESIGNATED_INITIALIZER;
 - (instancetype)init NS_UNAVAILABLE;

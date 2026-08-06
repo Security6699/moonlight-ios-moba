@@ -171,10 +171,17 @@ const CGFloat MobaDirectionalMeaningfulDragDeadzoneRatio = 0.10;
     return NO;
 }
 
-- (BOOL)updateInteractionWithToken:(id)token streamViewPoint:(CGPoint)point {
+- (BOOL)applyStreamViewPoint:(CGPoint)point
+                     toToken:(id)token
+requestCancellationOnFailure:(BOOL)requestCancellationOnFailure {
     if (!_interactionEnabled || !_inputGate.isBattleInputAllowed ||
         ![self isOwnerToken:token] || ![self pointIsFinite:point]) {
         return NO;
+    }
+
+    if (_descriptor.castType == MobaProfileSkillCastTypeInstant) {
+        _latestStreamViewPoint = point;
+        return YES;
     }
 
     CGVector displacement = CGVectorMake(point.x - _initialStreamViewPoint.x,
@@ -184,7 +191,9 @@ const CGFloat MobaDirectionalMeaningfulDragDeadzoneRatio = 0.10;
         ![_cancelZoneRouter evaluateCancelZoneAtStreamViewPoint:point
                                                    forCastToken:token
                                               insideCancelZone:&insideCancelZone]) {
-        [self requestLifecycleCancellation];
+        if (requestCancellationOnFailure) {
+            [self requestLifecycleCancellation];
+        }
         return NO;
     }
 
@@ -192,17 +201,24 @@ const CGFloat MobaDirectionalMeaningfulDragDeadzoneRatio = 0.10;
                                                             meaningfulDrag:[self meaningfulDragForDisplacement:displacement]
                                                            insideCancelZone:insideCancelZone];
     if (!result.accepted) {
+        if (requestCancellationOnFailure) {
+            [self requestLifecycleCancellation];
+        }
         return NO;
     }
 
     if (![self consumeStrategyUpdate:result displacement:displacement]) {
-        [self requestLifecycleCancellation];
+        if (requestCancellationOnFailure) {
+            [self requestLifecycleCancellation];
+        }
         return NO;
     }
 
     if (_cancelZoneActive &&
         ![_cancelZoneRouter applyCancelZoneTransitionResult:result forCastToken:token]) {
-        [self requestLifecycleCancellation];
+        if (requestCancellationOnFailure) {
+            [self requestLifecycleCancellation];
+        }
         return NO;
     }
 
@@ -210,9 +226,25 @@ const CGFloat MobaDirectionalMeaningfulDragDeadzoneRatio = 0.10;
     return YES;
 }
 
+- (BOOL)updateInteractionWithToken:(id)token streamViewPoint:(CGPoint)point {
+    return [self applyStreamViewPoint:point
+                              toToken:token
+         requestCancellationOnFailure:YES];
+}
+
 - (BOOL)endInteractionWithToken:(id)token streamViewPoint:(CGPoint)point {
     if (!_interactionEnabled || !_inputGate.isBattleInputAllowed ||
-        ![self isOwnerToken:token] || ![self pointIsFinite:point]) {
+        ![self isOwnerToken:token]) {
+        return NO;
+    }
+    if (![self pointIsFinite:point]) {
+        [self requestLifecycleCancellation];
+        return NO;
+    }
+
+    if (![self applyStreamViewPoint:point
+                            toToken:token
+       requestCancellationOnFailure:YES]) {
         return NO;
     }
 

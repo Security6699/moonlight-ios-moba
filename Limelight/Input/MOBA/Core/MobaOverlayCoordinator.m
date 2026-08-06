@@ -19,6 +19,7 @@
 #import "../Controls/MobaModeToolbarView.h"
 #import "../Controls/MobaSkillButtonView.h"
 #import "../Controls/MobaSkillCastController.h"
+#import "../Controls/MobaSkillControlPackage.h"
 #import "../Controls/MoveJoystickView.h"
 #import "../Profiles/MobaProfileStore.h"
 #import "../Profiles/MobaProfileRepository.h"
@@ -43,7 +44,8 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                                       MobaMovementControllerDelegate,
                                       MobaModeToolbarViewDelegate,
                                       MobaSkillCancelZoneRouting,
-                                      MobaSkillCastControllerDelegate>
+                                      MobaSkillCastControllerDelegate,
+                                      MobaSkillControlPackageBuilding>
 @end
 
 @implementation MobaOverlayCoordinator {
@@ -64,6 +66,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     MobaCancelZoneController *_cancelZoneController;
     MobaCancelZoneView *_cancelZoneView;
     MobaModeToolbarView *_modeToolbarView;
+    MobaSkillControlPackage *_skillControlPackage;
     NSDictionary<MobaCanonicalSkillSlot, MobaSkillButtonView *> *_skillButtonViews;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
@@ -91,10 +94,23 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         _displayLinkDriverProvider = [[MobaCADisplayLinkDriverProvider alloc] init];
         _castStrategyFactory = [[MobaCastStrategyFactory alloc] initWithDispatcher:_inputDispatcher
                                                                     driverProvider:_displayLinkDriverProvider];
+        _cancelZoneView = [[MobaCancelZoneView alloc]
+            initWithVisualDiameter:MobaCancelZoneDefaultVisualDiameter];
+        MobaCancelZoneGeometry cancelZoneGeometry =
+            MobaCancelZoneGeometryMake(CGPointZero,
+                                       MobaCancelZoneDefaultVisualDiameter,
+                                       MobaDefaultCancelZoneActivationInset);
+        _cancelZoneController = [[MobaCancelZoneController alloc]
+            initWithGeometry:cancelZoneGeometry
+                 presentation:_cancelZoneView];
+        _cancelZoneView.controller = _cancelZoneController;
+        [_lifecycle registerLocalInteractionResetParticipant:_cancelZoneView];
         _championSelectionController = [[MobaChampionSelectionController alloc]
             initWithRepository:_profileRepository
                  runtimeBuilder:_castStrategyFactory
+            controlPackageBuilder:self
                       lifecycle:(id<MobaChampionSelectionLifecycle>)_lifecycle];
+        _championSelectionController.delegate = self;
         _championSelectorView = [[MobaChampionSelectorView alloc]
             initWithCatalogEntries:_championSelectionController.catalogEntries];
         _championSelectorView.delegate = self;
@@ -121,22 +137,6 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         _attackController.delegate = self;
         _attackButtonView = [[AttackButtonView alloc] initWithAttackController:_attackController];
         [_lifecycle registerLocalInteractionResetParticipant:_attackButtonView];
-        _cancelZoneView = [[MobaCancelZoneView alloc]
-            initWithVisualDiameter:MobaCancelZoneDefaultVisualDiameter];
-        MobaCancelZoneGeometry cancelZoneGeometry =
-            MobaCancelZoneGeometryMake(CGPointZero,
-                                       MobaCancelZoneDefaultVisualDiameter,
-                                       MobaDefaultCancelZoneActivationInset);
-        _cancelZoneController = [[MobaCancelZoneController alloc]
-            initWithGeometry:cancelZoneGeometry
-                 presentation:_cancelZoneView];
-        _cancelZoneView.controller = _cancelZoneController;
-        [_lifecycle registerLocalInteractionResetParticipant:_cancelZoneView];
-        if (_championSelectionController.activeChampionRuntime != nil &&
-            ![self installSkillControlsForRuntime:_championSelectionController.activeChampionRuntime]) {
-            NSLog(@"MOBA initial skill controls could not be created");
-        }
-        _championSelectionController.delegate = self;
         _modeToolbarView = [[MobaModeToolbarView alloc] initWithFrame:CGRectZero];
         _modeToolbarView.delegate = self;
         _modeToolbarView.battleModeAvailable = streamView.isMobaBattleModeSupported;
@@ -151,47 +151,75 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     return self;
 }
 
-- (nullable NSDictionary<MobaCanonicalSkillSlot, MobaSkillButtonView *> *)skillControlsForRuntime:(MobaChampionRuntime *)runtime {
-    NSMutableDictionary<MobaCanonicalSkillSlot, MobaSkillButtonView *> *candidate =
+- (nullable MobaSkillControlPackage *)controlPackageForRuntime:(MobaChampionRuntime *)runtime
+                                                         error:(NSError **)error {
+    if (error != NULL) {
+        *error = nil;
+    }
+    NSMutableDictionary<MobaCanonicalSkillSlot, MobaSkillCastController *> *controllers =
+        [[NSMutableDictionary alloc] initWithCapacity:MobaCanonicalSkillSlots().count];
+    NSMutableDictionary<MobaCanonicalSkillSlot, MobaSkillButtonView *> *views =
         [[NSMutableDictionary alloc] initWithCapacity:MobaCanonicalSkillSlots().count];
     for (MobaCanonicalSkillSlot slot in MobaCanonicalSkillSlots()) {
         MobaSkillRuntimeDescriptor *descriptor = [runtime descriptorForSkillSlot:slot];
         if (descriptor == nil) {
-            return nil;
+            if (error != NULL) {
+                *error = [NSError errorWithDomain:MobaChampionSelectionErrorDomain
+                                             code:MobaChampionSelectionErrorControlPackageBuildFailed
+                                         userInfo:@{
+                    NSLocalizedDescriptionKey: @"The candidate runtime is missing a canonical skill descriptor.",
+                    MobaChampionSelectionChampionIDKey: runtime.championID,
+                    MobaChampionSelectionOperationKey: @"build-candidate-skill-controls",
+                    MobaCastStrategyFactorySkillSlotKey: slot,
+                }];
+            }
+            break;
         }
 
         MobaSkillCastController *controller = [[MobaSkillCastController alloc]
             initWithDescriptor:descriptor
                      inputGate:self
               cancelZoneRouter:self];
+        if (controller == nil) {
+            break;
+        }
         controller.delegate = self;
+        controllers[slot] = controller;
         MobaSkillButtonView *view = [[MobaSkillButtonView alloc]
             initWithController:controller
             streamCoordinateView:_streamView];
         if (view == nil) {
-            return nil;
+            break;
         }
         [view setMode:_lifecycle.mode];
-        candidate[slot] = view;
+        views[slot] = view;
     }
-    return [candidate copy];
+    MobaSkillControlPackage *package = [[MobaSkillControlPackage alloc]
+        initWithControllers:controllers skillButtonViews:views];
+    if (!package.isComplete && error != NULL && *error == nil) {
+        *error = [NSError errorWithDomain:MobaChampionSelectionErrorDomain
+                                     code:MobaChampionSelectionErrorControlPackageBuildFailed
+                                 userInfo:@{
+            NSLocalizedDescriptionKey: @"The candidate skill-control package could not be completed.",
+            MobaChampionSelectionChampionIDKey: runtime.championID,
+            MobaChampionSelectionOperationKey: @"build-candidate-skill-controls",
+        }];
+    }
+    return package;
 }
 
-- (BOOL)installSkillControlsForRuntime:(MobaChampionRuntime *)runtime {
-    NSDictionary<MobaCanonicalSkillSlot, MobaSkillButtonView *> *candidate =
-        [self skillControlsForRuntime:runtime];
-    if (candidate == nil || candidate.count != MobaCanonicalSkillSlots().count) {
-        return NO;
-    }
-
-    NSDictionary<MobaCanonicalSkillSlot, MobaSkillButtonView *> *previous = _skillButtonViews;
-    for (MobaSkillButtonView *view in previous.allValues) {
+- (void)installSkillControlPackage:(MobaSkillControlPackage *)package {
+    MobaSkillControlPackage *previous = _skillControlPackage;
+    for (id<MobaLocalInteractionResetParticipant> participant in previous.localInteractionResetParticipants) {
+        MobaSkillButtonView *view = (MobaSkillButtonView *)participant;
         [_lifecycle unregisterLocalInteractionResetParticipant:view];
         [view removeFromSuperview];
     }
 
-    _skillButtonViews = candidate;
-    for (MobaSkillButtonView *view in _skillButtonViews.allValues) {
+    _skillControlPackage = package;
+    _skillButtonViews = package.skillButtonViews;
+    for (id<MobaLocalInteractionResetParticipant> participant in package.localInteractionResetParticipants) {
+        MobaSkillButtonView *view = (MobaSkillButtonView *)participant;
         [_lifecycle registerLocalInteractionResetParticipant:view];
         if (_lifecycle.isRunning) {
             [_streamView addSubview:view];
@@ -200,7 +228,6 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     if (_lifecycle.isRunning) {
         [self layoutBattleControls];
     }
-    return YES;
 }
 
 - (void)layoutBattleControls {
@@ -499,13 +526,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)championSelectionController:(MobaChampionSelectionController *)controller
-                    didSelectRuntime:(MobaChampionRuntime *)runtime {
+                    didSelectRuntime:(MobaChampionRuntime *)runtime
+                 skillControlPackage:(nullable MobaSkillControlPackage *)skillControlPackage {
     (void)controller;
-    if (![self installSkillControlsForRuntime:runtime]) {
-        // Factory validation guarantees four constructible descriptors. Keep
-        // installed controls untouched if that invariant is ever violated.
-        NSLog(@"MOBA selected runtime skill controls could not be installed");
+    (void)runtime;
+    if (!skillControlPackage.isComplete) {
+        [NSException raise:NSInternalInconsistencyException
+                    format:@"Champion selection must provide a complete skill-control package"];
     }
+    [self installSkillControlPackage:skillControlPackage];
 }
 
 - (void)dealloc {
