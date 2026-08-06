@@ -117,6 +117,8 @@ This mapping is a touch-to-screen cursor envelope, not Caitlyn's world-space ult
 
 ## 9. Calibration rules
 
+Issue #21 supplies manual Skill Tuning controls and game-space preview only. The bundled Caitlyn values remain placeholders. Preview Only never sends host input. Live Cast is a selected-skill direct touch calibration path and does not detect, snap to or infer targets. This issue does not claim that any placeholder radius, anchor or response value has been validated on League or the target iPad.
+
 - Use League practice mode.
 - Keep host and stream at 2560x1440.
 - Keep camera locked.

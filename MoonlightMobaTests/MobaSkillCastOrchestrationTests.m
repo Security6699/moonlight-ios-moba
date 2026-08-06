@@ -831,6 +831,22 @@
     }
 }
 
+- (void)testSkillTuningRequiresExplicitPerCandidateInteractionOptIn {
+    MobaSkillTestStrategy *strategy = [[MobaSkillTestStrategy alloc] init];
+    MobaSkillCastController *controller = [self fakeControllerWithType:MobaProfileSkillCastTypeInstant
+                                                           allowCancel:NO strategy:strategy];
+    MobaSkillButtonView *view = [[MobaSkillButtonView alloc]
+        initWithController:controller streamCoordinateView:[[UIView alloc] init]];
+    [view setMode:MobaOverlayModeSkillTuning];
+    [view setMobaLocalInteractionEnabled:YES];
+    [self prepareSkillViewForHitTesting:view];
+    XCTAssertNil([self centerHitForSkillView:view]);
+    view.skillTuningInteractionEnabled = YES;
+    XCTAssertEqual([self centerHitForSkillView:view], view);
+    XCTAssertTrue([view beginInteractionWithToken:[NSObject new] streamViewPoint:CGPointZero]);
+    XCTAssertEqual(strategy.events.count, 1u);
+}
+
 - (void)testLayoutProfileControlsHitSizeLabelOpacityAndZIndex {
     MobaSkillTestStrategy *strategy = [[MobaSkillTestStrategy alloc] init];
     MobaSkillRuntimeDescriptor *descriptor = [self descriptorWithType:MobaProfileSkillCastTypeInstant

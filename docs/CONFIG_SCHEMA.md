@@ -193,11 +193,19 @@ For Cancel Zone, `activationInsetPt` is non-negative and strictly smaller than h
 
 Saving starts from deep copies of the current raw JSON dictionaries and patches only managed paths. `schemaVersion`, `layoutId`, `deviceClass`, unknown root or nested fields, and future controls are retained. Restore Defaults reads the bundled runtime and layout resources but does not persist until Save.
 
-## 8. Migration
+## 8. Skill tuning persistence
+
+Skill Tuning does not change schema v1. It patches only `camera.heroAnchorPx.x`, `camera.heroAnchorPx.y`, `mouseUpdateRateHz` and the existing managed fields of the selected champion skill. Runtime anchor values remain fixed 2560×1440 game-space pixels. The update rate remains the strict enum 30, 60 or 120.
+
+Directional and Point ranges remain game-space pixels. Default aim, response and `allowCancel` retain their existing types and validation ranges. Instant skills do not gain range, response or default-aim fields. Saving begins from private deep mutable copies and preserves schema metadata, calibration metadata, unknown root and nested fields, future skill fields and every unedited skill. Input and Layout bytes are outside this transaction.
+
+Restore Defaults pairs the bundled Runtime with the bundled resource for the currently selected champion. Missing champion defaults are an error and never substitute another champion's values.
+
+## 9. Migration
 
 `MobaProfileMigrator` upgrades older schema versions before model creation. Unknown fields are ignored for forward tolerance. Unknown enum values are rejected with a field-specific error. Breaking changes increment `schemaVersion` and require tests.
 
-## 9. Import result
+## 10. Import result
 
 Import UI must show:
 

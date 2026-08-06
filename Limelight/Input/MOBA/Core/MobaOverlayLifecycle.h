@@ -28,6 +28,9 @@ typedef NS_ENUM(NSInteger, MobaInputInterruptionReason) {
     MobaInputInterruptionReasonOrientationChange,
     MobaInputInterruptionReasonProfileReload,
     MobaInputInterruptionReasonFeatureDisable,
+    MobaInputInterruptionReasonSkillTuningCastModeChange,
+    MobaInputInterruptionReasonSkillTuningSkillChange,
+    MobaInputInterruptionReasonSkillTuningDraftChange,
 };
 
 @protocol MobaLocalInteractionResetParticipant <NSObject>
@@ -56,6 +59,7 @@ typedef NS_ENUM(NSInteger, MobaInputInterruptionReason) {
 @property (nonatomic, readonly, getter=isRunning) BOOL running;
 @property (nonatomic, readonly, getter=isInputSuspended) BOOL inputSuspended;
 @property (nonatomic, readonly, getter=isBattleInputAllowed) BOOL battleInputAllowed;
+@property (nonatomic, readonly, getter=isSkillTuningInputAllowed) BOOL skillTuningInputAllowed;
 @property (nonatomic, readonly) MobaOverlayMode mode;
 
 - (instancetype)initWithEnvironment:(id<MobaOverlayLifecycleEnvironment>)environment
@@ -66,6 +70,9 @@ typedef NS_ENUM(NSInteger, MobaInputInterruptionReason) {
 - (void)unregisterLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant;
 
 - (BOOL)transitionToMode:(MobaOverlayMode)mode;
+// Enables only the dedicated selected-skill tuning gate. Battle participants
+// remain disabled. Any interruption clears this gate and does not auto-resume.
+- (BOOL)beginSkillTuningLiveInput;
 - (void)start;
 - (void)stop;
 - (void)invalidateForDestruction;

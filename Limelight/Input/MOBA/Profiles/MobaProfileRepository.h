@@ -65,6 +65,16 @@ typedef BOOL (^MobaProfileCandidateValidator)(MobaProfileSnapshot *candidate,
 - (BOOL)rollbackLayoutCandidate:(MobaProfileRepositoryCandidate *)candidate
                            error:(NSError **)error;
 
+// Narrow skill-tuning seam. Runtime and the current champion are replaced
+// together while input and layout reuse their exact immutable base models.
+- (nullable MobaProfileRepositoryCandidate *)prepareSkillTuningCandidateWithRuntimeData:(NSData *)runtimeData
+                                                                            championData:(NSData *)championData
+                                                                                   error:(NSError **)error;
+- (BOOL)commitSkillTuningCandidate:(MobaProfileRepositoryCandidate *)candidate
+                              error:(NSError **)error;
+- (BOOL)rollbackSkillTuningCandidate:(MobaProfileRepositoryCandidate *)candidate
+                                error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

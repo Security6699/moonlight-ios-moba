@@ -502,4 +502,35 @@
     XCTAssertEqual(self.sink.eventSnapshot.count, 0u);
 }
 
+- (void)testSkillTuningLiveGateDoesNotEnableBattleParticipants {
+    XCTAssertTrue([self.lifecycle transitionToMode:MobaOverlayModeSkillTuning]);
+    XCTAssertTrue([self.lifecycle beginSkillTuningLiveInput]);
+    XCTAssertTrue(self.lifecycle.isSkillTuningInputAllowed);
+    XCTAssertFalse(self.lifecycle.isBattleInputAllowed);
+    XCTAssertFalse(self.participant.interactionEnabled);
+}
+
+- (void)testSkillTuningInterruptionReleasesInputAndClearsLiveGate {
+    [self.lifecycle transitionToMode:MobaOverlayModeSkillTuning];
+    [self.lifecycle beginSkillTuningLiveInput];
+    [self.dispatcher setKeyCode:81 down:YES];
+    [self drainDispatcher];
+    [self.sink clearEvents];
+    XCTAssertTrue([self.lifecycle interruptAndReleaseInputsForReason:
+        MobaInputInterruptionReasonSkillTuningCastModeChange]);
+    [self drainDispatcher];
+    XCTAssertEqualObjects(self.sink.eventSnapshot, (@[@"key:81:up"]));
+    XCTAssertFalse(self.lifecycle.isSkillTuningInputAllowed);
+    XCTAssertTrue(self.lifecycle.isInputSuspended);
+}
+
+- (void)testSkillTuningLiveGateDoesNotAutoResumeAfterApplicationActivation {
+    [self.lifecycle transitionToMode:MobaOverlayModeSkillTuning];
+    [self.lifecycle beginSkillTuningLiveInput];
+    [self.lifecycle applicationWillResignActive];
+    [self.lifecycle applicationDidBecomeActive];
+    XCTAssertFalse(self.lifecycle.isSkillTuningInputAllowed);
+    XCTAssertTrue(self.lifecycle.isInputSuspended);
+}
+
 @end

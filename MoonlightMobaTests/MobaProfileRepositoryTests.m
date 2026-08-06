@@ -258,4 +258,39 @@
     XCTAssertEqualObjects(self.repository.activeSnapshot.championProfile.championID, @"debug-instant");
 }
 
+- (void)testSkillTuningCandidateReusesInputAndLayoutAndCommitsExactBase {
+    MobaProfileSnapshot *base = [self loadValidCaitlynSnapshot];
+    NSMutableDictionary *runtime = [self storedJSONAtPath:@"runtime.json"];
+    NSMutableDictionary *champion = [self storedJSONAtPath:@"champions/caitlyn.json"];
+    runtime[@"camera"][@"heroAnchorPx"][@"x"] = @1300;
+    champion[@"skills"][@"Q"][@"range"][@"leftPx"] = @701;
+    NSData *runtimeData = [NSJSONSerialization dataWithJSONObject:runtime options:0 error:nil];
+    NSData *championData = [NSJSONSerialization dataWithJSONObject:champion options:0 error:nil];
+    NSError *error = nil;
+    MobaProfileRepositoryCandidate *candidate = [self.repository
+        prepareSkillTuningCandidateWithRuntimeData:runtimeData championData:championData error:&error];
+    XCTAssertNotNil(candidate);
+    XCTAssertNil(error);
+    XCTAssertTrue(candidate.snapshot.inputProfile == base.inputProfile);
+    XCTAssertTrue(candidate.snapshot.layoutProfile == base.layoutProfile);
+    XCTAssertTrue([self.repository commitSkillTuningCandidate:candidate error:&error]);
+    XCTAssertTrue(self.repository.activeSnapshot == candidate.snapshot);
+    XCTAssertTrue([self.repository rollbackSkillTuningCandidate:candidate error:&error]);
+    XCTAssertTrue(self.repository.activeSnapshot == base);
+}
+
+- (void)testSkillTuningCandidateRejectsStaleBaseAndDifferentChampion {
+    [self loadValidCaitlynSnapshot];
+    NSData *runtimeData = [self.store readDataAtRelativePath:@"runtime.json" error:nil];
+    NSData *caitlynData = [self.store readDataAtRelativePath:@"champions/caitlyn.json" error:nil];
+    MobaProfileRepositoryCandidate *candidate = [self.repository
+        prepareSkillTuningCandidateWithRuntimeData:runtimeData championData:caitlynData error:nil];
+    XCTAssertNotNil(candidate);
+    XCTAssertTrue([self.repository reloadWithChampionRelativePath:@"champions/caitlyn.json" error:nil]);
+    XCTAssertFalse([self.repository commitSkillTuningCandidate:candidate error:nil]);
+    NSData *instantData = [self.store readDataAtRelativePath:@"champions/debug-instant.json" error:nil];
+    XCTAssertNil([self.repository prepareSkillTuningCandidateWithRuntimeData:runtimeData
+                                                                championData:instantData error:nil]);
+}
+
 @end

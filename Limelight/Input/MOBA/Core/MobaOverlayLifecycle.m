@@ -16,6 +16,7 @@
     BOOL _streamConnected;
     BOOL _orientationTransitionInProgress;
     BOOL _profileReloadInProgress;
+    BOOL _skillTuningLiveInputEnabled;
     MobaOverlayMode _mode;
 }
 
@@ -49,6 +50,13 @@
         _mode == MobaOverlayModeBattle &&
         [_environment isMobaBattleModeSupported] &&
         !_inputSuspended;
+}
+
+- (BOOL)isSkillTuningInputAllowed {
+    return _running && _streamConnected && _applicationActive &&
+        _mode == MobaOverlayModeSkillTuning && _skillTuningLiveInputEnabled &&
+        [_environment isMobaBattleModeSupported] && !_inputSuspended &&
+        !_orientationTransitionInProgress && !_profileReloadInProgress;
 }
 
 - (MobaOverlayMode)mode {
@@ -119,7 +127,7 @@
         return YES;
     }
 
-    if (_mode == MobaOverlayModeBattle) {
+    if (_mode == MobaOverlayModeBattle || _skillTuningLiveInputEnabled) {
         [self interruptAndReleaseInputsForReason:[self interruptionReasonForMode:mode]];
     }
 
@@ -138,6 +146,17 @@
         [_environment setMobaNativeTouchRoutingEnabled:[self nativeTouchRoutingEnabledForMode:mode]];
     }
     return YES;
+}
+
+- (BOOL)beginSkillTuningLiveInput {
+    if (!_running || !_streamConnected || !_applicationActive ||
+        _orientationTransitionInProgress || _profileReloadInProgress ||
+        _mode != MobaOverlayModeSkillTuning || ![_environment isMobaBattleModeSupported]) return NO;
+    _skillTuningLiveInputEnabled = YES;
+    _inputSuspended = NO;
+    // Battle participants intentionally remain disabled outside Battle mode.
+    [self setLocalInteractionEnabled:NO];
+    return self.isSkillTuningInputAllowed;
 }
 
 - (void)start {
@@ -181,6 +200,7 @@
     // This synchronous gate closes before release-all is enqueued so no new
     // diagnostics or future Battle control can submit input during interruption.
     _inputSuspended = YES;
+    _skillTuningLiveInputEnabled = NO;
     [self setLocalInteractionEnabled:NO];
     [_inputDispatcher releaseAllInputs];
 

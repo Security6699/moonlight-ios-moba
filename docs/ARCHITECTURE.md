@@ -253,9 +253,15 @@ The debug nine-point panel submits only the fixed canvas points documented in th
 - Battle: MOBA controls consume their own hit areas and a StreamView routing gate blocks native direct-touch and Pencil gameplay input after real mouse handling. No full-screen overlay view is added.
 - UI: overlay controls are reduced/noninteractive and native StreamView interaction is enabled.
 - Layout Edit: the Lifecycle gate is closed before the editor overlay is attached. The overlay edits control properties and cannot call Dispatcher, Session, Strategy, or Cancel input.
-- Skill Tuning: preview or live-cast behavior with explicit controls.
+- Skill Tuning: a Foundation-only typed draft remains separate from the committed snapshot. Every edit constructs and validates a complete Runtime + Champion candidate and all four skill descriptors. Invalid edits keep the previous fully valid preview candidate. Preview Only updates pure geometry and a draw-only overlay with zero Dispatcher calls. Live Cast opens a Lifecycle-managed gate for only the selected candidate skill while Battle movement, Attack and the other skills remain disabled.
 
 Mode transitions always close Battle input first. Leaving Battle then enqueues dispatcher release-all and resets local interaction before UI mode restores native StreamView routing. Entering Battle disables native routing before Battle controls become interactive. Layout Edit and Skill Tuning keep native routing disabled.
+
+Skill Tuning captures an immutable descriptor when a cast begins. Its direct chain is `MobaSkillButtonView → MobaSkillCastController → MobaCastSession → Strategy → Coalescer/Cancel Zone → Dispatcher`. Draft edits affect the next cast and never replace the normal Battle package. Preview gestures do not enter this chain. Switching Preview/Live, switching skills, Save, Revert, Defaults and all application or stream interruptions close the tuning gate, release tracked input and silently reset local state.
+
+Aim presentation reuses `MobaAimGeometry`, `MobaPointCastGeometry`, `MobaPointResponse` and `MobaGameCanvas`. `MobaAimPreviewMapGamePointToVideoRect` maps inclusive canvas endpoints into the actual Runtime Aspect Fit `videoRect`, including black-bar offsets. Safe-area normalized layout coordinates are not inputs to aim geometry.
+
+Skill Tuning persistence uses an exact-base Repository candidate. It validates Runtime and current Champion with the unchanged Input and Layout models, prebuilds the runtime and complete Q/W/E/R package, enters profile reload, atomically writes Runtime then Champion, conditionally commits the snapshot and installs the prepared package. Failure restores both previous byte sequences and the previous snapshot identity. Input and Layout are never written.
 
 ## 7. Lifecycle
 

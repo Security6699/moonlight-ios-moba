@@ -29,6 +29,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) CGFloat disabledOpacity;
 @property (nonatomic, readonly) CGFloat effectiveVisualOpacity;
 @property (nonatomic, copy, readonly) NSString *displayLabel;
+// Candidate controls used by Skill Tuning opt in explicitly. Normal Battle
+// controls remain noninteractive in Skill Tuning mode.
+@property (nonatomic) BOOL skillTuningInteractionEnabled;
 
 - (nullable instancetype)initWithController:(MobaSkillCastController *)controller
                           streamCoordinateView:(UIView *)streamCoordinateView NS_DESIGNATED_INITIALIZER;
