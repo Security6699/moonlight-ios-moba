@@ -349,6 +349,22 @@ NSArray<MobaCanonicalSkillSlot> *MobaCanonicalSkillSlots(void) {
             return nil;
         }
 
+        if (skill.castType == MobaProfileSkillCastTypeDirectional ||
+            skill.castType == MobaProfileSkillCastTypePoint) {
+            NSNumber *wheelRadius = layout.wheelRadiusPt;
+            double wheelRadiusValue = wheelRadius.doubleValue;
+            if (wheelRadius == nil || !isfinite(wheelRadiusValue) || wheelRadiusValue <= 0.0) {
+                [self failWithCode:MobaCastStrategyFactoryErrorMissingAimedWheelRadius
+                        championID:championID
+                          skillSlot:skillSlot
+                          fieldPath:[NSString stringWithFormat:@"$.controls.%@.wheelRadiusPt", definition.layoutControlName]
+                          operation:@"resolve-aimed-wheel-radius"
+                        description:@"Directional and point skills require a finite, positive wheelRadiusPt."
+                              error:error];
+                return nil;
+            }
+        }
+
         uint16_t hostKeyCode = keyNumber.unsignedShortValue;
         id<MobaCastStrategy> strategy = nil;
         MobaCursorCoalescer *coalescer = nil;
@@ -410,16 +426,6 @@ NSArray<MobaCanonicalSkillSlot> *MobaCanonicalSkillSlots(void) {
                 }
             }
             else if (skill.castType == MobaProfileSkillCastTypePoint) {
-                if (layout.wheelRadiusPt == nil) {
-                    [self failWithCode:MobaCastStrategyFactoryErrorMissingAimedWheelRadius
-                            championID:championID
-                              skillSlot:skillSlot
-                              fieldPath:[NSString stringWithFormat:@"$.controls.%@.wheelRadiusPt", definition.layoutControlName]
-                              operation:@"resolve-point-wheel-radius"
-                            description:@"A point-cast layout control requires wheelRadiusPt."
-                                  error:error];
-                    return nil;
-                }
                 MobaPointCastTargetMode targetMode;
                 if (skill.targetMode == MobaProfilePointTargetModeGround) {
                     targetMode = MobaPointCastTargetModeGround;

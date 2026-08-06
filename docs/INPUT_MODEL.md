@@ -69,6 +69,18 @@ typedef NS_ENUM(NSInteger, MobaCastState) {
 
 Each skill control tracks exactly one `UITouch`. One touch belongs to one control.
 
+`MobaSkillButtonView` first converts UIKit locations to StreamView coordinates. Its UIKit-free `MobaSkillCastController` then owns the corresponding semantic token and one independent `MobaCastSession`. View code never calls Dispatcher or a concrete Strategy.
+
+For an aimed skill update, orchestration computes exactly one displacement.
+
+```text
+displacement = currentStreamViewPoint - initialStreamViewPoint
+```
+
+Directional and Point updates receive this same displacement. The Cancel Zone evaluates the same current StreamView point before Session update. An accepted Session result is then consumed by the concrete Strategy and applied to Cancel Zone presentation. A Session/Strategy/Cancel Zone acceptance mismatch triggers unified Lifecycle cancellation.
+
+Normal release first consumes its final StreamView endpoint through the same semantic update used by movement. The final displacement, meaningful threshold, Cancel Zone membership, Session state and Strategy target are therefore current before release. A mismatch during this final update requests Lifecycle cancellation and produces no stale commit or configured cancel action. Release then produces one Session terminal outcome. Committed releases call Strategy commit. Only an intentional release from the final `CancelArmed` state calls Strategy cancel. `touchesCancelled`, background, disconnect, orientation, profile reload and teardown never synthesize a configured cancel action. They use Lifecycle release-all followed by silent local reset.
+
 ## 5. Default aim
 
 When an aimed skill is pressed without a meaningful drag:

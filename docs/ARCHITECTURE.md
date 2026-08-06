@@ -26,7 +26,8 @@ Limelight/Input/MOBA/
 ├── Controls/
 │   ├── MobaOverlayView
 │   ├── MoveJoystickView
-│   ├── SkillButtonView
+│   ├── MobaSkillButtonView
+│   ├── MobaSkillCastController
 │   ├── AttackButtonView
 │   ├── CancelZoneView
 │   └── MobaToolbarView
@@ -90,9 +91,26 @@ Serializes all remote input, tracks pressed keys/buttons, prevents duplicate tra
 
 ### Controls
 
-UIKit views own visual state and one active `UITouch`. Controls emit semantic gestures to the coordinator or cast strategy; they do not contain champion-specific logic.
+UIKit views own visual state and one active `UITouch`. Controls emit semantic gestures to a UIKit-free controller. They do not contain champion-specific logic.
 
-`SkillButtonView` converts UIKit touch locations and visual state into semantic cast events such as meaningful drag and cancel-zone membership. It does not own cast transitions or remote-input ordering.
+`MobaSkillButtonView` converts its one owned UIKit touch to StreamView coordinates before forwarding semantic begin, update, release, or cancellation calls. It never imports Dispatcher or a concrete Strategy. `MobaSkillCastController` owns one immutable runtime descriptor, one independent `MobaCastSession`, semantic token identity, the initial StreamView point, the latest StreamView point, and local pressed state. It owns neither `UITouch` nor `UIView`.
+
+The production call chain is fixed.
+
+```text
+MobaSkillButtonView
+→ MobaSkillCastController
+→ MobaCastSession
+→ concrete Strategy
+→ MobaCursorCoalescer / MobaCancelZoneController
+→ MobaInputDispatcher
+```
+
+Begin checks the Battle gate, begins Session ownership, begins the shared Cancel Zone only for aimed cancel-enabled skills, then begins the Strategy. Strategy begin preserves its own cursor-before-key ordering. Any partial begin failure silently resets Strategy and Session, ends the owned Cancel Zone presentation, clears local ownership and requests the unified Lifecycle touch-cancellation boundary.
+
+Update computes one current-minus-initial displacement in StreamView coordinates. Directional and Point strategies consume that same displacement, while Point derives both direction and distance from it. The meaningful threshold uses the layout wheel radius and profile touch-response deadzone. Directional profiles without touch response use the named centralized fallback `MobaDirectionalMeaningfulDragDeadzoneRatio`, currently 0.10. After geometry evaluation, Session remains the only cast-state authority. If an accepted Session update is rejected by Strategy or cannot be applied to the Cancel Zone, orchestration requests Lifecycle cancellation rather than leaving split state.
+
+Normal release first validates and consumes the final StreamView endpoint through the same semantic update path used by `touchesMoved`. This recalculates displacement, meaningful drag, Cancel Zone membership, Session active state and the Strategy target before Session produces its sole terminal outcome. A final update mismatch requests Lifecycle cancellation and cannot commit a stale target or invoke intentional cancel input. Committed outcomes call Strategy commit. Only an intentional release whose final accepted state is `CancelArmed` calls Strategy cancel. UIKit `touchesCancelled` and Lifecycle interruptions never call configured cancel actions. They close the Battle gate, enqueue Dispatcher release-all, and silently reset the View, Controller, Session, Strategy, Coalescer and Cancel Zone presentation.
 
 ### MobaCastStateMachine
 
@@ -140,7 +158,7 @@ Strategy initializers continue to support no coalescer for compatibility and tes
 
 An intentional cancel-zone release selects a configured keyboard, right-mouse, or release-only action. Keyboard and mouse cancellation use the Dispatcher's ordered cancellation operations. Lifecycle interruption does not send the configured cancel action. It relies on lifecycle `releaseAllInputs`, then silently resets strategy and Session state.
 
-The cancel zone is one shared, fixed `MobaCancelZoneView`. It is a noninteractive presentation view and never owns a skill touch. Future `SkillButtonView` instances retain their touch ownership, convert the owned touch location into StreamView coordinates, and pass that point through `MobaCancelZoneGeometry`. The geometry performs a pure radial circle test using `visualDiameter / 2 - activationInset` as its activation radius.
+The cancel zone is one shared, fixed `MobaCancelZoneView`. It is a noninteractive presentation view and never owns a skill touch. Each `MobaSkillButtonView` retains its own touch ownership, converts the owned touch location into StreamView coordinates, and routes that point through its Controller to `MobaCancelZoneGeometry`. The geometry performs a pure radial circle test using `visualDiameter / 2 - activationInset` as its activation radius.
 
 The geometric inside value is only an input to `MobaCastSession`. It cannot arm the presentation directly. An accepted Session result in `CancelArmed` arms the zone, while accepted `AimingDefault` and `AimingDragged` results restore the normal casting visual. The Strategy alone maps an intentional cancelled terminal result to its configured keyboard, right-mouse, or release-only input. Neither the View nor the cast state machine hard-codes Escape.
 
@@ -168,13 +186,15 @@ Runtime, input, layout, champion, and nested profile objects are immutable after
 
 `MobaProfileRepository` forms the transactional activation boundary. It reads runtime, input, active layout, and one caller-selected champion relative path through `MobaProfileStore`. All four profiles are migrated, validated, and constructed locally. Cross-profile validation then confirms every champion skill `inputAction` resolves in the input profile. Only a fully valid candidate becomes one immutable `MobaProfileSnapshot`, which replaces `activeSnapshot` in one synchronized assignment. Any storage, parsing, migration, validation, construction, or reference failure preserves the prior snapshot object and contents.
 
-Repository activation includes a candidate-acceptance seam. `MobaCastStrategyFactory` must successfully map the typed candidate snapshot into a `MobaChampionRuntime` before Repository commits it as `activeSnapshot`. Factory failure preserves the old snapshot and its field-specific runtime error. The Factory never parses JSON or reads storage.
+Repository activation includes a candidate-acceptance seam. `MobaCastStrategyFactory` must successfully map the typed candidate snapshot into a `MobaChampionRuntime` before Repository commits it as `activeSnapshot`. Factory failure preserves the old snapshot and its field-specific runtime error. The Factory never parses JSON or reads storage. Directional and Point descriptors require their canonical layout control to provide a finite, positive `wheelRadiusPt` at this assembly boundary. Instant descriptors do not require that field.
 
 The canonical UI slots are Q, W, E, and R. Each slot maps once to the corresponding champion skill and `abilityQ`, `abilityW`, `abilityE`, or `abilityR` layout control. Its display label stays Q, W, E, or R. The host key is resolved separately through the skill `inputAction` and Input Profile actions dictionary. Remapped host letters are not UI labels. A playable runtime requires all four canonical slots. Additional future noncanonical skill fields remain valid profile data but are ignored by this four-slot runtime shell.
 
 Each aimed descriptor owns an independent display-link driver and `MobaCursorCoalescer`, configured with the Runtime Profile update rate and sharing the one Dispatcher. Instant descriptors create neither. `MobaChampionSelectionController` performs manual Caitlyn or Debug Instant replacement inside paired `profileWillReload` and `profileDidReload` calls. It releases and resets the old runtime through Lifecycle, builds and validates the candidate, swaps registered coalescer participants only after Repository commits, and restores the old snapshot, runtime, selection, and participants on failure.
 
-`MobaChampionSelectorView` is a compact UI-mode-only manual selection shell. It delegates champion IDs and owns no Repository, Strategy, Dispatcher, or remote-input behavior. This issue deliberately does not add `SkillButtonView`. A later skill-control issue will create one Cast Session and UIKit touch orchestration boundary for each selected runtime descriptor.
+`MobaChampionSelectorView` is a compact UI-mode-only manual selection shell. It delegates champion IDs and owns no Repository, Strategy, Dispatcher, or remote-input behavior. `MobaSkillControlPackage` holds a detached candidate set of all four Q, W, E and R Controllers, Views and Lifecycle reset participants. Champion Selection asks its package builder to complete this set inside the Repository candidate validator after runtime assembly and before snapshot commit. An incomplete package is silently reset and never attached. Its failure preserves the old snapshot, runtime, selection, installed Views and both View and Coalescer participant registrations. On success Champion Selection commits the snapshot, replaces runtime Coalescer participants and active runtime state, then Coordinator atomically installs the already prepared package. Coordinator unregisters only the old Views because Champion Selection owns Coalescer participant replacement.
+
+Each skill layout comes directly from its immutable runtime descriptor. Safe-area normalized centers determine placement. Point sizes determine visible and hit-area bounds. Profile opacity, pressed opacity, disabled opacity, z-index and interaction flag remain independent. Battle shows interactive controls only while Lifecycle allows input. UI hides them. Layout Edit and Skill Tuning show them without gameplay interaction.
 
 Issue #22 owns document picker access, import/export, backup rotation, user confirmation, and migration persistence. This profile layer performs none of those workflows.
 

@@ -52,6 +52,13 @@
 		AA1000000000000000000003 /* AttackButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000104 /* AttackButtonView.m */; };
 		AA1000000000000000000004 /* AttackButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000104 /* AttackButtonView.m */; };
 		AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = AA1000000000000000000105 /* MobaAttackControllerTests.m */; };
+		C05100000000000000000001 /* MobaSkillCastController.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000102 /* MobaSkillCastController.m */; };
+		C05100000000000000000002 /* MobaSkillCastController.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000102 /* MobaSkillCastController.m */; };
+		C05100000000000000000003 /* MobaSkillButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000104 /* MobaSkillButtonView.m */; };
+		C05100000000000000000004 /* MobaSkillButtonView.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000104 /* MobaSkillButtonView.m */; };
+		C05200000000000000000001 /* MobaSkillControlPackage.m in Sources */ = {isa = PBXBuildFile; fileRef = C05200000000000000000102 /* MobaSkillControlPackage.m */; };
+		C05200000000000000000002 /* MobaSkillControlPackage.m in Sources */ = {isa = PBXBuildFile; fileRef = C05200000000000000000102 /* MobaSkillControlPackage.m */; };
+		C05100000000000000000005 /* MobaSkillCastOrchestrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000105 /* MobaSkillCastOrchestrationTests.m */; };
 		AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
 		AB1100000000000000000002 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
 		AB1100000000000000000003 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
@@ -360,6 +367,13 @@
 		AA1000000000000000000103 /* AttackButtonView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AttackButtonView.h; sourceTree = "<group>"; };
 		AA1000000000000000000104 /* AttackButtonView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AttackButtonView.m; sourceTree = "<group>"; };
 		AA1000000000000000000105 /* MobaAttackControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaAttackControllerTests.m; sourceTree = "<group>"; };
+		C05100000000000000000101 /* MobaSkillCastController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaSkillCastController.h; sourceTree = "<group>"; };
+		C05100000000000000000102 /* MobaSkillCastController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaSkillCastController.m; sourceTree = "<group>"; };
+		C05100000000000000000103 /* MobaSkillButtonView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaSkillButtonView.h; sourceTree = "<group>"; };
+		C05100000000000000000104 /* MobaSkillButtonView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaSkillButtonView.m; sourceTree = "<group>"; };
+		C05200000000000000000101 /* MobaSkillControlPackage.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaSkillControlPackage.h; sourceTree = "<group>"; };
+		C05200000000000000000102 /* MobaSkillControlPackage.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaSkillControlPackage.m; sourceTree = "<group>"; };
+		C05100000000000000000105 /* MobaSkillCastOrchestrationTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaSkillCastOrchestrationTests.m; sourceTree = "<group>"; };
 		AB1100000000000000000101 /* MobaNativeTouchRoutingController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaNativeTouchRoutingController.h; sourceTree = "<group>"; };
 		AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaNativeTouchRoutingController.m; sourceTree = "<group>"; };
 		AB1100000000000000000103 /* MobaModeToolbarView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaModeToolbarView.h; sourceTree = "<group>"; };
@@ -916,6 +930,12 @@
 				AB1100000000000000000104 /* MobaModeToolbarView.m */,
 				AA1000000000000000000101 /* MobaAttackController.h */,
 				AA1000000000000000000102 /* MobaAttackController.m */,
+				C05100000000000000000103 /* MobaSkillButtonView.h */,
+				C05100000000000000000104 /* MobaSkillButtonView.m */,
+				C05100000000000000000101 /* MobaSkillCastController.h */,
+				C05100000000000000000102 /* MobaSkillCastController.m */,
+				C05200000000000000000101 /* MobaSkillControlPackage.h */,
+				C05200000000000000000102 /* MobaSkillControlPackage.m */,
 				A9C000000000000000000101 /* MobaJoystickModel.h */,
 				A9C000000000000000000102 /* MobaJoystickModel.m */,
 				A9C000000000000000000103 /* MobaMovementController.h */,
@@ -953,6 +973,7 @@
 				AF160000000000000000010A /* MobaCancelZoneIntegrationTests.m */,
 				AF1600000000000000000109 /* MobaCancelZoneViewTests.m */,
 				AA1000000000000000000105 /* MobaAttackControllerTests.m */,
+				C05100000000000000000105 /* MobaSkillCastOrchestrationTests.m */,
 				AD1400000000000000000108 /* MobaDirectionalCastStrategyTests.m */,
 				AD1400000000000000000107 /* MobaInstantCastStrategyTests.m */,
 				AC1300000000000000000106 /* MobaCastSessionTests.m */,
@@ -1347,6 +1368,10 @@
 				AA1000000000000000000002 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000004 /* AttackButtonView.m in Sources */,
 				AA1000000000000000000005 /* MobaAttackControllerTests.m in Sources */,
+				C05100000000000000000002 /* MobaSkillCastController.m in Sources */,
+				C05100000000000000000004 /* MobaSkillButtonView.m in Sources */,
+				C05200000000000000000002 /* MobaSkillControlPackage.m in Sources */,
+				C05100000000000000000005 /* MobaSkillCastOrchestrationTests.m in Sources */,
 				AD1400000000000000000002 /* MobaCastStrategy.m in Sources */,
 				AD1400000000000000000004 /* MobaInstantCastStrategy.m in Sources */,
 				AD1400000000000000000006 /* MobaDirectionalCastStrategy.m in Sources */,
@@ -1463,6 +1488,9 @@
 				AF1600000000000000000005 /* MobaCancelZoneView.m in Sources */,
 				AA1000000000000000000001 /* MobaAttackController.m in Sources */,
 				AA1000000000000000000003 /* AttackButtonView.m in Sources */,
+				C05100000000000000000001 /* MobaSkillCastController.m in Sources */,
+				C05100000000000000000003 /* MobaSkillButtonView.m in Sources */,
+				C05200000000000000000001 /* MobaSkillControlPackage.m in Sources */,
 				AD1400000000000000000001 /* MobaCastStrategy.m in Sources */,
 				AD1400000000000000000003 /* MobaInstantCastStrategy.m in Sources */,
 				AD1400000000000000000005 /* MobaDirectionalCastStrategy.m in Sources */,

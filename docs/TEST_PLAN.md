@@ -48,6 +48,25 @@
 - Touch cancellation.
 - Repeated begin while active is rejected.
 
+### MobaSkillCastOrchestrationTests
+
+- Independent Session and semantic token ownership for Q, W, E and R.
+- Battle gate, Session, Cancel Zone and Strategy begin ordering.
+- Transactional rollback when Cancel Zone or Strategy begin fails.
+- One current-minus-initial StreamView displacement for Directional and Point updates.
+- The final release endpoint is consumed as a semantic update before terminal release, including dead-zone and Cancel Zone transitions.
+- Final endpoint failure requests Lifecycle cancellation and cannot commit an earlier target.
+- Accepted Session update mismatch escalates to Lifecycle cancellation.
+- Intentional `CancelArmed` release is the only configured Strategy cancel path.
+- Final cursor remains ordered before skill key-up through Strategy and Dispatcher.
+- UIKit cancellation and Lifecycle reset release tracked input once, silently clear local state and emit no Escape or mouse action.
+- UI hides skill controls. Layout Edit and Skill Tuning show disabled controls without gameplay input.
+- Profile-driven size, hit area, opacity, z-index, label and interaction behavior.
+- Candidate Q/W/E/R package failure preserves snapshot, runtime, selection, installed Views and participant registrations.
+- Successful Champion replacement installs one prebuilt package and swaps View participants once.
+- Factory assembly rejects missing, nonfinite or nonpositive aimed-skill wheel radius while Instant skills may omit it.
+- Semantic View tests use object tokens and pre-converted points instead of private `UITouch` construction.
+
 ### MobaInputDispatcherTests
 
 - Duplicate key-down/up suppression.
