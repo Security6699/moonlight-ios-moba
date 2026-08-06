@@ -200,6 +200,7 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
             _selectedChampionID = [championID copy];
             _activeChampionRuntime = candidateRuntime;
         }
+        [self.delegate championSelectionController:self didSelectRuntime:candidateRuntime];
         return YES;
     }
     @catch (NSException *exception) {

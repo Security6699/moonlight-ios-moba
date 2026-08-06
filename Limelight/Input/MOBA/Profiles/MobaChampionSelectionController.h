@@ -41,8 +41,16 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
 - (void)unregisterLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant;
 @end
 
+@class MobaChampionSelectionController;
+
+@protocol MobaChampionSelectionControllerDelegate <NSObject>
+- (void)championSelectionController:(MobaChampionSelectionController *)controller
+                    didSelectRuntime:(MobaChampionRuntime *)runtime;
+@end
+
 @interface MobaChampionSelectionController : NSObject
 
+@property (nonatomic, weak, nullable) id<MobaChampionSelectionControllerDelegate> delegate;
 @property (class, nonatomic, readonly) NSArray<MobaChampionCatalogEntry *> *defaultCatalogEntries;
 @property (nonatomic, copy, readonly) NSArray<MobaChampionCatalogEntry *> *catalogEntries;
 @property (atomic, copy, readonly, nullable) NSString *selectedChampionID;

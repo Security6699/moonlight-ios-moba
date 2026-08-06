@@ -110,6 +110,22 @@
 - (void)setMobaNativeTouchRoutingEnabled:(BOOL)enabled { (void)enabled; }
 @end
 
+@interface MobaSelectionRuntimeDelegate : NSObject <MobaChampionSelectionControllerDelegate>
+@property (nonatomic, strong) NSMutableArray<MobaChampionRuntime *> *runtimes;
+@end
+@implementation MobaSelectionRuntimeDelegate
+- (instancetype)init {
+    self = [super init];
+    if (self) _runtimes = [[NSMutableArray alloc] init];
+    return self;
+}
+- (void)championSelectionController:(MobaChampionSelectionController *)controller
+                    didSelectRuntime:(MobaChampionRuntime *)runtime {
+    (void)controller;
+    [self.runtimes addObject:runtime];
+}
+@end
+
 @interface MobaChampionSelectionControllerTests : XCTestCase
 @property (nonatomic, strong) NSFileManager *fileManager;
 @property (nonatomic, strong) NSURL *containerURL;
@@ -276,6 +292,31 @@
     XCTAssertTrue([self.selection selectChampionID:@"caitlyn" error:nil]);
     XCTAssertEqual(self.lifecycle.participants.count, 4u);
     for (id participant in oldParticipants) XCTAssertFalse([self.lifecycle.participants containsObject:participant]);
+}
+
+- (void)testSuccessfulSelectionNotifiesRuntimeDelegateInsideExistingTransaction {
+    MobaSelectionRuntimeDelegate *delegate = [[MobaSelectionRuntimeDelegate alloc] init];
+    self.selection.delegate = delegate;
+    XCTAssertTrue([self.selection selectChampionID:@"caitlyn" error:nil]);
+    XCTAssertEqual(delegate.runtimes.count, 1u);
+    XCTAssertEqual(delegate.runtimes.firstObject, self.selection.activeChampionRuntime);
+    XCTAssertTrue([self.selection selectChampionID:@"debug-instant" error:nil]);
+    XCTAssertEqual(delegate.runtimes.count, 2u);
+    XCTAssertEqual(delegate.runtimes.lastObject, self.selection.activeChampionRuntime);
+}
+
+- (void)testFailedSelectionDoesNotNotifyRuntimeDelegate {
+    MobaSelectionRuntimeDelegate *delegate = [[MobaSelectionRuntimeDelegate alloc] init];
+    self.selection.delegate = delegate;
+    XCTAssertTrue([self.selection selectChampionID:@"caitlyn" error:nil]);
+    XCTAssertEqual(delegate.runtimes.count, 1u);
+    NSData *invalid = [@"{" dataUsingEncoding:NSUTF8StringEncoding];
+    XCTAssertTrue([self.store writeData:invalid
+                         toRelativePath:@"champions/debug-instant.json"
+                       replaceExisting:YES
+                                  error:nil]);
+    XCTAssertFalse([self.selection selectChampionID:@"debug-instant" error:nil]);
+    XCTAssertEqual(delegate.runtimes.count, 1u);
 }
 
 - (void)testFailedSwitchKeepsOldCoalescersRegisteredAndCleansCandidateDrivers {
