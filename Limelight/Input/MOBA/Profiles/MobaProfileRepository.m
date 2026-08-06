@@ -76,10 +76,19 @@ NSString *const MobaActiveLayoutProfileRelativePath = @"active-layout.json";
 }
 
 - (BOOL)reloadWithChampionRelativePath:(NSString *)championRelativePath error:(NSError **)error {
+    return [self reloadWithChampionRelativePath:championRelativePath
+                              candidateValidator:nil
+                                           error:error];
+}
+
+- (BOOL)reloadWithChampionRelativePath:(NSString *)championRelativePath
+                    candidateValidator:(MobaProfileCandidateValidator)candidateValidator
+                                 error:(NSError **)error {
     return [self loadRuntimeRelativePath:MobaRuntimeProfileRelativePath
                        inputRelativePath:MobaInputProfileRelativePath
                       layoutRelativePath:MobaActiveLayoutProfileRelativePath
                     championRelativePath:championRelativePath
+                      candidateValidator:candidateValidator
                                    error:error];
 }
 
@@ -87,6 +96,20 @@ NSString *const MobaActiveLayoutProfileRelativePath = @"active-layout.json";
               inputRelativePath:(NSString *)inputRelativePath
              layoutRelativePath:(NSString *)layoutRelativePath
            championRelativePath:(NSString *)championRelativePath
+                          error:(NSError **)error {
+    return [self loadRuntimeRelativePath:runtimeRelativePath
+                       inputRelativePath:inputRelativePath
+                      layoutRelativePath:layoutRelativePath
+                    championRelativePath:championRelativePath
+                      candidateValidator:nil
+                                   error:error];
+}
+
+- (BOOL)loadRuntimeRelativePath:(NSString *)runtimeRelativePath
+              inputRelativePath:(NSString *)inputRelativePath
+             layoutRelativePath:(NSString *)layoutRelativePath
+           championRelativePath:(NSString *)championRelativePath
+             candidateValidator:(MobaProfileCandidateValidator)candidateValidator
                           error:(NSError **)error {
     if (error != NULL) {
         *error = nil;
@@ -144,6 +167,9 @@ NSString *const MobaActiveLayoutProfileRelativePath = @"active-layout.json";
                                                                             inputProfile:input
                                                                            layoutProfile:layout
                                                                          championProfile:champion];
+    if (candidateValidator != nil && !candidateValidator(candidate, error)) {
+        return NO;
+    }
     @synchronized (self) {
         _activeSnapshot = candidate;
     }
