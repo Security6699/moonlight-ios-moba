@@ -22,7 +22,7 @@
 @property (nonatomic, readonly, getter=isInputSuspended) BOOL inputSuspended;
 @property (nonatomic, strong, readonly, nullable) MobaChampionRuntime *activeChampionRuntime;
 @property (nonatomic, strong, readonly) MobaChampionSelectionController *championSelectionController;
-@property (nonatomic, copy, readonly) NSDictionary<NSString *, MobaSkillButtonView *> *skillButtonViews;
+@property (nonatomic, copy, readonly, nonnull) NSDictionary<NSString *, MobaSkillButtonView *> *skillButtonViews;
 
 // Future MOBA battle input must only be emitted while this value is YES.
 @property (nonatomic, readonly, getter=isBattleInputAllowed) BOOL battleInputAllowed;
