@@ -274,3 +274,12 @@ App-active, orientation-complete, and profile-reloaded callbacks may clear suspe
 ## 8. Extension path
 
 Future champion support adds JSON profiles, not new UI classes. Future cast types add a new strategy and schema enum. Future device layouts add layout profiles. The fixed game canvas remains independent from device geometry.
+## Profile import and export
+
+`MobaProfileTransferService` is the Foundation-only preview and export boundary. It classifies a JSON dictionary by mutually exclusive structural signatures, invokes exactly one existing decoder, builds an exact-base Repository candidate, and prebuilds the Champion runtime and complete Q/W/E/R package. Its immutable `MobaProfileImportPlan` captures the source bytes, destination, active raw bytes, base snapshot identity, summary, runtime, and package. Preview never writes the Store or changes active state.
+
+`MobaProfileImportTransaction` owns confirmed replacement. It rechecks snapshot identity and raw active bytes, enters the existing profile-reload Lifecycle boundary, creates a complete backup, atomically writes the destination, commits the Repository candidate, and installs the prepared runtime/package. Failure restores the destination and Repository identity. A newly created Champion file is removed on rollback. Rollback failure is a separate error retaining both the original and rollback errors.
+
+`MobaProfileTransferViewController` owns only buttons, system document pickers, coordinated security-scoped reads, confirmation, status presentation, and temporary export cleanup. Coordinator transitions to UI mode before presenting it, so the Lifecycle closes the Battle input gate and releases tracked input. Background, rotation, disconnect, stop, disappearance, and feature disable dismiss pending transfer UI without automatically returning to Battle.
+
+Champion imports derive `champions/<validated-championId>.json` internally. Successful installation updates the selection catalog and performs one prepared runtime/control replacement. The Store remains a safe byte-I/O layer, the Repository remains the exact-base snapshot owner, and no transfer UI calls Dispatcher or a Decoder directly.

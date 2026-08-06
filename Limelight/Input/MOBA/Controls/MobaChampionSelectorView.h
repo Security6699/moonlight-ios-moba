@@ -33,6 +33,7 @@ NS_ASSUME_NONNULL_BEGIN
 - (instancetype)initWithCoder:(NSCoder *)coder NS_UNAVAILABLE;
 
 - (void)setMode:(MobaOverlayMode)mode;
+- (void)setCatalogEntries:(NSArray<MobaChampionCatalogEntry *> *)catalogEntries;
 
 // Deterministic semantic seam shared by the segmented-control action and tests.
 - (BOOL)requestSelectionAtIndex:(NSUInteger)index error:(NSError **)error;

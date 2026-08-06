@@ -341,6 +341,67 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
     return YES;
 }
 
+- (BOOL)commitPreparedImportedSnapshot:(MobaProfileSnapshot *)snapshot
+                                runtime:(MobaChampionRuntime *)runtime
+                     skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                  championRelativePath:(NSString *)championRelativePath
+                                  error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    NSString *championID = snapshot.championProfile.championID;
+    if (_invalidated || snapshot == nil || runtime == nil || !skillControlPackage.isComplete ||
+        championID.length == 0 || championRelativePath.length == 0 ||
+        ![runtime.championID isEqualToString:championID] || _repository.activeSnapshot != snapshot) {
+        if (error != NULL) {
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorPreparedCommitRejected
+                                       championID:championID ?: @"<none>"
+                                        operation:@"commit-imported-profile-runtime"
+                                      description:@"The imported runtime does not match the committed snapshot."
+                                  underlyingError:nil];
+        }
+        return NO;
+    }
+
+    MobaChampionCatalogEntry *entry = [[MobaChampionCatalogEntry alloc]
+        initWithChampionID:championID
+        displayName:snapshot.championProfile.displayName
+        championRelativePath:championRelativePath];
+    if (entry == nil) {
+        if (error != NULL) {
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorPreparedCommitRejected
+                                       championID:championID
+                                        operation:@"create-imported-catalog-entry"
+                                      description:@"The imported Champion catalog entry is invalid."
+                                  underlyingError:nil];
+        }
+        return NO;
+    }
+
+    MobaChampionRuntime *oldRuntime = self.activeChampionRuntime;
+    for (id<MobaLocalInteractionResetParticipant> participant in oldRuntime.localInteractionResetParticipants) {
+        [_lifecycle unregisterLocalInteractionResetParticipant:participant];
+    }
+    for (id<MobaLocalInteractionResetParticipant> participant in runtime.localInteractionResetParticipants) {
+        [_lifecycle registerLocalInteractionResetParticipant:participant];
+    }
+    NSMutableArray<MobaChampionCatalogEntry *> *entries = [_catalogEntries mutableCopy];
+    NSUInteger existingIndex = [entries indexOfObjectPassingTest:^BOOL(MobaChampionCatalogEntry *candidate,
+                                                                        NSUInteger index, BOOL *stop) {
+        return [candidate.championID isEqualToString:championID];
+    }];
+    if (existingIndex == NSNotFound) [entries addObject:entry];
+    else entries[existingIndex] = entry;
+    @synchronized (self) {
+        _catalogEntries = [entries copy];
+        _selectedChampionID = [championID copy];
+        _activeChampionRuntime = runtime;
+        _activeSkillControlPackage = skillControlPackage;
+    }
+    [self.delegate championSelectionController:self
+                               didSelectRuntime:runtime
+                            skillControlPackage:skillControlPackage];
+    return YES;
+}
+
 - (void)invalidate {
     if (_invalidated) {
         return;

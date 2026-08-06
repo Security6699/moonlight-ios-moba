@@ -122,6 +122,12 @@ static MobaMovementKeyMask MobaMovementKeyMaskForState(MobaJoystickState state) 
     return YES;
 }
 
+- (BOOL)updateKeyMappingForCommittedProfile:(MobaMovementKeyMapping)keyMapping {
+    if (_interactionEnabled || _state != MobaJoystickStateNeutral || _activeTouchToken != nil) return NO;
+    _keyMapping = keyMapping;
+    return YES;
+}
+
 - (NSArray<NSNumber *> *)orderedKeyCodes {
     return @[@(_keyMapping.upKeyCode),
              @(_keyMapping.leftKeyCode),

@@ -230,3 +230,10 @@ Run relevant XCTest targets when introduced. A successful compile does not repla
 ## 11. MVP exit criteria
 
 All automated tests pass; nine-point diagnostics pass; no lifecycle stuck keys; Caitlyn strategies behave as configured; layout/opacity and import/export persist; unresolved items are limited to documented calibration values rather than architecture defects.
+## JSON profile transfer
+
+The `MoonlightMobaTests` target covers content-based classification for all four profiles, malformed and ambiguous input, exact Decoder paths, unsupported versions, no-write preview, immutable raw bytes, exact-base rejection, summaries, raw-byte export, safe names, unknown-field round trips, and missing active data.
+
+Deterministic transaction tests inject Store, Repository, runtime/package builder, installer, Lifecycle, and backup-name failures. They verify all backup writes precede replacement, paired Lifecycle calls, one candidate commit and install, same-ID and new-ID Champion behavior, existing destination backup, new-file removal, raw-byte preservation, unchanged sibling profiles, and distinct rollback failures retaining both causes. UIKit business seams cover content-over-filename behavior, user cancellation, confirmation forwarding, raw temporary exports, and cleanup without iCloud or private `UITouch` construction.
+
+macOS CI remains the compilation and XCTest authority. Real iPad validation is still required for security-scoped provider behavior, popover and modal presentation, rotation/background dismissal, safe-area toolbar placement, and touch/input release under live streaming.

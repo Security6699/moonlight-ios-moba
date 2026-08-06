@@ -13,6 +13,7 @@
 @class MobaChampionRuntime;
 @class MobaChampionSelectionController;
 @class MobaSkillButtonView;
+@class UIViewController;
 
 @interface MobaOverlayCoordinator : NSObject
 
@@ -28,6 +29,8 @@
 @property (nonatomic, readonly, getter=isBattleInputAllowed) BOOL battleInputAllowed;
 
 - (instancetype)initWithStreamView:(StreamView *)streamView;
+- (instancetype)initWithStreamView:(StreamView *)streamView
+         presentationViewController:(nullable UIViewController *)presentationViewController;
 - (void)registerLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant;
 - (void)unregisterLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant;
 - (BOOL)transitionToMode:(MobaOverlayMode)mode;

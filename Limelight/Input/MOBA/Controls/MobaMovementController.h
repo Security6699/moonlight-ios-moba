@@ -68,6 +68,10 @@ FOUNDATION_EXPORT MobaMovementKeyMapping MobaDefaultMovementKeyMapping(void);
 // neutral, and without an owned touch.
 - (BOOL)updateWheelRadiusForCommittedProfile:(CGFloat)wheelRadius;
 
+// Profile-import commit boundary only. The controller must already be
+// disabled, neutral, and without an owned touch.
+- (BOOL)updateKeyMappingForCommittedProfile:(MobaMovementKeyMapping)keyMapping;
+
 /// Returns NO for disabled interaction or invalid model input.
 - (BOOL)updateDisplacement:(CGVector)displacement;
 

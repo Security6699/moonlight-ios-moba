@@ -198,6 +198,65 @@ NSString *const MobaActiveLayoutProfileRelativePath = @"active-layout.json";
     return [self rollbackLayoutCandidate:candidate error:error];
 }
 
+- (MobaProfileRepositoryCandidate *)prepareImportCandidateWithProfileKind:(MobaProfileKind)profileKind
+                                                                        data:(NSData *)data
+                                                                       error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    MobaProfileSnapshot *base = self.activeSnapshot;
+    if (base == nil) {
+        if (error != NULL) {
+            *error = [self candidateStateError:@"An active profile snapshot is required before import."
+                                      operation:@"prepare-import-candidate"];
+        }
+        return nil;
+    }
+
+    MobaRuntimeProfile *runtime = base.runtimeProfile;
+    MobaInputProfile *input = base.inputProfile;
+    MobaLayoutProfile *layout = base.layoutProfile;
+    MobaChampionProfile *champion = base.championProfile;
+    if ([profileKind isEqualToString:MobaProfileKindRuntime]) {
+        runtime = [_decoder decodeRuntimeProfileData:data error:error];
+    }
+    else if ([profileKind isEqualToString:MobaProfileKindInput]) {
+        input = [_decoder decodeInputProfileData:data error:error];
+    }
+    else if ([profileKind isEqualToString:MobaProfileKindLayout]) {
+        layout = [_decoder decodeLayoutProfileData:data error:error];
+    }
+    else if ([profileKind isEqualToString:MobaProfileKindChampion]) {
+        champion = [_decoder decodeChampionProfileData:data error:error];
+    }
+    else {
+        if (error != NULL) {
+            *error = MobaProfileMakeError(MobaProfileErrorUnknownProfileType,
+                                          profileKind ?: @"unknown",
+                                          @"$",
+                                          @"prepare-import-candidate",
+                                          @"The imported profile kind is not supported.",
+                                          nil);
+        }
+        return nil;
+    }
+    if (runtime == nil || input == nil || layout == nil || champion == nil ||
+        ![self validateChampion:champion inputProfile:input error:error]) {
+        return nil;
+    }
+    MobaProfileSnapshot *snapshot = [[MobaProfileSnapshot alloc] initWithRuntimeProfile:runtime
+                                                                           inputProfile:input
+                                                                          layoutProfile:layout
+                                                                        championProfile:champion];
+    return [[MobaProfileRepositoryCandidate alloc] initWithBaseSnapshot:base snapshot:snapshot];
+}
+
+- (BOOL)commitImportCandidate:(MobaProfileRepositoryCandidate *)candidate error:(NSError **)error {
+    return [self commitLayoutCandidate:candidate error:error];
+}
+
+- (BOOL)rollbackImportCandidate:(MobaProfileRepositoryCandidate *)candidate error:(NSError **)error {
+    return [self rollbackLayoutCandidate:candidate error:error];
+}
+
 - (BOOL)reloadWithChampionRelativePath:(NSString *)championRelativePath error:(NSError **)error {
     return [self reloadWithChampionRelativePath:championRelativePath
                               candidateValidator:nil

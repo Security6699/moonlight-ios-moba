@@ -493,4 +493,46 @@
     XCTAssertEqualObjects(error.userInfo[MobaProfileStoreErrorRelativePathKey], @"future.json");
 }
 
+- (void)testDataExistsReturnsFalseForMissingSafePathWithoutCreatingRoot {
+    NSError *error = nil;
+    XCTAssertFalse([self.store dataExistsAtRelativePath:@"champions/missing.json" error:&error]);
+    XCTAssertNil(error);
+    XCTAssertFalse([self.fileManager fileExistsAtPath:self.rootURL.path]);
+}
+
+- (void)testDataExistsReturnsTrueForRegularFile {
+    XCTAssertTrue([self.store writeData:[self dataForString:@"profile"]
+                         toRelativePath:@"champions/imported.json" replaceExisting:NO error:nil]);
+    XCTAssertTrue([self.store dataExistsAtRelativePath:@"champions/imported.json" error:nil]);
+}
+
+- (void)testDataExistsRejectsTraversal {
+    NSError *error = nil;
+    XCTAssertFalse([self.store dataExistsAtRelativePath:@"../outside.json" error:&error]);
+    XCTAssertEqual(error.code, MobaProfileStoreErrorInvalidPath);
+}
+
+- (void)testRemoveDataDeletesOnlyRequestedRegularFile {
+    XCTAssertTrue([self.store writeData:[self dataForString:@"profile"]
+                         toRelativePath:@"champions/imported.json" replaceExisting:NO error:nil]);
+    XCTAssertTrue([self.store removeDataAtRelativePath:@"champions/imported.json" error:nil]);
+    XCTAssertFalse([self.fileManager fileExistsAtPath:[self URLForRelativePath:@"champions/imported.json"].path]);
+}
+
+- (void)testRemoveMissingDataIsIdempotent {
+    XCTAssertTrue([self.store removeDataAtRelativePath:@"champions/missing.json" error:nil]);
+    XCTAssertTrue([self.store removeDataAtRelativePath:@"champions/missing.json" error:nil]);
+}
+
+- (void)testRemoveDataRejectsDirectoryAndTraversal {
+    XCTAssertTrue([self.fileManager createDirectoryAtURL:[self URLForRelativePath:@"champions/occupied.json"]
+                              withIntermediateDirectories:YES attributes:nil error:nil]);
+    NSError *directoryError = nil;
+    XCTAssertFalse([self.store removeDataAtRelativePath:@"champions/occupied.json" error:&directoryError]);
+    XCTAssertEqual(directoryError.code, MobaProfileStoreErrorDestinationConflict);
+    NSError *pathError = nil;
+    XCTAssertFalse([self.store removeDataAtRelativePath:@"../outside.json" error:&pathError]);
+    XCTAssertEqual(pathError.code, MobaProfileStoreErrorInvalidPath);
+}
+
 @end

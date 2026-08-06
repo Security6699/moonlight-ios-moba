@@ -92,6 +92,14 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
                                runtime:(MobaChampionRuntime *)runtime
                     skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
                                  error:(NSError **)error;
+
+// Import-only prepared install seam. Unlike editor/tuning commits, this may
+// atomically switch to a newly validated Champion ID and catalog path.
+- (BOOL)commitPreparedImportedSnapshot:(MobaProfileSnapshot *)snapshot
+                                runtime:(MobaChampionRuntime *)runtime
+                     skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                  championRelativePath:(NSString *)championRelativePath
+                                  error:(NSError **)error;
 - (void)invalidate;
 
 @end

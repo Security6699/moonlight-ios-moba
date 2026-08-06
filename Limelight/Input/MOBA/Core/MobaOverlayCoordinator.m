@@ -17,6 +17,7 @@
 #import "../Controls/MobaCancelZoneView.h"
 #import "../Controls/MobaMovementController.h"
 #import "../Controls/MobaModeToolbarView.h"
+#import "../Controls/MobaProfileTransferViewController.h"
 #import "../Controls/MobaSkillButtonView.h"
 #import "../Controls/MobaSkillCastController.h"
 #import "../Controls/MobaSkillControlPackage.h"
@@ -30,6 +31,8 @@
 #import "../Profiles/MobaSkillTuningSaveTransaction.h"
 #import "../Profiles/MobaProfileStore.h"
 #import "../Profiles/MobaProfileRepository.h"
+#import "../Profiles/MobaProfileImportTransaction.h"
+#import "../Profiles/MobaProfileTransferService.h"
 #import "../Profiles/MobaChampionSelectionController.h"
 
 #if DEBUG
@@ -61,6 +64,8 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                                       MobaLayoutEditorOverlayViewDelegate,
                                       MobaLayoutSaveInstalling,
                                       MobaModeToolbarViewDelegate,
+                                      MobaProfileImportInstalling,
+                                      MobaProfileTransferViewControllerDelegate,
                                       MobaSkillTuningOverlayViewDelegate,
                                       MobaSkillTuningSaveInstalling,
                                       MobaSkillCancelZoneRouting,
@@ -70,12 +75,17 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 @implementation MobaOverlayCoordinator {
     __weak StreamView *_streamView;
+    __weak UIViewController *_presentationViewController;
     MobaProfileStore *_profileStore;
     MobaProfileRepository *_profileRepository;
     MobaCADisplayLinkDriverProvider *_displayLinkDriverProvider;
     MobaCastStrategyFactory *_castStrategyFactory;
     MobaChampionSelectionController *_championSelectionController;
     MobaChampionSelectorView *_championSelectorView;
+    MobaProfileTransferService *_profileTransferService;
+    MobaProfileImportTransaction *_profileImportTransaction;
+    MobaProfileTransferViewController *_profileTransferViewController;
+    NSString *_activeChampionRelativePath;
     MobaInputDispatcher *_inputDispatcher;
     MobaOverlayLifecycle *_lifecycle;
     MobaCursorDiagnostics *_cursorDiagnostics;
@@ -104,9 +114,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (instancetype)initWithStreamView:(StreamView *)streamView {
+    return [self initWithStreamView:streamView presentationViewController:nil];
+}
+
+- (instancetype)initWithStreamView:(StreamView *)streamView
+         presentationViewController:(UIViewController *)presentationViewController {
     self = [super init];
     if (self) {
         _streamView = streamView;
+        _presentationViewController = presentationViewController;
         _profileStore = [[MobaProfileStore alloc] init];
         NSError *profileStoreError = nil;
         BOOL profileStoreReady = [_profileStore bootstrapDefaultsIfFeatureEnabled:YES error:&profileStoreError];
@@ -154,12 +170,25 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
             }
             _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
         }
+        MobaChampionCatalogEntry *selectedEntry = [_championSelectionController catalogEntryForChampionID:
+            _championSelectionController.selectedChampionID];
+        _activeChampionRelativePath = [selectedEntry.championRelativePath copy] ?: @"champions/caitlyn.json";
+        _profileTransferService = [[MobaProfileTransferService alloc]
+            initWithStore:_profileStore repository:_profileRepository
+            runtimeBuilder:_castStrategyFactory controlPackageBuilder:self];
+        _profileImportTransaction = [[MobaProfileImportTransaction alloc]
+            initWithStore:_profileStore repository:_profileRepository
+            lifecycle:(id<MobaProfileImportLifecycle>)_lifecycle installer:self];
         MobaLayoutControlProfile *moveLayout = _profileRepository.activeSnapshot.layoutProfile.controls[@"move"];
         CGFloat initialMoveRadius = moveLayout.wheelRadiusPt != nil
             ? moveLayout.wheelRadiusPt.doubleValue : MoveJoystickDefaultWheelRadius;
+        MobaMovementProfile *initialMovement = _profileRepository.activeSnapshot.inputProfile.movement;
+        MobaMovementKeyMapping initialMapping = initialMovement == nil ? MobaDefaultMovementKeyMapping()
+            : MobaMovementKeyMappingMake(initialMovement.upKeyCode, initialMovement.leftKeyCode,
+                                         initialMovement.downKeyCode, initialMovement.rightKeyCode);
         _movementController = [[MobaMovementController alloc]
             initWithInputDispatcher:_inputDispatcher
-                         keyMapping:MobaDefaultMovementKeyMapping()
+                         keyMapping:initialMapping
                         wheelRadius:initialMoveRadius
                       deadZoneRatio:MobaJoystickDefaultDeadZoneRatio
          directionHysteresisDegrees:MobaJoystickDefaultDirectionHysteresisDegrees];
@@ -172,7 +201,11 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                                                                      wheelRadius:initialMoveRadius
                                                                     hitAreaScale:moveHitScale];
         [_lifecycle registerLocalInteractionResetParticipant:_moveJoystickView];
-        _attackController = [[MobaAttackController alloc] initWithInputDispatcher:_inputDispatcher];
+        MobaInputProfile *initialInput = _profileRepository.activeSnapshot.inputProfile;
+        NSNumber *initialAttackCode = [initialInput keyCodeForAction:@"attack"];
+        _attackController = [[MobaAttackController alloc] initWithInputDispatcher:_inputDispatcher
+            attackKeyCode:initialAttackCode != nil ? initialAttackCode.unsignedShortValue : MobaDefaultAttackKeyCode
+            tapDurationMs:initialInput != nil ? initialInput.attackTapDurationMs : MobaDefaultAttackTapDurationMs];
         _attackController.delegate = self;
         MobaLayoutControlProfile *attackLayout = _profileRepository.activeSnapshot.layoutProfile.controls[@"attack"];
         CGSize attackVisualSize = attackLayout != nil
@@ -211,6 +244,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 #endif
     }
     return self;
+}
+
+- (void)dismissProfileTransferState {
+    [_profileTransferViewController cancelPendingTransfer];
+    if (_profileTransferViewController.presentingViewController != nil) {
+        [_profileTransferViewController dismissViewControllerAnimated:NO completion:nil];
+    }
+    _profileTransferViewController.delegate = nil;
+    _profileTransferViewController = nil;
 }
 
 - (nullable MobaSkillControlPackage *)controlPackageForRuntime:(MobaChampionRuntime *)runtime
@@ -829,6 +871,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)stop {
+    [self dismissProfileTransferState];
     [self discardLayoutEditorDraft];
     [self discardSkillTuningDraft];
     [_lifecycle stop];
@@ -847,12 +890,14 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)applicationWillResignActive {
+    [self dismissProfileTransferState];
     [_layoutEditorOverlayView cancelEditingInteraction];
     [_lifecycle applicationWillResignActive];
     [self restoreSkillTuningPreviewUIAfterInterruption];
 }
 
 - (void)applicationDidEnterBackground {
+    [self dismissProfileTransferState];
     [_layoutEditorOverlayView cancelEditingInteraction];
     [_layoutEditorOverlayView removeFromSuperview];
     _layoutEditorOverlayView = nil;
@@ -866,6 +911,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)streamDidDisconnect {
+    [self dismissProfileTransferState];
     [self discardLayoutEditorDraft];
     [self discardSkillTuningDraft];
     [_lifecycle streamDidDisconnect];
@@ -876,6 +922,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)viewControllerWillDisappear {
+    [self dismissProfileTransferState];
     [self discardLayoutEditorDraft];
     [self discardSkillTuningDraft];
     [_lifecycle viewControllerWillDisappear];
@@ -886,6 +933,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)orientationWillChange {
+    [self dismissProfileTransferState];
     [_layoutEditorOverlayView cancelEditingInteraction];
     [_lifecycle orientationWillChange];
     [self restoreSkillTuningPreviewUIAfterInterruption];
@@ -900,6 +948,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)profileWillReload {
+    [self dismissProfileTransferState];
     [_lifecycle profileWillReload];
     [self restoreSkillTuningPreviewUIAfterInterruption];
 }
@@ -909,6 +958,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)mobaFeatureWillDisable {
+    [self dismissProfileTransferState];
     [self discardLayoutEditorDraft];
     [self discardSkillTuningDraft];
     [_lifecycle mobaFeatureWillDisable];
@@ -1104,12 +1154,68 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     return [self transitionToMode:mode];
 }
 
+- (void)mobaModeToolbarViewDidRequestProfileTransfer:(MobaModeToolbarView *)toolbar {
+    (void)toolbar;
+    if (!_lifecycle.isRunning || _presentationViewController == nil ||
+        _profileTransferViewController != nil || _profileRepository.activeSnapshot == nil) return;
+    if (![self transitionToMode:MobaOverlayModeUI]) return;
+    _profileTransferViewController = [[MobaProfileTransferViewController alloc]
+        initWithTransferService:_profileTransferService importTransaction:_profileImportTransaction
+        activeChampionRelativePath:_activeChampionRelativePath];
+    _profileTransferViewController.delegate = self;
+    [_presentationViewController presentViewController:_profileTransferViewController
+                                              animated:YES completion:nil];
+}
+
+- (void)mobaProfileTransferViewControllerDidRequestClose:(MobaProfileTransferViewController *)controller {
+    if (controller != _profileTransferViewController) return;
+    [controller dismissViewControllerAnimated:YES completion:nil];
+    controller.delegate = nil;
+    _profileTransferViewController = nil;
+}
+
+- (void)mobaProfileTransferViewController:(MobaProfileTransferViewController *)controller
+              didImportActiveChampionPath:(NSString *)activeChampionRelativePath {
+    if (controller != _profileTransferViewController) return;
+    _activeChampionRelativePath = [activeChampionRelativePath copy];
+    [_championSelectorView setCatalogEntries:_championSelectionController.catalogEntries];
+    _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
+    [self applyCommittedLayoutPresentation];
+    [self layoutBattleControls];
+}
+
+- (BOOL)installImportedProfileSnapshot:(MobaProfileSnapshot *)snapshot
+                                runtime:(MobaChampionRuntime *)runtime
+                    skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                 championRelativePath:(NSString *)championRelativePath
+                                  error:(NSError **)error {
+    if (!_lifecycle.isInputSuspended || _movementController.isInteractionEnabled ||
+        _attackController.isInteractionEnabled) return NO;
+    BOOL committed = [_championSelectionController commitPreparedImportedSnapshot:snapshot
+        runtime:runtime skillControlPackage:skillControlPackage
+        championRelativePath:championRelativePath error:error];
+    if (!committed) return NO;
+    MobaMovementProfile *movement = snapshot.inputProfile.movement;
+    BOOL movementUpdated = [_movementController updateKeyMappingForCommittedProfile:
+        MobaMovementKeyMappingMake(movement.upKeyCode, movement.leftKeyCode,
+                                   movement.downKeyCode, movement.rightKeyCode)];
+    NSNumber *attackCode = [snapshot.inputProfile keyCodeForAction:@"attack"];
+    BOOL attackUpdated = [_attackController updateAttackKeyCodeForCommittedProfile:attackCode.unsignedShortValue
+        tapDurationMs:snapshot.inputProfile.attackTapDurationMs];
+    NSAssert(movementUpdated && attackUpdated, @"Profile input controls require a suspended neutral commit boundary.");
+    return YES;
+}
+
 - (BOOL)mobaChampionSelectorView:(MobaChampionSelectorView *)selectorView
                requestChampionID:(NSString *)championID
                             error:(NSError **)error {
     (void)selectorView;
     BOOL selected = [_championSelectionController selectChampionID:championID error:error];
     _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
+    if (selected) {
+        MobaChampionCatalogEntry *entry = [_championSelectionController catalogEntryForChampionID:championID];
+        _activeChampionRelativePath = [entry.championRelativePath copy];
+    }
     return selected;
 }
 
@@ -1127,6 +1233,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)dealloc {
+    [self dismissProfileTransferState];
     [_layoutEditorOverlayView cancelEditingInteraction];
     [_skillTuningOverlayView cancelPreview];
     [_lifecycle invalidateForDestruction];

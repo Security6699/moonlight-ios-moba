@@ -502,6 +502,28 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
     return data;
 }
 
+- (BOOL)dataExistsAtRelativePath:(NSString *)relativePath error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    NSError *pathError = nil;
+    NSURL *destinationURL = [self destinationURLForRelativePath:relativePath error:&pathError];
+    if (destinationURL == nil) {
+        if (error != NULL) *error = pathError;
+        return NO;
+    }
+    NSError *inspectionError = nil;
+    MobaProfileStoreItemKind kind = [self itemKindAtURL:destinationURL error:&inspectionError];
+    if (kind == MobaProfileStoreItemKindRegularFile) return YES;
+    if (kind == MobaProfileStoreItemKindMissing) return NO;
+    if (error != NULL) {
+        *error = [self errorWithCode:MobaProfileStoreErrorDestinationConflict
+                           operation:@"inspect"
+                        relativePath:relativePath
+                      underlyingError:inspectionError
+                          description:@"The profile path is occupied by a non-file item."];
+    }
+    return NO;
+}
+
 - (NSData *)readBundledDefaultDataForDestinationRelativePath:(NSString *)relativePath
                                                         error:(NSError **)error {
     if (error != NULL) *error = nil;
@@ -611,6 +633,41 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
                             relativePath:relativePath
                           underlyingError:writeError
                               description:@"Unable to atomically write MOBA profile data."];
+        }
+        return NO;
+    }
+    return YES;
+}
+
+- (BOOL)removeDataAtRelativePath:(NSString *)relativePath error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    NSError *pathError = nil;
+    NSURL *destinationURL = [self destinationURLForRelativePath:relativePath error:&pathError];
+    if (destinationURL == nil) {
+        if (error != NULL) *error = pathError;
+        return NO;
+    }
+    NSError *inspectionError = nil;
+    MobaProfileStoreItemKind kind = [self itemKindAtURL:destinationURL error:&inspectionError];
+    if (kind == MobaProfileStoreItemKindMissing) return YES;
+    if (kind != MobaProfileStoreItemKindRegularFile) {
+        if (error != NULL) {
+            *error = [self errorWithCode:MobaProfileStoreErrorDestinationConflict
+                               operation:@"remove"
+                            relativePath:relativePath
+                          underlyingError:inspectionError
+                              description:@"Only a regular profile file can be removed."];
+        }
+        return NO;
+    }
+    NSError *removeError = nil;
+    if (![_fileManager removeItemAtURL:destinationURL error:&removeError]) {
+        if (error != NULL) {
+            *error = [self errorWithCode:MobaProfileStoreErrorRemoveFailed
+                               operation:@"remove"
+                            relativePath:relativePath
+                          underlyingError:removeError
+                              description:@"Unable to remove the profile file during rollback."];
         }
         return NO;
     }

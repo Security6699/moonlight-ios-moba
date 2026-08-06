@@ -15,6 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (BOOL)mobaModeToolbarView:(MobaModeToolbarView *)toolbar
                 requestMode:(MobaOverlayMode)mode;
+@optional
+- (void)mobaModeToolbarViewDidRequestProfileTransfer:(MobaModeToolbarView *)toolbar;
 
 @end
 

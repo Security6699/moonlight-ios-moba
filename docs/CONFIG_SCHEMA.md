@@ -216,3 +216,10 @@ Import UI must show:
 - Summary of values that will replace active state.
 
 The user explicitly confirms before applying.
+## Import, export, and backups
+
+Profile type is detected from JSON content, not the external file name. A dictionary must match exactly one Runtime, Input, Layout, or Champion structural signature. Ambiguous and unknown content is rejected at `$`, after which the selected schema-v1 decoder remains the sole migration and validation authority.
+
+Exports return the active Store bytes without model reserialization. This preserves unknown root and nested values. Runtime, Input, and Layout replace `runtime.json`, `input.json`, and `active-layout.json`. Champion destinations are derived only from a validated identifier using `champions/<championId>.json`. Separators, traversal components, and other unsafe identifier characters are rejected.
+
+Each confirmed import creates `backups/<UTC timestamp>-<UUID>/` before active bytes change. It contains `runtime.json`, `input.json`, `active-layout.json`, `active-champion.json`, `manifest.json`, and `target-champion.json` when a different existing Champion destination is replaced. Manifest format version 1 records UTC time, import kind, prior selected Champion, original active Champion path, replacement path, source-path mappings, and whether the destination existed. Backup browsing and restore UI are not part of schema v1.
