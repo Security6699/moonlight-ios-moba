@@ -71,6 +71,8 @@ FOUNDATION_EXPORT MobaMovementKeyMapping MobaDefaultMovementKeyMapping(void);
 // Profile-import commit boundary only. The controller must already be
 // disabled, neutral, and without an owned touch.
 - (BOOL)updateKeyMappingForCommittedProfile:(MobaMovementKeyMapping)keyMapping;
+- (BOOL)canApplyCommittedKeyMapping;
+- (void)applyCommittedKeyMappingAfterPreflight:(MobaMovementKeyMapping)keyMapping;
 
 /// Returns NO for disabled interaction or invalid model input.
 - (BOOL)updateDisplacement:(CGVector)displacement;

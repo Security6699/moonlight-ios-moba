@@ -18,6 +18,7 @@
     UILabel *_statusLabel;
     UIStackView *_stackView;
     BOOL _exportPickerActive;
+    BOOL _closeNotified;
 }
 
 - (instancetype)initWithTransferService:(MobaProfileTransferService *)transferService
@@ -235,13 +236,25 @@
 
 - (void)documentPickerWasCancelled:(UIDocumentPickerViewController *)controller {
     (void)controller;
+    BOOL wasExport = _exportPickerActive;
     _exportPickerActive = NO;
+    if (wasExport) [self cleanupTemporaryExport];
+}
+
+- (void)finishClosingAndNotifyDelegate {
+    if (_closeNotified) return;
+    _closeNotified = YES;
     [self cancelPendingTransfer];
+    [self.delegate mobaProfileTransferViewControllerDidRequestClose:self];
 }
 
 - (void)closeTapped {
-    [self cancelPendingTransfer];
-    [self.delegate mobaProfileTransferViewControllerDidRequestClose:self];
+    [self finishClosingAndNotifyDelegate];
+}
+
+- (void)presentationControllerDidDismiss:(UIPresentationController *)presentationController {
+    (void)presentationController;
+    [self finishClosingAndNotifyDelegate];
 }
 
 - (void)dealloc {

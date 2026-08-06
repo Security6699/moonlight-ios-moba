@@ -60,6 +60,8 @@ NS_ASSUME_NONNULL_BEGIN
                                                              error:(NSError **)error;
 
 + (NSString *)safeExportFileComponent:(NSString *)component;
++ (nullable NSString *)safeChampionStorageComponentForIdentifier:(NSString *)identifier
+                                                            error:(NSError **)error;
 
 @end
 

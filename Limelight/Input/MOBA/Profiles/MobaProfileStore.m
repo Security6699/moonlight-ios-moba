@@ -674,4 +674,39 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
     return YES;
 }
 
+- (BOOL)removeDirectoryAtRelativePath:(NSString *)relativePath error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    NSError *pathError = nil;
+    NSURL *destinationURL = [self destinationURLForRelativePath:relativePath error:&pathError];
+    if (destinationURL == nil) {
+        if (error != NULL) *error = pathError;
+        return NO;
+    }
+    NSError *inspectionError = nil;
+    MobaProfileStoreItemKind kind = [self itemKindAtURL:destinationURL error:&inspectionError];
+    if (kind == MobaProfileStoreItemKindMissing) return YES;
+    if (kind != MobaProfileStoreItemKindDirectory) {
+        if (error != NULL) {
+            *error = [self errorWithCode:MobaProfileStoreErrorDestinationConflict
+                               operation:@"remove-directory"
+                            relativePath:relativePath
+                          underlyingError:inspectionError
+                              description:@"Only an import-owned backup directory can be removed."];
+        }
+        return NO;
+    }
+    NSError *removeError = nil;
+    if (![_fileManager removeItemAtURL:destinationURL error:&removeError]) {
+        if (error != NULL) {
+            *error = [self errorWithCode:MobaProfileStoreErrorRemoveFailed
+                               operation:@"remove-directory"
+                            relativePath:relativePath
+                          underlyingError:removeError
+                              description:@"Unable to remove the incomplete import backup directory."];
+        }
+        return NO;
+    }
+    return YES;
+}
+
 @end

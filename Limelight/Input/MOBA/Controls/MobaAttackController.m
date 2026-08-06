@@ -69,10 +69,19 @@ const NSUInteger MobaDefaultAttackTapDurationMs = 30;
 
 - (BOOL)updateAttackKeyCodeForCommittedProfile:(uint16_t)attackKeyCode
                                   tapDurationMs:(NSUInteger)tapDurationMs {
-    if (_interactionEnabled || _pressed || _activeTouchToken != nil) return NO;
+    if (![self canApplyCommittedAttackProfile]) return NO;
+    [self applyCommittedAttackKeyCodeAfterPreflight:attackKeyCode tapDurationMs:tapDurationMs];
+    return YES;
+}
+
+- (BOOL)canApplyCommittedAttackProfile {
+    return !_interactionEnabled && !_pressed && _activeTouchToken == nil;
+}
+
+- (void)applyCommittedAttackKeyCodeAfterPreflight:(uint16_t)attackKeyCode
+                                      tapDurationMs:(NSUInteger)tapDurationMs {
     _attackKeyCode = attackKeyCode;
     _tapDurationMs = tapDurationMs;
-    return YES;
 }
 
 - (BOOL)beginInteractionWithToken:(id)token {

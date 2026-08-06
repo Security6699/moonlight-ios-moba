@@ -35,6 +35,9 @@
 #import "../Profiles/MobaProfileTransferService.h"
 #import "../Profiles/MobaChampionSelectionController.h"
 
+#include <float.h>
+#include <math.h>
+
 #if DEBUG
 #import "../Debug/MobaCursorDiagnosticPanel.h"
 #endif
@@ -64,7 +67,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                                       MobaLayoutEditorOverlayViewDelegate,
                                       MobaLayoutSaveInstalling,
                                       MobaModeToolbarViewDelegate,
-                                      MobaProfileImportInstalling,
+                                      MobaProfileRuntimeInstallationHost,
                                       MobaProfileTransferViewControllerDelegate,
                                       MobaSkillTuningOverlayViewDelegate,
                                       MobaSkillTuningSaveInstalling,
@@ -84,6 +87,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     MobaChampionSelectorView *_championSelectorView;
     MobaProfileTransferService *_profileTransferService;
     MobaProfileImportTransaction *_profileImportTransaction;
+    MobaProfileRuntimeInstaller *_profileRuntimeInstaller;
     MobaProfileTransferViewController *_profileTransferViewController;
     NSString *_activeChampionRelativePath;
     MobaInputDispatcher *_inputDispatcher;
@@ -108,6 +112,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     MobaSkillControlPackage *_skillTuningControlPackage;
     MobaSkillButtonView *_skillTuningSkillView;
     MobaSkillRuntimeDescriptor *_skillTuningDescriptor;
+    MobaProfileSnapshot *_committedPresentationSnapshotOverride;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
 #endif
@@ -176,9 +181,10 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         _profileTransferService = [[MobaProfileTransferService alloc]
             initWithStore:_profileStore repository:_profileRepository
             runtimeBuilder:_castStrategyFactory controlPackageBuilder:self];
+        _profileRuntimeInstaller = [[MobaProfileRuntimeInstaller alloc] initWithHost:self];
         _profileImportTransaction = [[MobaProfileImportTransaction alloc]
             initWithStore:_profileStore repository:_profileRepository
-            lifecycle:(id<MobaProfileImportLifecycle>)_lifecycle installer:self];
+            lifecycle:(id<MobaProfileImportLifecycle>)_lifecycle installer:_profileRuntimeInstaller];
         MobaLayoutControlProfile *moveLayout = _profileRepository.activeSnapshot.layoutProfile.controls[@"move"];
         CGFloat initialMoveRadius = moveLayout.wheelRadiusPt != nil
             ? moveLayout.wheelRadiusPt.doubleValue : MoveJoystickDefaultWheelRadius;
@@ -385,11 +391,20 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         visibleOnlyWhileCasting:YES];
 }
 
+- (MobaCancelZoneLayoutPresentation *)presentationForCancelProfile:(MobaCancelZoneProfile *)profile {
+    if (profile == nil) return self.fallbackCancelPresentation;
+    return [[MobaCancelZoneLayoutPresentation alloc]
+        initWithCenterX:profile.centerX centerY:profile.centerY
+        diameterPt:profile.diameterPt activationInsetPt:profile.activationInsetPt
+        opacity:profile.opacity visibleOnlyWhileCasting:profile.visibleOnlyWhileCasting];
+}
+
 - (MobaControlLayoutPresentation *)currentPresentationForControlName:(NSString *)name {
     if (_layoutEditorController != nil && _lifecycle.mode == MobaOverlayModeLayoutEdit) {
         return [_layoutEditorController.draft controlNamed:name].presentation;
     }
-    MobaLayoutControlProfile *profile = _profileRepository.activeSnapshot.layoutProfile.controls[name];
+    MobaProfileSnapshot *snapshot = _committedPresentationSnapshotOverride ?: _profileRepository.activeSnapshot;
+    MobaLayoutControlProfile *profile = snapshot.layoutProfile.controls[name];
     if ([name isEqualToString:@"move"]) {
         return [self presentationForProfile:profile fallback:self.fallbackMovePresentation];
     }
@@ -403,19 +418,16 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     if (_layoutEditorController != nil && _lifecycle.mode == MobaOverlayModeLayoutEdit) {
         return _layoutEditorController.draft.cancelZone.presentation;
     }
-    MobaCancelZoneProfile *profile = _profileRepository.activeSnapshot.layoutProfile.cancelZone;
-    if (profile == nil) return self.fallbackCancelPresentation;
-    return [[MobaCancelZoneLayoutPresentation alloc]
-        initWithCenterX:profile.centerX centerY:profile.centerY
-        diameterPt:profile.diameterPt activationInsetPt:profile.activationInsetPt
-        opacity:profile.opacity visibleOnlyWhileCasting:profile.visibleOnlyWhileCasting];
+    MobaProfileSnapshot *snapshot = _committedPresentationSnapshotOverride ?: _profileRepository.activeSnapshot;
+    return [self presentationForCancelProfile:snapshot.layoutProfile.cancelZone];
 }
 
 - (CGFloat)currentGlobalOpacityMultiplier {
     if (_layoutEditorController != nil && _lifecycle.mode == MobaOverlayModeLayoutEdit) {
         return _layoutEditorController.draft.globalOpacityMultiplier;
     }
-    MobaRuntimeProfile *runtime = _profileRepository.activeSnapshot.runtimeProfile;
+    MobaProfileSnapshot *snapshot = _committedPresentationSnapshotOverride ?: _profileRepository.activeSnapshot;
+    MobaRuntimeProfile *runtime = snapshot.runtimeProfile;
     return runtime != nil ? runtime.globalOpacityMultiplier : 1.0;
 }
 
@@ -447,11 +459,33 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)applyCommittedLayoutPresentation {
-    MobaControlLayoutPresentation *move = [self presentationForProfile:
-        _profileRepository.activeSnapshot.layoutProfile.controls[@"move"] fallback:self.fallbackMovePresentation];
-    [_movementController updateWheelRadiusForCommittedProfile:move.wheelRadiusPt.doubleValue];
-    [self applyCurrentLayoutPresentation];
-    [self layoutBattleControls];
+    [self applyCommittedLayoutPresentationForSnapshot:_profileRepository.activeSnapshot error:nil];
+}
+
+- (BOOL)applyCommittedLayoutPresentationForSnapshot:(MobaProfileSnapshot *)snapshot
+                                               error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    if (snapshot == nil) return NO;
+    MobaControlLayoutPresentation *move = [self presentationForProfile:snapshot.layoutProfile.controls[@"move"]
+        fallback:self.fallbackMovePresentation];
+    CGFloat wheelRadius = move.wheelRadiusPt.doubleValue;
+    BOOL radiusAlreadyApplied = fabs(_movementController.wheelRadius - wheelRadius) <= DBL_EPSILON;
+    if (!radiusAlreadyApplied && ![_movementController updateWheelRadiusForCommittedProfile:wheelRadius]) {
+        if (error != NULL) *error = [NSError errorWithDomain:MobaProfileImportTransactionErrorDomain
+            code:MobaProfileImportTransactionErrorRuntimeInstallFailed
+            userInfo:@{NSLocalizedDescriptionKey:
+                @"The committed movement wheel radius failed its neutral preflight."}];
+        return NO;
+    }
+    _committedPresentationSnapshotOverride = snapshot;
+    @try {
+        [self applyCurrentLayoutPresentation];
+        [self layoutBattleControls];
+    }
+    @finally {
+        _committedPresentationSnapshotOverride = nil;
+    }
+    return YES;
 }
 
 - (void)layoutBattleControls {
@@ -1163,8 +1197,10 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         initWithTransferService:_profileTransferService importTransaction:_profileImportTransaction
         activeChampionRelativePath:_activeChampionRelativePath];
     _profileTransferViewController.delegate = self;
-    [_presentationViewController presentViewController:_profileTransferViewController
-                                              animated:YES completion:nil];
+    MobaProfileTransferViewController *controller = _profileTransferViewController;
+    [_presentationViewController presentViewController:controller animated:YES completion:^{
+        controller.presentationController.delegate = controller;
+    }];
 }
 
 - (void)mobaProfileTransferViewControllerDidRequestClose:(MobaProfileTransferViewController *)controller {
@@ -1184,26 +1220,61 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     [self layoutBattleControls];
 }
 
-- (BOOL)installImportedProfileSnapshot:(MobaProfileSnapshot *)snapshot
-                                runtime:(MobaChampionRuntime *)runtime
-                    skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
-                 championRelativePath:(NSString *)championRelativePath
-                                  error:(NSError **)error {
-    if (!_lifecycle.isInputSuspended || _movementController.isInteractionEnabled ||
-        _attackController.isInteractionEnabled) return NO;
-    BOOL committed = [_championSelectionController commitPreparedImportedSnapshot:snapshot
-        runtime:runtime skillControlPackage:skillControlPackage
-        championRelativePath:championRelativePath error:error];
-    if (!committed) return NO;
-    MobaMovementProfile *movement = snapshot.inputProfile.movement;
-    BOOL movementUpdated = [_movementController updateKeyMappingForCommittedProfile:
-        MobaMovementKeyMappingMake(movement.upKeyCode, movement.leftKeyCode,
-                                   movement.downKeyCode, movement.rightKeyCode)];
-    NSNumber *attackCode = [snapshot.inputProfile keyCodeForAction:@"attack"];
-    BOOL attackUpdated = [_attackController updateAttackKeyCodeForCommittedProfile:attackCode.unsignedShortValue
-        tapDurationMs:snapshot.inputProfile.attackTapDurationMs];
-    NSAssert(movementUpdated && attackUpdated, @"Profile input controls require a suspended neutral commit boundary.");
+- (BOOL)profileImportInputSuspended {
+    return _lifecycle.isInputSuspended;
+}
+
+- (MobaChampionSelectionController *)profileImportChampionSelectionController {
+    return _championSelectionController;
+}
+
+- (MobaMovementController *)profileImportMovementController {
+    return _movementController;
+}
+
+- (MobaAttackController *)profileImportAttackController {
+    return _attackController;
+}
+
+- (MobaProfileSnapshot *)profileImportActiveSnapshot {
+    return _profileRepository.activeSnapshot;
+}
+
+- (NSString *)profileImportActiveChampionRelativePath {
+    return _activeChampionRelativePath;
+}
+
+- (BOOL)applyProfileImportMovementMapping:(MobaMovementKeyMapping)mapping error:(NSError **)error {
+    if (![_movementController canApplyCommittedKeyMapping]) {
+        if (error != NULL) *error = [NSError errorWithDomain:MobaProfileImportTransactionErrorDomain
+            code:MobaProfileImportTransactionErrorRuntimeInstallFailed
+            userInfo:@{NSLocalizedDescriptionKey: @"Movement input is not at its prepared neutral boundary."}];
+        return NO;
+    }
+    [_movementController applyCommittedKeyMappingAfterPreflight:mapping];
     return YES;
+}
+
+- (BOOL)applyProfileImportAttackKeyCode:(uint16_t)attackKeyCode
+                           tapDurationMs:(NSUInteger)tapDurationMs
+                                   error:(NSError **)error {
+    if (![_attackController canApplyCommittedAttackProfile]) {
+        if (error != NULL) *error = [NSError errorWithDomain:MobaProfileImportTransactionErrorDomain
+            code:MobaProfileImportTransactionErrorRuntimeInstallFailed
+            userInfo:@{NSLocalizedDescriptionKey: @"Attack input is not at its prepared neutral boundary."}];
+        return NO;
+    }
+    [_attackController applyCommittedAttackKeyCodeAfterPreflight:attackKeyCode
+                                                   tapDurationMs:tapDurationMs];
+    return YES;
+}
+
+- (void)setProfileImportActiveChampionRelativePath:(NSString *)relativePath {
+    _activeChampionRelativePath = [relativePath copy];
+}
+
+- (BOOL)applyProfileImportPresentationForSnapshot:(MobaProfileSnapshot *)snapshot error:(NSError **)error {
+    return [self applyCommittedLayoutPresentationForSnapshot:snapshot error:error];
 }
 
 - (BOOL)mobaChampionSelectorView:(MobaChampionSelectorView *)selectorView

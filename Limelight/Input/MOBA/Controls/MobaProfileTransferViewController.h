@@ -16,7 +16,8 @@ NS_ASSUME_NONNULL_BEGIN
               didImportActiveChampionPath:(NSString *)activeChampionRelativePath;
 @end
 
-@interface MobaProfileTransferViewController : UIViewController <UIDocumentPickerDelegate>
+@interface MobaProfileTransferViewController : UIViewController <UIDocumentPickerDelegate,
+                                                                  UIAdaptivePresentationControllerDelegate>
 
 @property (nonatomic, weak, nullable) id<MobaProfileTransferViewControllerDelegate> delegate;
 @property (nonatomic, strong, readonly, nullable) MobaProfileImportPlan *pendingImportPlan;

@@ -45,6 +45,7 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
 @end
 
 @class MobaChampionSelectionController;
+@class MobaChampionPreparedImportState;
 
 @protocol MobaChampionSelectionControllerDelegate <NSObject>
 - (void)championSelectionController:(MobaChampionSelectionController *)controller
@@ -100,6 +101,19 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
                      skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
                   championRelativePath:(NSString *)championRelativePath
                                   error:(NSError **)error;
+
+// Import installation preflight and reversible commit. Preparation captures
+// the existing catalog, runtime, package and participant ownership without
+// mutating them. Rollback is idempotent.
+- (nullable MobaChampionPreparedImportState *)prepareImportedSnapshot:(MobaProfileSnapshot *)snapshot
+                                                               runtime:(MobaChampionRuntime *)runtime
+                                                    skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                                                 championRelativePath:(NSString *)championRelativePath
+                                                                 error:(NSError **)error;
+- (BOOL)commitPreparedImportedState:(MobaChampionPreparedImportState *)state
+                               error:(NSError **)error;
+- (BOOL)rollbackPreparedImportedState:(MobaChampionPreparedImportState *)state
+                                 error:(NSError **)error;
 - (void)invalidate;
 
 @end

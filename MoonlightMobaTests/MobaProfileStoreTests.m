@@ -535,4 +535,25 @@
     XCTAssertEqual(pathError.code, MobaProfileStoreErrorInvalidPath);
 }
 
+- (void)testRemoveDirectoryDeletesOnlyRequestedBackupTree {
+    XCTAssertTrue([self.store writeData:[self dataForString:@"partial"]
+                         toRelativePath:@"backups/import-1/runtime.json" replaceExisting:NO error:nil]);
+    XCTAssertTrue([self.store writeData:[self dataForString:@"keep"]
+                         toRelativePath:@"backups/import-2/runtime.json" replaceExisting:NO error:nil]);
+    XCTAssertTrue([self.store removeDirectoryAtRelativePath:@"backups/import-1" error:nil]);
+    XCTAssertFalse([self.fileManager fileExistsAtPath:[self URLForRelativePath:@"backups/import-1"].path]);
+    XCTAssertTrue([self.fileManager fileExistsAtPath:[self URLForRelativePath:@"backups/import-2/runtime.json"].path]);
+}
+
+- (void)testRemoveDirectoryRejectsFileAndTraversal {
+    XCTAssertTrue([self.store writeData:[self dataForString:@"profile"]
+                         toRelativePath:@"backups/not-a-directory" replaceExisting:NO error:nil]);
+    NSError *fileError = nil;
+    XCTAssertFalse([self.store removeDirectoryAtRelativePath:@"backups/not-a-directory" error:&fileError]);
+    XCTAssertEqual(fileError.code, MobaProfileStoreErrorDestinationConflict);
+    NSError *pathError = nil;
+    XCTAssertFalse([self.store removeDirectoryAtRelativePath:@"../outside" error:&pathError]);
+    XCTAssertEqual(pathError.code, MobaProfileStoreErrorInvalidPath);
+}
+
 @end

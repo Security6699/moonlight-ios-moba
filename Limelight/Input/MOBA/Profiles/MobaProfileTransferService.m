@@ -136,34 +136,56 @@
 }
 
 - (MobaProfileKind)detectedKindForRoot:(NSDictionary *)root error:(NSError **)error {
-    NSDictionary<MobaProfileKind, NSArray<NSString *> *> *signatures = @{
-        MobaProfileKindRuntime: @[@"canvas", @"requiredStreamResolution", @"videoMode", @"camera",
-                                  @"mouseUpdateRateHz", @"globalOpacityMultiplier"],
-        MobaProfileKindInput: @[@"profileId", @"movement", @"actions", @"attackTapDurationMs",
-                                @"cancelCastAction"],
-        MobaProfileKindLayout: @[@"layoutId", @"deviceClass", @"controls", @"cancelZone"],
-        MobaProfileKindChampion: @[@"championId", @"displayName", @"displayNameZhCN",
-                                   @"calibrationStatus", @"skills"],
+    NSDictionary<MobaProfileKind, NSArray<NSString *> *> *strongSignatures = @{
+        MobaProfileKindRuntime: @[@"canvas", @"requiredStreamResolution", @"videoMode", @"camera"],
+        MobaProfileKindInput: @[@"profileId", @"movement", @"actions", @"cancelCastAction"],
+        MobaProfileKindLayout: @[@"layoutId", @"deviceClass", @"controls"],
+        MobaProfileKindChampion: @[@"championId", @"displayName", @"skills"],
     };
     NSMutableArray<MobaProfileKind> *matches = [NSMutableArray array];
-    [signatures enumerateKeysAndObjectsUsingBlock:^(MobaProfileKind kind, NSArray<NSString *> *keys, BOOL *stop) {
+    [strongSignatures enumerateKeysAndObjectsUsingBlock:^(MobaProfileKind kind,
+                                                           NSArray<NSString *> *keys,
+                                                           BOOL *stop) {
+        BOOL complete = YES;
         for (NSString *key in keys) {
-            if (root[key] != nil) {
-                [matches addObject:kind];
+            if (root[key] == nil) {
+                complete = NO;
                 break;
             }
         }
+        if (complete) [matches addObject:kind];
     }];
-    if (matches.count != 1) {
-        MobaProfileErrorCode code = matches.count == 0 ? MobaProfileErrorUnknownProfileType
-                                                       : MobaProfileErrorAmbiguousProfileType;
-        NSString *description = matches.count == 0 ? @"The JSON content does not identify a supported profile type."
-                                                    : @"The JSON content contains conflicting profile type signatures.";
-        if (error != NULL) *error = [self errorWithCode:code kind:@"unknown" path:@"$"
-            operation:@"detect-profile-type" description:description underlying:nil];
+    if (matches.count == 1) return matches.firstObject;
+    if (matches.count > 1) {
+        if (error != NULL) *error = [self errorWithCode:MobaProfileErrorAmbiguousProfileType
+            kind:@"unknown" path:@"$"
+            operation:@"detect-profile-type"
+            description:@"The JSON content contains multiple complete profile type signatures."
+            underlying:nil];
         return nil;
     }
-    return matches.firstObject;
+
+    NSMutableArray<MobaProfileKind> *fallbackMatches = [NSMutableArray array];
+    if (root[@"championId"] != nil || root[@"skills"] != nil) {
+        [fallbackMatches addObject:MobaProfileKindChampion];
+    }
+    if (root[@"layoutId"] != nil) [fallbackMatches addObject:MobaProfileKindLayout];
+    if (root[@"profileId"] != nil) [fallbackMatches addObject:MobaProfileKindInput];
+    NSUInteger runtimeCoreCount = 0;
+    for (NSString *key in strongSignatures[MobaProfileKindRuntime]) {
+        if (root[key] != nil) runtimeCoreCount += 1;
+    }
+    if (runtimeCoreCount >= 2) [fallbackMatches addObject:MobaProfileKindRuntime];
+    if (fallbackMatches.count == 1) return fallbackMatches.firstObject;
+
+    MobaProfileErrorCode code = fallbackMatches.count == 0
+        ? MobaProfileErrorUnknownProfileType : MobaProfileErrorAmbiguousProfileType;
+    NSString *description = fallbackMatches.count == 0
+        ? @"The JSON content does not identify a supported profile type."
+        : @"The malformed JSON content has conflicting profile type tendencies.";
+    if (error != NULL) *error = [self errorWithCode:code kind:@"unknown" path:@"$"
+        operation:@"detect-profile-type" description:description underlying:nil];
+    return nil;
 }
 
 + (NSString *)safeExportFileComponent:(NSString *)component {
@@ -187,10 +209,34 @@
     return result.length > 0 ? result : @"profile";
 }
 
-- (BOOL)isSafeChampionIdentifier:(NSString *)identifier {
-    return identifier.length > 0 &&
-        [identifier isEqualToString:[self.class safeExportFileComponent:identifier]] &&
-        ![identifier isEqualToString:@"."] && ![identifier isEqualToString:@".."];
++ (NSString *)safeChampionStorageComponentForIdentifier:(NSString *)identifier error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    if (![identifier isKindOfClass:[NSString class]] || identifier.length == 0) {
+        if (error != NULL) *error = MobaProfileMakeError(MobaProfileErrorValueOutOfRange,
+            MobaProfileKindChampion, @"$.championId", @"derive-champion-path",
+            @"championId must be a non-empty string.", nil);
+        return nil;
+    }
+    NSCharacterSet *safe = [NSCharacterSet characterSetWithCharactersInString:
+        @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"];
+    if ([identifier rangeOfCharacterFromSet:safe.invertedSet].location == NSNotFound &&
+        ![identifier isEqualToString:@"."] && ![identifier isEqualToString:@".."]) {
+        return identifier;
+    }
+    NSData *utf8 = [identifier dataUsingEncoding:NSUTF8StringEncoding];
+    if (utf8 == nil) {
+        if (error != NULL) *error = MobaProfileMakeError(MobaProfileErrorValueOutOfRange,
+            MobaProfileKindChampion, @"$.championId", @"derive-champion-path",
+            @"championId could not be encoded as UTF-8.", nil);
+        return nil;
+    }
+    NSString *encoded = [utf8 base64EncodedStringWithOptions:0];
+    encoded = [[encoded stringByReplacingOccurrencesOfString:@"+" withString:@"-"]
+        stringByReplacingOccurrencesOfString:@"/" withString:@"_"];
+    while ([encoded hasSuffix:@"="]) {
+        encoded = [encoded substringToIndex:encoded.length - 1];
+    }
+    return [@"id-" stringByAppendingString:encoded];
 }
 
 - (NSData *)readRequiredPath:(NSString *)path kind:(MobaProfileKind)kind error:(NSError **)error {
@@ -204,14 +250,36 @@
     return data;
 }
 
+- (NSString *)cancelTypeName:(MobaProfileCancelType)type {
+    switch (type) {
+        case MobaProfileCancelTypeKeyboard: return @"keyboard";
+        case MobaProfileCancelTypeRightMouse: return @"rightMouse";
+        case MobaProfileCancelTypeReleaseOnly: return @"releaseOnly";
+    }
+    return @"unknown";
+}
+
+- (NSString *)castTypeName:(MobaProfileSkillCastType)type {
+    switch (type) {
+        case MobaProfileSkillCastTypeInstant: return @"instant";
+        case MobaProfileSkillCastTypeDirectional: return @"directional";
+        case MobaProfileSkillCastTypePoint: return @"point";
+    }
+    return @"unknown";
+}
+
 - (NSArray<NSString *> *)summaryForKind:(MobaProfileKind)kind
                                snapshot:(MobaProfileSnapshot *)snapshot
                      replacedIdentifier:(NSString *)replacedIdentifier
                     targetRelativePath:(NSString *)targetRelativePath
                          switchChampion:(BOOL)switchChampion {
+    NSUInteger schemaVersion = snapshot.runtimeProfile.schemaVersion;
+    if ([kind isEqualToString:MobaProfileKindInput]) schemaVersion = snapshot.inputProfile.schemaVersion;
+    else if ([kind isEqualToString:MobaProfileKindLayout]) schemaVersion = snapshot.layoutProfile.schemaVersion;
+    else if ([kind isEqualToString:MobaProfileKindChampion]) schemaVersion = snapshot.championProfile.schemaVersion;
     NSMutableArray<NSString *> *lines = [NSMutableArray arrayWithArray:@[
         [NSString stringWithFormat:@"Detected Type: %@", kind.capitalizedString],
-        [NSString stringWithFormat:@"Schema Version: %lu", (unsigned long)snapshot.runtimeProfile.schemaVersion],
+        [NSString stringWithFormat:@"Schema Version: %lu", (unsigned long)schemaVersion],
         [NSString stringWithFormat:@"Replace: %@", targetRelativePath],
         [NSString stringWithFormat:@"Current: %@", replacedIdentifier],
         @"A complete active-profile backup will be created before replacement.",
@@ -237,7 +305,7 @@
                 p.movement.leftKeyCode, p.movement.downKeyCode, p.movement.rightKeyCode],
             [NSString stringWithFormat:@"Actions: %@", p.actions],
             [NSString stringWithFormat:@"Attack Tap: %lu ms", (unsigned long)p.attackTapDurationMs],
-            [NSString stringWithFormat:@"Cancel Type: %ld", (long)p.cancelCastAction.type],
+            [NSString stringWithFormat:@"Cancel Type: %@", [self cancelTypeName:p.cancelCastAction.type]],
         ]];
     }
     else if ([kind isEqualToString:MobaProfileKindLayout]) {
@@ -254,7 +322,7 @@
         NSMutableArray *casts = [NSMutableArray array];
         for (NSString *slot in @[@"Q", @"W", @"E", @"R"]) {
             MobaChampionSkillProfile *skill = p.skills[slot];
-            [casts addObject:[NSString stringWithFormat:@"%@=%ld", slot, (long)skill.castType]];
+            [casts addObject:[NSString stringWithFormat:@"%@=%@", slot, [self castTypeName:skill.castType]]];
         }
         [lines addObjectsFromArray:@[
             [NSString stringWithFormat:@"Champion ID: %@", p.championID],
@@ -311,17 +379,16 @@
     }
     else if ([kind isEqualToString:MobaProfileKindChampion]) {
         MobaChampionProfile *champion = model;
-        if (![self isSafeChampionIdentifier:champion.championID]) {
-            if (error != NULL) *error = [self errorWithCode:MobaProfileErrorValueOutOfRange kind:kind
-                path:@"$.championId" operation:@"derive-champion-path"
-                description:@"championId may contain only letters, digits, hyphen, and underscore."
-                underlying:nil];
-            return nil;
-        }
+        NSString *storageComponent = [self.class
+            safeChampionStorageComponentForIdentifier:champion.championID error:error];
+        if (storageComponent == nil) return nil;
         identifier = champion.championID;
         displayName = champion.displayName;
         replacedIdentifier = base.championProfile.championID;
-        target = [NSString stringWithFormat:@"champions/%@.json", champion.championID];
+        BOOL usesEncodedNamespace = ![storageComponent isEqualToString:champion.championID];
+        target = usesEncodedNamespace
+            ? [NSString stringWithFormat:@"champions/encoded/%@.json", storageComponent]
+            : [NSString stringWithFormat:@"champions/%@.json", storageComponent];
     }
 
     NSError *stepError = nil;

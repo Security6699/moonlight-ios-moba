@@ -100,6 +100,11 @@ typedef NS_ERROR_ENUM(MobaProfileStoreErrorDomain, MobaProfileStoreErrorCode) {
 - (BOOL)removeDataAtRelativePath:(NSString *)relativePath
                             error:(NSError **)error;
 
+// Removes only a containment-checked directory. Import backup creation uses
+// this to discard its own incomplete directory before a manifest exists.
+- (BOOL)removeDirectoryAtRelativePath:(NSString *)relativePath
+                                 error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

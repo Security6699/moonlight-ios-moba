@@ -8,6 +8,8 @@
 #import "../Limelight/Input/MOBA/Profiles/MobaProfileTransferService.h"
 #import "../Limelight/Input/MOBA/Profiles/MobaProfileImportTransaction.h"
 #import "../Limelight/Input/MOBA/Controls/MobaProfileTransferViewController.h"
+#import "../Limelight/Input/MOBA/Core/MobaInputDispatcher.h"
+#import "../Limelight/Input/MOBA/Core/MobaInputSink.h"
 
 @interface MobaTransferNoopResources : NSObject <MobaProfileResourceProviding>
 @end
@@ -24,9 +26,14 @@
 @property (nonatomic) BOOL fail;
 @property (nonatomic) NSUInteger buildCount;
 @end
+@interface MobaTransferFakeRuntime : NSObject
+@property (nonatomic, copy) NSString *championID;
+@property (nonatomic, copy) NSArray<id<MobaLocalInteractionResetParticipant>> *localInteractionResetParticipants;
+@end
 @interface MobaTransferFakePackage : NSObject
 @property (nonatomic, getter=isComplete) BOOL complete;
 @property (nonatomic) NSUInteger resetCount;
+@property (nonatomic, copy) NSArray<id<MobaLocalInteractionResetParticipant>> *localInteractionResetParticipants;
 @end
 @interface MobaTransferFakePackageBuilder : NSObject <MobaSkillControlPackageBuilding>
 @property (nonatomic) BOOL fail;
@@ -44,12 +51,22 @@
 @end
 @interface MobaTransferFakeInstaller : NSObject <MobaProfileImportInstalling>
 @property (nonatomic) BOOL fail;
+@property (nonatomic) BOOL failPrepare;
+@property (nonatomic) BOOL failRollback;
 @property (nonatomic) NSUInteger installCount;
+@property (nonatomic) NSUInteger rollbackCount;
 @property (nonatomic, copy) NSString *installedChampionPath;
 @property (nonatomic, strong) MobaProfileSnapshot *installedSnapshot;
+@property (nonatomic, copy) NSString *preparedChampionPath;
+@property (nonatomic, strong) MobaProfileSnapshot *preparedSnapshot;
 @end
 @interface MobaTransferFixedBackupProvider : NSObject <MobaProfileBackupDirectoryNameProviding>
 @property (nonatomic) NSUInteger count;
+@end
+@interface MobaTransferViewControllerDelegate : NSObject <MobaProfileTransferViewControllerDelegate>
+@property (nonatomic) NSUInteger closeCount;
+@property (nonatomic) NSUInteger importCount;
+@property (nonatomic, strong, nullable) MobaProfileTransferViewController *retainedController;
 @end
 
 @interface MobaProfileTransferViewControllerTests : XCTestCase
@@ -116,6 +133,66 @@
     XCTAssertTrue([NSFileManager.defaultManager fileExistsAtPath:second.path]);
     [self.viewController cleanupTemporaryExport];
 }
+- (void)testInteractiveDismissalClearsPendingPlanAndTemporaryExport {
+    XCTAssertNotNil([self.viewController prepareImportFromData:[self exampleData:@"input.json"]
+        sourceFileName:nil error:nil]);
+    NSURL *url = [self.viewController prepareTemporaryExportForProfileKind:MobaProfileKindRuntime error:nil];
+    MobaTransferViewControllerDelegate *delegate = [[MobaTransferViewControllerDelegate alloc] init];
+    delegate.retainedController = self.viewController;
+    self.viewController.delegate = delegate;
+    [self.viewController presentationControllerDidDismiss:nil];
+    XCTAssertNil(self.viewController.pendingImportPlan);
+    XCTAssertNil(self.viewController.temporaryExportURL);
+    XCTAssertFalse([NSFileManager.defaultManager fileExistsAtPath:url.path]);
+    XCTAssertNil(delegate.retainedController);
+    XCTAssertEqual(delegate.closeCount, 1u);
+}
+- (void)testRepeatedInteractiveDismissalIsIdempotent {
+    MobaTransferViewControllerDelegate *delegate = [[MobaTransferViewControllerDelegate alloc] init];
+    self.viewController.delegate = delegate;
+    [self.viewController presentationControllerDidDismiss:nil];
+    [self.viewController presentationControllerDidDismiss:nil];
+    XCTAssertEqual(delegate.closeCount, 1u);
+}
+- (void)testExplicitCloseAndDismissalNotifyOnce {
+    MobaTransferViewControllerDelegate *delegate = [[MobaTransferViewControllerDelegate alloc] init];
+    self.viewController.delegate = delegate;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Warc-performSelector-leaks"
+    [self.viewController performSelector:@selector(closeTapped)];
+#pragma clang diagnostic pop
+    [self.viewController presentationControllerDidDismiss:nil];
+    XCTAssertEqual(delegate.closeCount, 1u);
+}
+- (void)testPickerCancelDoesNotCloseProfileManager {
+    MobaTransferViewControllerDelegate *delegate = [[MobaTransferViewControllerDelegate alloc] init];
+    self.viewController.delegate = delegate;
+    [self.viewController documentPickerWasCancelled:nil];
+    XCTAssertEqual(delegate.closeCount, 0u);
+}
+- (void)testDismissalAllowsDelegateToOpenAnotherController {
+    MobaTransferViewControllerDelegate *delegate = [[MobaTransferViewControllerDelegate alloc] init];
+    delegate.retainedController = self.viewController;
+    self.viewController.delegate = delegate;
+    [self.viewController presentationControllerDidDismiss:nil];
+    XCTAssertNil(delegate.retainedController);
+    delegate.retainedController = [[MobaProfileTransferViewController alloc]
+        initWithTransferService:self.service importTransaction:self.transaction
+        activeChampionRelativePath:@"champions/caitlyn.json"];
+    XCTAssertNotNil(delegate.retainedController);
+}
+@end
+
+@implementation MobaTransferViewControllerDelegate
+- (void)mobaProfileTransferViewControllerDidRequestClose:(MobaProfileTransferViewController *)controller {
+    self.closeCount += 1;
+    if (self.retainedController == controller) self.retainedController = nil;
+}
+- (void)mobaProfileTransferViewController:(MobaProfileTransferViewController *)controller
+              didImportActiveChampionPath:(NSString *)activeChampionRelativePath {
+    (void)controller; (void)activeChampionRelativePath;
+    self.importCount += 1;
+}
 @end
 
 @implementation MobaTransferFakeRepository
@@ -143,19 +220,40 @@
 @end
 
 @implementation MobaTransferFakeInstaller
-- (BOOL)installImportedProfileSnapshot:(MobaProfileSnapshot *)snapshot
-                                runtime:(MobaChampionRuntime *)runtime
-                    skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
-                 championRelativePath:(NSString *)championRelativePath
-                                  error:(NSError **)error {
+- (MobaPreparedProfileInstallation *)prepareInstallationForSnapshot:(MobaProfileSnapshot *)snapshot
+                                                              runtime:(MobaChampionRuntime *)runtime
+                                                  skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                                               championRelativePath:(NSString *)championRelativePath
+                                                               error:(NSError **)error {
     (void)runtime; (void)skillControlPackage;
+    if (self.failPrepare) {
+        if (error != NULL) *error = [NSError errorWithDomain:@"Installer" code:1 userInfo:nil];
+        return nil;
+    }
+    self.preparedSnapshot = snapshot;
+    self.preparedChampionPath = championRelativePath;
+    return [[MobaPreparedProfileInstallation alloc] init];
+}
+- (BOOL)commitPreparedInstallation:(MobaPreparedProfileInstallation *)installation error:(NSError **)error {
+    (void)installation;
     self.installCount += 1;
     if (self.fail) {
-        if (error != NULL) *error = [NSError errorWithDomain:@"Installer" code:1 userInfo:nil];
+        if (error != NULL) *error = [NSError errorWithDomain:@"Installer" code:2 userInfo:nil];
         return NO;
     }
-    self.installedSnapshot = snapshot;
-    self.installedChampionPath = championRelativePath;
+    self.installedSnapshot = self.preparedSnapshot;
+    self.installedChampionPath = self.preparedChampionPath;
+    return YES;
+}
+- (BOOL)rollbackPreparedInstallation:(MobaPreparedProfileInstallation *)installation error:(NSError **)error {
+    (void)installation;
+    self.rollbackCount += 1;
+    if (self.failRollback) {
+        if (error != NULL) *error = [NSError errorWithDomain:@"Installer" code:3 userInfo:nil];
+        return NO;
+    }
+    self.installedSnapshot = nil;
+    self.installedChampionPath = nil;
     return YES;
 }
 @end
@@ -236,6 +334,14 @@
         activeChampionRelativePath:@"champions/caitlyn.json" error:nil];
 }
 
+- (MobaProfileImportPlan *)championPlanWithIdentifier:(NSString *)identifier {
+    NSMutableDictionary *json = [self mutableJSONFromData:self.originalFiles[@"champions/caitlyn.json"]];
+    json[@"championId"] = identifier;
+    json[@"displayName"] = identifier;
+    return [self.service prepareImportPlanForData:[self dataFromJSON:json]
+        activeChampionRelativePath:@"champions/caitlyn.json" error:nil];
+}
+
 - (MobaProfileImportResult *)apply:(MobaProfileImportPlan *)plan error:(NSError **)error {
     return [self.transaction applyImportPlan:plan error:error];
 }
@@ -259,6 +365,15 @@
     self.store.failWritePath = @"backups/fixed-1/input.json";
     XCTAssertNil([self apply:plan error:nil]);
     XCTAssertEqualObjects(self.store.files[MobaRuntimeProfileRelativePath], self.originalFiles[MobaRuntimeProfileRelativePath]);
+}
+
+- (void)testPartialBackupDirectoryIsRemovedWhenManifestWasNotCompleted {
+    MobaProfileImportPlan *plan = [self runtimePlan];
+    self.store.failWritePath = @"backups/fixed-1/input.json";
+    XCTAssertNil([self apply:plan error:nil]);
+    XCTAssertFalse([[self.store.files.allKeys componentsJoinedByString:@" "]
+        containsString:@"backups/fixed-1/"]);
+    XCTAssertTrue([self.store.operations containsObject:@"remove-directory:backups/fixed-1"]);
 }
 
 - (void)testTargetWriteFailurePreservesSnapshotIdentity {
@@ -296,6 +411,18 @@
     XCTAssertNotNil(error.userInfo[MobaProfileImportRollbackErrorKey]);
 }
 
+- (void)testInstallerRollbackFailureIsRecordedIndependently {
+    MobaProfileImportPlan *plan = [self runtimePlan];
+    self.installer.fail = YES;
+    self.installer.failRollback = YES;
+    NSError *error = nil;
+    XCTAssertNil([self apply:plan error:&error]);
+    XCTAssertEqual(error.code, MobaProfileImportTransactionErrorRollbackFailed);
+    XCTAssertNotNil(error.userInfo[MobaProfileImportInstallerRollbackErrorKey]);
+    XCTAssertNotNil(error.userInfo[MobaProfileImportOriginalErrorKey]);
+    XCTAssertNotNil(error.userInfo[MobaProfileImportRollbackErrorKey]);
+}
+
 - (void)testSuccessfulImportCommitsRepositoryOnce {
     XCTAssertNotNil([self apply:[self runtimePlan] error:nil]);
     XCTAssertEqual(self.repository.commitCount, 1u);
@@ -323,6 +450,16 @@
     XCTAssertNotNil([self apply:plan error:nil]);
     MobaProfileExportPayload *payload = [self.service exportPayloadForProfileKind:MobaProfileKindRuntime
         activeChampionRelativePath:@"champions/caitlyn.json" error:nil];
+    XCTAssertEqualObjects([NSJSONSerialization JSONObjectWithData:payload.data options:0 error:nil],
+                          [NSJSONSerialization JSONObjectWithData:plan.importData options:0 error:nil]);
+}
+
+- (void)testUnsafeChampionIdentifierExportImportExportKeepsEquivalentJSON {
+    MobaProfileImportPlan *plan = [self championPlanWithIdentifier:@"Kai'Sa"];
+    MobaProfileImportResult *result = [self apply:plan error:nil];
+    XCTAssertNotNil(result);
+    MobaProfileExportPayload *payload = [self.service exportPayloadForProfileKind:MobaProfileKindChampion
+        activeChampionRelativePath:result.activeChampionRelativePath error:nil];
     XCTAssertEqualObjects([NSJSONSerialization JSONObjectWithData:payload.data options:0 error:nil],
                           [NSJSONSerialization JSONObjectWithData:plan.importData options:0 error:nil]);
 }
@@ -485,17 +622,33 @@
     if (error != NULL) *error = nil;
     return YES;
 }
+- (BOOL)removeDirectoryAtRelativePath:(NSString *)path error:(NSError **)error {
+    [self.operations addObject:[@"remove-directory:" stringByAppendingString:path]];
+    NSArray<NSString *> *keys = self.files.allKeys.copy;
+    NSString *prefix = [path stringByAppendingString:@"/"];
+    for (NSString *key in keys) {
+        if ([key hasPrefix:prefix]) [self.files removeObjectForKey:key];
+    }
+    if (error != NULL) *error = nil;
+    return YES;
+}
 @end
 
 @implementation MobaTransferFakeRuntimeBuilder
 - (MobaChampionRuntime *)runtimeFromSnapshot:(MobaProfileSnapshot *)snapshot error:(NSError **)error {
-    (void)snapshot; self.buildCount += 1;
+    self.buildCount += 1;
     if (self.fail) {
         if (error != NULL) *error = [NSError errorWithDomain:@"Runtime" code:1 userInfo:nil];
         return nil;
     }
-    return (id)[NSObject new];
+    MobaTransferFakeRuntime *runtime = [[MobaTransferFakeRuntime alloc] init];
+    runtime.championID = snapshot.championProfile.championID;
+    runtime.localInteractionResetParticipants = @[];
+    return (id)runtime;
 }
+@end
+
+@implementation MobaTransferFakeRuntime
 @end
 
 @implementation MobaTransferFakePackage
@@ -511,6 +664,374 @@
     package.complete = !self.fail;
     if (self.fail && error != NULL) *error = [NSError errorWithDomain:@"Package" code:1 userInfo:nil];
     return (id)package;
+}
+@end
+
+@interface MobaTransferRecordingSink : NSObject <MobaInputSink>
+@property (nonatomic, strong) NSMutableArray<NSString *> *events;
+@end
+@implementation MobaTransferRecordingSink
+- (instancetype)init { self = [super init]; if (self) _events = [NSMutableArray array]; return self; }
+- (void)setKeyCode:(uint16_t)keyCode down:(BOOL)down {
+    [self.events addObject:[NSString stringWithFormat:@"key:%u:%@", keyCode, down ? @"down" : @"up"]];
+}
+- (void)moveCursorToCanvasPoint:(CGPoint)point { (void)point; [self.events addObject:@"cursor"]; }
+- (void)sendMouseButton:(int)button down:(BOOL)down {
+    [self.events addObject:[NSString stringWithFormat:@"mouse:%d:%@", button, down ? @"down" : @"up"]];
+}
+@end
+
+@interface MobaTransferResetToken : NSObject <MobaLocalInteractionResetParticipant>
+@end
+@implementation MobaTransferResetToken
+- (void)resetMobaLocalInteractionForReason:(MobaInputInterruptionReason)reason { (void)reason; }
+@end
+
+@interface MobaTransferInstallerLifecycle : NSObject <MobaChampionSelectionLifecycle>
+@property (nonatomic, strong) NSMutableArray *participants;
+@property (nonatomic) BOOL failNextRegistration;
+@property (nonatomic) NSUInteger registerCount;
+@property (nonatomic) NSUInteger unregisterCount;
+@end
+@implementation MobaTransferInstallerLifecycle
+- (instancetype)init { self = [super init]; if (self) _participants = [NSMutableArray array]; return self; }
+- (void)profileWillReload {}
+- (void)profileDidReload {}
+- (void)registerLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant {
+    if (self.failNextRegistration) {
+        self.failNextRegistration = NO;
+        [NSException raise:@"InjectedParticipantRegistrationFailure" format:@"injected"];
+    }
+    self.registerCount += 1;
+    if (participant != nil && ![self.participants containsObject:participant]) [self.participants addObject:participant];
+}
+- (void)unregisterLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant {
+    self.unregisterCount += 1;
+    if (participant != nil) [self.participants removeObject:participant];
+}
+@end
+
+@interface MobaTransferInstallerHost : NSObject <MobaProfileRuntimeInstallationHost,
+                                                 MobaChampionSelectionControllerDelegate>
+@property (nonatomic) BOOL profileImportInputSuspended;
+@property (nonatomic, strong) MobaChampionSelectionController *profileImportChampionSelectionController;
+@property (nonatomic, strong) MobaMovementController *profileImportMovementController;
+@property (nonatomic, strong) MobaAttackController *profileImportAttackController;
+@property (nonatomic, strong) MobaProfileRepository *repository;
+@property (nonatomic, copy) NSString *profileImportActiveChampionRelativePath;
+@property (nonatomic, strong) MobaChampionRuntime *installedRuntime;
+@property (nonatomic, strong) MobaSkillControlPackage *installedPackage;
+@property (nonatomic, strong) MobaProfileSnapshot *presentedSnapshot;
+@property (nonatomic) NSUInteger delegateInstallCount;
+@property (nonatomic) NSUInteger presentationCount;
+@property (nonatomic) BOOL failMovementApply;
+@property (nonatomic) BOOL failAttackApply;
+@property (nonatomic) BOOL failPresentation;
+@property (nonatomic) BOOL throwNextDelegateInstall;
+@end
+@implementation MobaTransferInstallerHost
+- (MobaProfileSnapshot *)profileImportActiveSnapshot { return self.repository.activeSnapshot; }
+- (NSError *)injectedError:(NSString *)operation {
+    return [NSError errorWithDomain:@"MobaTransferInstallerHost" code:1
+        userInfo:@{NSLocalizedDescriptionKey: operation}];
+}
+- (BOOL)applyProfileImportMovementMapping:(MobaMovementKeyMapping)mapping error:(NSError **)error {
+    if (self.failMovementApply) {
+        self.failMovementApply = NO;
+        if (error != NULL) *error = [self injectedError:@"movement"];
+        return NO;
+    }
+    if (![self.profileImportMovementController canApplyCommittedKeyMapping]) return NO;
+    [self.profileImportMovementController applyCommittedKeyMappingAfterPreflight:mapping];
+    return YES;
+}
+- (BOOL)applyProfileImportAttackKeyCode:(uint16_t)attackKeyCode
+                           tapDurationMs:(NSUInteger)tapDurationMs error:(NSError **)error {
+    if (self.failAttackApply) {
+        self.failAttackApply = NO;
+        if (error != NULL) *error = [self injectedError:@"attack"];
+        return NO;
+    }
+    if (![self.profileImportAttackController canApplyCommittedAttackProfile]) return NO;
+    [self.profileImportAttackController applyCommittedAttackKeyCodeAfterPreflight:attackKeyCode
+        tapDurationMs:tapDurationMs];
+    return YES;
+}
+- (void)setProfileImportActiveChampionRelativePath:(NSString *)relativePath {
+    _profileImportActiveChampionRelativePath = [relativePath copy];
+}
+- (BOOL)applyProfileImportPresentationForSnapshot:(MobaProfileSnapshot *)snapshot error:(NSError **)error {
+    self.presentationCount += 1;
+    if (self.failPresentation) {
+        self.failPresentation = NO;
+        if (error != NULL) *error = [self injectedError:@"presentation"];
+        return NO;
+    }
+    self.presentedSnapshot = snapshot;
+    return YES;
+}
+- (void)championSelectionController:(MobaChampionSelectionController *)controller
+                    didSelectRuntime:(MobaChampionRuntime *)runtime
+                 skillControlPackage:(MobaSkillControlPackage *)skillControlPackage {
+    (void)controller;
+    self.delegateInstallCount += 1;
+    self.installedRuntime = runtime;
+    self.installedPackage = skillControlPackage;
+    if (self.throwNextDelegateInstall) {
+        self.throwNextDelegateInstall = NO;
+        [NSException raise:@"InjectedViewInstallationFailure" format:@"injected"];
+    }
+}
+@end
+
+@interface MobaProfileRuntimeInstallerTests : XCTestCase
+@property (nonatomic, strong) MobaTransferMemoryStore *store;
+@property (nonatomic, strong) MobaTransferFakeRepository *repository;
+@property (nonatomic, strong) MobaTransferFakeRuntimeBuilder *runtimeBuilder;
+@property (nonatomic, strong) MobaTransferFakePackageBuilder *packageBuilder;
+@property (nonatomic, strong) MobaProfileTransferService *service;
+@property (nonatomic, strong) MobaTransferInstallerLifecycle *selectionLifecycle;
+@property (nonatomic, strong) MobaTransferRecordingSink *sink;
+@property (nonatomic, strong) MobaTransferInstallerHost *host;
+@property (nonatomic, strong) MobaProfileRuntimeInstaller *installer;
+@property (nonatomic, copy) NSDictionary<NSString *, NSData *> *originalFiles;
+@end
+
+@implementation MobaProfileRuntimeInstallerTests
+- (NSData *)exampleData:(NSString *)name {
+    NSString *tests = [[NSString stringWithUTF8String:__FILE__] stringByDeletingLastPathComponent];
+    NSString *path = [[tests stringByDeletingLastPathComponent] stringByAppendingPathComponent:@"examples/moba"];
+    return [NSData dataWithContentsOfFile:[path stringByAppendingPathComponent:name]];
+}
+- (NSMutableDictionary *)mutableJSONFromData:(NSData *)data {
+    return [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableContainers error:nil];
+}
+- (NSData *)dataFromJSON:(NSDictionary *)json {
+    return [NSJSONSerialization dataWithJSONObject:json options:NSJSONWritingSortedKeys error:nil];
+}
+- (void)setUp {
+    [super setUp];
+    self.store = [[MobaTransferMemoryStore alloc] init];
+    self.originalFiles = @{
+        MobaRuntimeProfileRelativePath: [self exampleData:@"runtime.json"],
+        MobaInputProfileRelativePath: [self exampleData:@"input.json"],
+        MobaActiveLayoutProfileRelativePath: [self exampleData:@"ipad-pro-13-layout.json"],
+        @"champions/caitlyn.json": [self exampleData:@"caitlyn.json"],
+    };
+    [self.store.files addEntriesFromDictionary:self.originalFiles];
+    self.repository = [[MobaTransferFakeRepository alloc] initWithStore:self.store];
+    XCTAssertTrue([self.repository reloadWithChampionRelativePath:@"champions/caitlyn.json" error:nil]);
+    self.runtimeBuilder = [[MobaTransferFakeRuntimeBuilder alloc] init];
+    self.packageBuilder = [[MobaTransferFakePackageBuilder alloc] init];
+    self.selectionLifecycle = [[MobaTransferInstallerLifecycle alloc] init];
+    MobaChampionSelectionController *selection = [[MobaChampionSelectionController alloc]
+        initWithRepository:self.repository runtimeBuilder:self.runtimeBuilder
+        controlPackageBuilder:self.packageBuilder lifecycle:self.selectionLifecycle];
+    XCTAssertTrue([selection selectChampionID:@"caitlyn" error:nil]);
+    self.selectionLifecycle.registerCount = 0;
+    self.selectionLifecycle.unregisterCount = 0;
+    self.sink = [[MobaTransferRecordingSink alloc] init];
+    MobaInputDispatcher *dispatcher = [[MobaInputDispatcher alloc] initWithSink:self.sink];
+    MobaMovementController *movement = [[MobaMovementController alloc]
+        initWithInputDispatcher:dispatcher keyMapping:MobaDefaultMovementKeyMapping()
+        wheelRadius:95 deadZoneRatio:MobaJoystickDefaultDeadZoneRatio
+        directionHysteresisDegrees:MobaJoystickDefaultDirectionHysteresisDegrees];
+    MobaAttackController *attack = [[MobaAttackController alloc] initWithInputDispatcher:dispatcher];
+    [movement setInteractionEnabled:NO];
+    [attack setInteractionEnabled:NO];
+    self.host = [[MobaTransferInstallerHost alloc] init];
+    self.host.profileImportInputSuspended = YES;
+    self.host.profileImportChampionSelectionController = selection;
+    self.host.profileImportMovementController = movement;
+    self.host.profileImportAttackController = attack;
+    self.host.repository = self.repository;
+    self.host.profileImportActiveChampionRelativePath = @"champions/caitlyn.json";
+    self.host.installedRuntime = selection.activeChampionRuntime;
+    self.host.installedPackage = selection.activeSkillControlPackage;
+    self.host.presentedSnapshot = self.repository.activeSnapshot;
+    selection.delegate = self.host;
+    self.installer = [[MobaProfileRuntimeInstaller alloc] initWithHost:self.host];
+    self.service = [[MobaProfileTransferService alloc] initWithStore:self.store
+        repository:self.repository runtimeBuilder:self.runtimeBuilder
+        controlPackageBuilder:self.packageBuilder];
+    [self.store.operations removeAllObjects];
+    [self.sink.events removeAllObjects];
+}
+- (MobaProfileImportPlan *)planForData:(NSData *)data {
+    return [self.service prepareImportPlanForData:data
+        activeChampionRelativePath:self.host.profileImportActiveChampionRelativePath error:nil];
+}
+- (MobaProfileImportPlan *)inputPlan {
+    NSMutableDictionary *json = [self mutableJSONFromData:self.originalFiles[MobaInputProfileRelativePath]];
+    json[@"movement"] = @{@"up": @38, @"left": @37, @"down": @40, @"right": @39};
+    NSMutableDictionary *actions = [json[@"actions"] mutableCopy];
+    actions[@"attack"] = @88;
+    json[@"actions"] = actions;
+    json[@"attackTapDurationMs"] = @45;
+    return [self planForData:[self dataFromJSON:json]];
+}
+- (MobaPreparedProfileInstallation *)prepare:(MobaProfileImportPlan *)plan error:(NSError **)error {
+    NSString *activeChampionPath = [plan.profileKind isEqualToString:MobaProfileKindChampion]
+        ? plan.targetRelativePath : plan.activeChampionRelativePath;
+    return [self.installer prepareInstallationForSnapshot:plan.repositoryCandidate.snapshot
+        runtime:plan.runtime skillControlPackage:plan.skillControlPackage
+        championRelativePath:activeChampionPath error:error];
+}
+- (BOOL)commitPlanDirectly:(MobaProfileImportPlan *)plan error:(NSError **)error {
+    MobaPreparedProfileInstallation *installation = [self prepare:plan error:error];
+    if (installation == nil || ![self.repository commitImportCandidate:plan.repositoryCandidate error:error]) return NO;
+    return [self.installer commitPreparedInstallation:installation error:error];
+}
+- (void)testPrepareRejectsMovementNonNeutralWithoutChangingState {
+    [self.host.profileImportMovementController setInteractionEnabled:YES];
+    XCTAssertTrue([self.host.profileImportMovementController updateDisplacement:CGVectorMake(80, 0)]);
+    [self.host.profileImportMovementController setInteractionEnabled:NO];
+    MobaMovementKeyMapping before = self.host.profileImportMovementController.keyMapping;
+    XCTAssertNil([self prepare:[self inputPlan] error:nil]);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.upKeyCode, before.upKeyCode);
+    XCTAssertEqualObjects(self.host.profileImportChampionSelectionController.selectedChampionID, @"caitlyn");
+}
+- (void)testPrepareRejectsMovementOwnedToken {
+    NSObject *token = [[NSObject alloc] init];
+    [self.host.profileImportMovementController setInteractionEnabled:YES];
+    XCTAssertTrue([self.host.profileImportMovementController beginInteractionWithToken:token
+        displacement:CGVectorMake(0, 0)]);
+    [self.host.profileImportMovementController setInteractionEnabled:NO];
+    XCTAssertNil([self prepare:[self inputPlan] error:nil]);
+    XCTAssertTrue(self.host.profileImportMovementController.activeTouchToken == token);
+}
+- (void)testPrepareRejectsAttackPressed {
+    [self.host.profileImportAttackController setValue:@YES forKey:@"pressed"];
+    XCTAssertNil([self prepare:[self inputPlan] error:nil]);
+    XCTAssertTrue(self.host.profileImportAttackController.isPressed);
+}
+- (void)testPrepareRejectsAttackOwnedToken {
+    NSObject *token = [[NSObject alloc] init];
+    [self.host.profileImportAttackController setValue:token forKey:@"activeTouchToken"];
+    XCTAssertNil([self prepare:[self inputPlan] error:nil]);
+    XCTAssertTrue(self.host.profileImportAttackController.activeTouchToken == token);
+}
+- (void)testChampionPrepareRejectionDoesNotChangeInputControllers {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaTransferFakeRuntime *wrongRuntime = [[MobaTransferFakeRuntime alloc] init];
+    wrongRuntime.championID = @"wrong";
+    XCTAssertNil([self.installer prepareInstallationForSnapshot:plan.repositoryCandidate.snapshot
+        runtime:(id)wrongRuntime skillControlPackage:plan.skillControlPackage
+        championRelativePath:plan.activeChampionRelativePath error:nil]);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.upKeyCode, 87);
+    XCTAssertEqual(self.host.profileImportAttackController.attackKeyCode, 67);
+}
+- (void)testDelegateViewInstallationExceptionRestoresOldObjectIdentities {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaChampionRuntime *oldRuntime = self.host.installedRuntime;
+    MobaSkillControlPackage *oldPackage = self.host.installedPackage;
+    self.host.throwNextDelegateInstall = YES;
+    XCTAssertFalse([self commitPlanDirectly:plan error:nil]);
+    XCTAssertTrue(self.host.installedRuntime == oldRuntime);
+    XCTAssertTrue(self.host.installedPackage == oldPackage);
+    XCTAssertEqualObjects(self.host.profileImportChampionSelectionController.selectedChampionID, @"caitlyn");
+}
+- (void)testParticipantRegistrationExceptionRestoresOldParticipants {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaTransferResetToken *candidateParticipant = [[MobaTransferResetToken alloc] init];
+    ((MobaTransferFakeRuntime *)(id)plan.runtime).localInteractionResetParticipants = @[candidateParticipant];
+    self.selectionLifecycle.failNextRegistration = YES;
+    XCTAssertFalse([self commitPlanDirectly:plan error:nil]);
+    XCTAssertFalse([self.selectionLifecycle.participants containsObject:candidateParticipant]);
+}
+- (void)testMovementApplyFailureRestoresRuntimePackageAndCatalog {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaChampionRuntime *oldRuntime = self.host.installedRuntime;
+    MobaSkillControlPackage *oldPackage = self.host.installedPackage;
+    NSArray *oldCatalog = self.host.profileImportChampionSelectionController.catalogEntries;
+    self.host.failMovementApply = YES;
+    XCTAssertFalse([self commitPlanDirectly:plan error:nil]);
+    XCTAssertTrue(self.host.installedRuntime == oldRuntime);
+    XCTAssertTrue(self.host.installedPackage == oldPackage);
+    XCTAssertEqualObjects(self.host.profileImportChampionSelectionController.catalogEntries, oldCatalog);
+}
+- (void)testAttackApplyFailureRestoresMovementMapping {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaMovementKeyMapping oldMapping = self.host.profileImportMovementController.keyMapping;
+    self.host.failAttackApply = YES;
+    XCTAssertFalse([self commitPlanDirectly:plan error:nil]);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.upKeyCode, oldMapping.upKeyCode);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.rightKeyCode, oldMapping.rightKeyCode);
+    XCTAssertEqual(self.host.profileImportAttackController.attackKeyCode, 67);
+}
+- (void)testPresentationFailureRestoresPathAndOldPresentation {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaProfileSnapshot *oldSnapshot = self.host.presentedSnapshot;
+    self.host.failPresentation = YES;
+    XCTAssertFalse([self commitPlanDirectly:plan error:nil]);
+    XCTAssertEqualObjects(self.host.profileImportActiveChampionRelativePath, @"champions/caitlyn.json");
+    XCTAssertTrue(self.host.presentedSnapshot == oldSnapshot);
+}
+- (void)testSuccessfulInputInstallationUpdatesMovementAndAttack {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaTransferResetToken *participant = [[MobaTransferResetToken alloc] init];
+    ((MobaTransferFakeRuntime *)(id)plan.runtime).localInteractionResetParticipants = @[participant];
+    XCTAssertTrue([self commitPlanDirectly:plan error:nil]);
+    MobaMovementKeyMapping mapping = self.host.profileImportMovementController.keyMapping;
+    XCTAssertEqual(mapping.upKeyCode, 38);
+    XCTAssertEqual(mapping.leftKeyCode, 37);
+    XCTAssertEqual(mapping.downKeyCode, 40);
+    XCTAssertEqual(mapping.rightKeyCode, 39);
+    XCTAssertEqual(self.host.profileImportAttackController.attackKeyCode, 88);
+    XCTAssertEqual(self.host.profileImportAttackController.tapDurationMs, 45u);
+    XCTAssertEqual(self.host.delegateInstallCount, 1u);
+    XCTAssertEqual(self.host.presentationCount, 1u);
+    XCTAssertEqual(self.selectionLifecycle.registerCount, 1u);
+    XCTAssertTrue([self.selectionLifecycle.participants containsObject:participant]);
+}
+- (void)testRuntimeImportDoesNotChangeInputConfiguration {
+    MobaMovementKeyMapping oldMapping = self.host.profileImportMovementController.keyMapping;
+    XCTAssertTrue([self commitPlanDirectly:[self planForData:self.originalFiles[MobaRuntimeProfileRelativePath]] error:nil]);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.upKeyCode, oldMapping.upKeyCode);
+    XCTAssertEqual(self.host.profileImportAttackController.attackKeyCode, 67);
+}
+- (void)testLayoutImportDoesNotChangeInputConfiguration {
+    MobaMovementKeyMapping oldMapping = self.host.profileImportMovementController.keyMapping;
+    XCTAssertTrue([self commitPlanDirectly:[self planForData:self.originalFiles[MobaActiveLayoutProfileRelativePath]] error:nil]);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.leftKeyCode, oldMapping.leftKeyCode);
+    XCTAssertEqual(self.host.profileImportAttackController.tapDurationMs, 30u);
+}
+- (void)testChampionImportDoesNotChangeInputConfigurationAndKeepsOriginalID {
+    NSMutableDictionary *json = [self mutableJSONFromData:self.originalFiles[@"champions/caitlyn.json"]];
+    json[@"championId"] = @"Kai'Sa";
+    json[@"displayName"] = @"Kai'Sa";
+    MobaProfileImportPlan *plan = [self planForData:[self dataFromJSON:json]];
+    XCTAssertTrue([self commitPlanDirectly:plan error:nil]);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.upKeyCode, 87);
+    XCTAssertEqual(self.host.profileImportAttackController.attackKeyCode, 67);
+    XCTAssertEqualObjects(self.host.profileImportChampionSelectionController.selectedChampionID, @"Kai'Sa");
+    MobaChampionCatalogEntry *entry = [self.host.profileImportChampionSelectionController
+        catalogEntryForChampionID:@"Kai'Sa"];
+    XCTAssertEqualObjects(entry.championID, @"Kai'Sa");
+    XCTAssertEqualObjects(entry.championRelativePath, plan.targetRelativePath);
+}
+- (void)testProductionInstallerFailurePathSendsNoDispatcherEvents {
+    self.host.failAttackApply = YES;
+    XCTAssertFalse([self commitPlanDirectly:[self inputPlan] error:nil]);
+    XCTAssertEqual(self.sink.events.count, 0u);
+}
+- (void)testTransactionRestoresRepositoryAndBytesAfterProductionInstallerRollback {
+    MobaProfileImportPlan *plan = [self inputPlan];
+    MobaProfileSnapshot *oldSnapshot = self.repository.activeSnapshot;
+    NSData *oldBytes = self.store.files[MobaInputProfileRelativePath];
+    MobaTransferFakeLifecycle *lifecycle = [[MobaTransferFakeLifecycle alloc] init];
+    MobaProfileImportTransaction *transaction = [[MobaProfileImportTransaction alloc]
+        initWithStore:self.store repository:self.repository lifecycle:lifecycle installer:self.installer
+        backupDirectoryProvider:[[MobaTransferFixedBackupProvider alloc] init]];
+    self.host.failAttackApply = YES;
+    XCTAssertNil([transaction applyImportPlan:plan error:nil]);
+    XCTAssertTrue(self.repository.activeSnapshot == oldSnapshot);
+    XCTAssertEqualObjects(self.store.files[MobaInputProfileRelativePath], oldBytes);
+    XCTAssertEqual(self.host.profileImportMovementController.keyMapping.upKeyCode, 87);
+    XCTAssertEqual(self.host.profileImportAttackController.attackKeyCode, 67);
+    XCTAssertEqual(lifecycle.willCount, 1u);
+    XCTAssertEqual(lifecycle.didCount, 1u);
+    XCTAssertEqual(self.sink.events.count, 0u);
 }
 @end
 
@@ -602,10 +1123,58 @@
 
 - (void)testAmbiguousTypeReportsRootPath {
     NSError *error = nil;
-    NSData *data = [@"{\"schemaVersion\":1,\"canvas\":{},\"skills\":{}}" dataUsingEncoding:NSUTF8StringEncoding];
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
+    NSDictionary *input = [self mutableJSONFromData:[self exampleData:@"input.json"]];
+    for (NSString *key in @[@"profileId", @"movement", @"actions", @"cancelCastAction"]) {
+        json[key] = input[key];
+    }
+    NSData *data = [self dataFromJSON:json];
     XCTAssertNil([self planForData:data error:&error]);
     XCTAssertEqual(error.code, MobaProfileErrorAmbiguousProfileType);
     XCTAssertEqualObjects(error.userInfo[MobaProfileErrorFieldPathKey], @"$");
+    XCTAssertEqualObjects(error.userInfo[MobaProfileErrorOperationKey], @"detect-profile-type");
+}
+
+- (void)testChampionUnknownActionsDoesNotCollideWithInput {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
+    json[@"actions"] = @{@"futureMetadata": @YES};
+    XCTAssertEqualObjects([self planForData:[self dataFromJSON:json] error:nil].profileKind,
+                          MobaProfileKindChampion);
+}
+
+- (void)testChampionUnknownControlsDoesNotCollideWithLayout {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
+    json[@"controls"] = @{@"future": @YES};
+    XCTAssertEqualObjects([self planForData:[self dataFromJSON:json] error:nil].profileKind,
+                          MobaProfileKindChampion);
+}
+
+- (void)testChampionUnknownProfileIDDoesNotCollideWithInput {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
+    json[@"profileId"] = @"future-metadata";
+    XCTAssertEqualObjects([self planForData:[self dataFromJSON:json] error:nil].profileKind,
+                          MobaProfileKindChampion);
+}
+
+- (void)testInputUnknownSkillsDoesNotCollideWithChampion {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"input.json"]];
+    json[@"skills"] = @{@"future": @YES};
+    XCTAssertEqualObjects([self planForData:[self dataFromJSON:json] error:nil].profileKind,
+                          MobaProfileKindInput);
+}
+
+- (void)testLayoutUnknownCameraDoesNotCollideWithRuntime {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"ipad-pro-13-layout.json"]];
+    json[@"camera"] = @{@"future": @YES};
+    XCTAssertEqualObjects([self planForData:[self dataFromJSON:json] error:nil].profileKind,
+                          MobaProfileKindLayout);
+}
+
+- (void)testRuntimeUnknownChampionIDDoesNotCollideWithChampion {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"runtime.json"]];
+    json[@"championId"] = @"future-metadata";
+    XCTAssertEqualObjects([self planForData:[self dataFromJSON:json] error:nil].profileKind,
+                          MobaProfileKindRuntime);
 }
 
 - (void)testMissingRuntimeFieldKeepsDecoderPath {
@@ -614,6 +1183,14 @@
     NSError *error = nil;
     XCTAssertNil([self planForData:[self dataFromJSON:json] error:&error]);
     XCTAssertEqualObjects(error.userInfo[MobaProfileErrorFieldPathKey], @"$.canvas");
+}
+
+- (void)testMissingChampionSkillsKeepsDecoderPath {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
+    [json removeObjectForKey:@"skills"];
+    NSError *error = nil;
+    XCTAssertNil([self planForData:[self dataFromJSON:json] error:&error]);
+    XCTAssertEqualObjects(error.userInfo[MobaProfileErrorFieldPathKey], @"$.skills");
 }
 
 - (void)testInvalidEnumKeepsDecoderPath {
@@ -677,6 +1254,36 @@
     XCTAssertTrue([[plan.summaryLines componentsJoinedByString:@" "] containsString:@"Cast Types"]);
 }
 
+- (void)testEachSummaryUsesItsImportedProfileSchemaVersion {
+    // Make the active Runtime version intentionally distinct so the Input,
+    // Layout, and Champion assertions catch accidental Runtime coupling.
+    [self.repository.activeSnapshot.runtimeProfile setValue:@77 forKey:@"schemaVersion"];
+    NSDictionary *files = @{
+        MobaProfileKindRuntime: @"runtime.json",
+        MobaProfileKindInput: @"input.json",
+        MobaProfileKindLayout: @"ipad-pro-13-layout.json",
+        MobaProfileKindChampion: @"caitlyn.json",
+    };
+    for (MobaProfileKind kind in files) {
+        MobaProfileImportPlan *plan = [self planForData:[self exampleData:files[kind]] error:nil];
+        NSString *expected = [NSString stringWithFormat:@"Schema Version: %lu",
+            (unsigned long)plan.schemaVersion];
+        NSString *summary = [plan.summaryLines componentsJoinedByString:@" "];
+        XCTAssertTrue([summary containsString:expected]);
+        XCTAssertFalse([summary containsString:@"Schema Version: 77"]);
+    }
+}
+
+- (void)testSummaryUsesReadableCancelAndCastTypes {
+    NSString *input = [[[self planForData:[self exampleData:@"input.json"] error:nil]
+        summaryLines] componentsJoinedByString:@" "];
+    NSString *champion = [[[self planForData:[self exampleData:@"caitlyn.json"] error:nil]
+        summaryLines] componentsJoinedByString:@" "];
+    XCTAssertTrue([input containsString:@"keyboard"]);
+    XCTAssertTrue([champion containsString:@"directional"]);
+    XCTAssertTrue([champion containsString:@"point"]);
+}
+
 - (void)testRuntimeExportMatchesRawBytes {
     MobaProfileExportPayload *payload = [self.service exportPayloadForProfileKind:MobaProfileKindRuntime
         activeChampionRelativePath:@"champions/caitlyn.json" error:nil];
@@ -734,12 +1341,68 @@
     XCTAssertEqualObjects(plan.targetRelativePath, @"champions/new-champion.json");
 }
 
-- (void)testChampionPathTraversalIsRejected {
+- (void)testChampionPathTraversalLikeIdentifierIsSafelyEncoded {
     NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
     json[@"championId"] = @"../new";
-    NSError *error = nil;
-    XCTAssertNil([self planForData:[self dataFromJSON:json] error:&error]);
-    XCTAssertEqualObjects(error.userInfo[MobaProfileErrorFieldPathKey], @"$.championId");
+    MobaProfileImportPlan *plan = [self planForData:[self dataFromJSON:json] error:nil];
+    XCTAssertNotNil(plan);
+    XCTAssertTrue([plan.targetRelativePath hasPrefix:@"champions/encoded/id-"]);
+    XCTAssertFalse([plan.targetRelativePath containsString:@".."]);
+}
+
+- (void)testExistingSafeChampionIDKeepsOriginalPath {
+    XCTAssertEqualObjects([self planForData:[self exampleData:@"caitlyn.json"] error:nil].targetRelativePath,
+                          @"champions/caitlyn.json");
+}
+
+- (MobaProfileImportPlan *)championPlanWithIdentifier:(NSString *)identifier {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
+    json[@"championId"] = identifier;
+    json[@"displayName"] = identifier;
+    return [self planForData:[self dataFromJSON:json] error:nil];
+}
+
+- (void)testUnsafeChampionIdentifiersUseSafeEncodedNamespace {
+    for (NSString *identifier in @[@"Kai'Sa", @"Dr. Mundo", @"Nunu & Willump", @"瑟提"]) {
+        MobaProfileImportPlan *plan = [self championPlanWithIdentifier:identifier];
+        XCTAssertNotNil(plan);
+        XCTAssertTrue([plan.targetRelativePath hasPrefix:@"champions/encoded/id-"]);
+        XCTAssertFalse([plan.targetRelativePath containsString:identifier]);
+        XCTAssertEqualObjects(plan.repositoryCandidate.snapshot.championProfile.championID, identifier);
+    }
+}
+
+- (void)testUnsafeChampionStorageEncodingAvoidsSanitizationCollision {
+    MobaProfileImportPlan *apostrophe = [self championPlanWithIdentifier:@"Kai'Sa"];
+    MobaProfileImportPlan *space = [self championPlanWithIdentifier:@"Kai Sa"];
+    XCTAssertNotEqualObjects(apostrophe.targetRelativePath, space.targetRelativePath);
+}
+
+- (void)testEncodedChampionStorageComponentsContainOnlySafeCharacters {
+    for (NSString *identifier in @[@"../new", @"Kai'Sa", @"Dr. Mundo", @"瑟提", @"a:b\\c"]) {
+        NSString *component = [MobaProfileTransferService
+            safeChampionStorageComponentForIdentifier:identifier error:nil];
+        XCTAssertNotNil(component);
+        XCTAssertEqual([component rangeOfCharacterFromSet:
+            [NSCharacterSet characterSetWithCharactersInString:
+                @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"].invertedSet].location,
+            NSNotFound);
+        XCTAssertFalse([component containsString:@".."]);
+    }
+}
+
+- (void)testExternalFileNameCannotChangeChampionStoragePath {
+    NSMutableDictionary *json = [self mutableJSONFromData:[self exampleData:@"caitlyn.json"]];
+    json[@"championId"] = @"Kai'Sa";
+    NSData *data = [self dataFromJSON:json];
+    MobaProfileImportPlan *direct = [self planForData:data error:nil];
+    MobaProfileTransferViewController *controller = [[MobaProfileTransferViewController alloc]
+        initWithTransferService:self.service
+        importTransaction:(id)[NSObject new]
+        activeChampionRelativePath:@"champions/caitlyn.json"];
+    MobaProfileImportPlan *named = [controller prepareImportFromData:data
+        sourceFileName:@"../../different.json" error:nil];
+    XCTAssertEqualObjects(direct.targetRelativePath, named.targetRelativePath);
 }
 
 - (void)testNewChampionPlanDeclaresActiveSwitch {
