@@ -112,7 +112,8 @@
 - (void)updateInteractionAndAppearance {
     BOOL visible = _mode != MobaOverlayModeUI;
     BOOL enabled = visible &&
-        _mode == MobaOverlayModeBattle &&
+        (_mode == MobaOverlayModeBattle ||
+         (_mode == MobaOverlayModeSkillTuning && _skillTuningInteractionEnabled)) &&
         _mobaLocalInteractionEnabled &&
         _layoutPresentation.isInteractionEnabled;
     self.hidden = !visible;
@@ -136,6 +137,11 @@
             break;
     }
     _buttonView.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
+}
+
+- (void)setSkillTuningInteractionEnabled:(BOOL)skillTuningInteractionEnabled {
+    _skillTuningInteractionEnabled = skillTuningInteractionEnabled;
+    [self updateInteractionAndAppearance];
 }
 
 - (void)applyControlLayoutPresentation:(MobaControlLayoutPresentation *)presentation

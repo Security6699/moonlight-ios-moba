@@ -187,7 +187,18 @@ Verify no touch ownership transfer, no native keyboard gesture, no dropped movem
 - Verify leaving Layout Edit removes its touch blocker and restores committed presentation.
 - Verify background, disconnect, rotation, feature disable, and stop clear editor touch ownership without saving.
 
-## 8. JSON import/export
+## 8. Skill tuning
+
+- Verify the typed Runtime and Champion draft is independent of committed models and preserves unknown and unedited JSON.
+- Verify all Directional and Point range axes, default aim, response, `allowCancel`, hero anchor and 30/60/120 Hz validation. Instant skills must not acquire inapplicable fields.
+- Verify game-space center, corners, sampled Directional boundaries, Point minimum and maximum boundaries including independently zero minimum radii, point response, the shared strict meaningful-drag threshold, final preview endpoints, and canvas clamp mapping through Aspect Fit video rectangles with black bars.
+- Verify Preview Only gestures, inspector changes, skill selection, Revert and Defaults produce zero Dispatcher events.
+- Verify Live Cast enables only the selected skill, its production Coalescer, and the shared Cancel Zone, and preserves final-cursor-before-key-up and configured intentional cancel ordering.
+- Verify mode, skill, application, stream, rotation, save, reload and stop interruptions release tracked state once and invalidate stale coalescer callbacks.
+- Verify managed Restore Defaults preserves champion identity, cast types, input mappings, unknown fields, future fields and unrelated Runtime fields. Verify Runtime + current Champion save success and rollback for either write, conditional Repository commit or atomic package installation failure. Input and Layout bytes must remain identical.
+- Real iPad testing remains required for touch hit areas, landscape transitions, latency, cursor update rate and League calibration.
+
+## 9. JSON import/export
 
 - Export each profile type.
 - Re-import exported files.
@@ -195,7 +206,7 @@ Verify no touch ownership transfer, no native keyboard gesture, no dropped movem
 - Confirm backup creation before successful replacement.
 - Confirm field-specific error messages.
 
-## 9. Build and CI validation
+## 10. Build and CI validation
 
 Before every PR completion, run locally where the environment supports it:
 
@@ -216,6 +227,6 @@ Every code PR targeting `master` must pass `iOS Build` before merge. CI failures
 
 Run relevant XCTest targets when introduced. A successful compile does not replace XCTest, and neither CI nor XCTest replaces target-iPad touch, lifecycle, latency, layout, or game-calibration testing.
 
-## 10. MVP exit criteria
+## 11. MVP exit criteria
 
 All automated tests pass; nine-point diagnostics pass; no lifecycle stuck keys; Caitlyn strategies behave as configured; layout/opacity and import/export persist; unresolved items are limited to documented calibration values rather than architecture defects.

@@ -16,7 +16,7 @@
     self.layer.borderColor = [UIColor colorWithWhite:1.0 alpha:0.35].CGColor;
     self.layer.borderWidth = 1.0;
 
-    _modeControl = [[UISegmentedControl alloc] initWithItems:@[@"Battle", @"UI"]];
+    _modeControl = [[UISegmentedControl alloc] initWithItems:@[@"Battle", @"UI", @"Layout", @"Tuning"]];
     [_modeControl addTarget:self action:@selector(modeControlChanged:)
           forControlEvents:UIControlEventValueChanged];
     [self addSubview:_modeControl];
@@ -42,7 +42,7 @@
 }
 
 - (CGSize)intrinsicContentSize {
-    return CGSizeMake(176.0, 42.0);
+    return CGSizeMake(348.0, 42.0);
 }
 
 - (MobaOverlayMode)selectedMode {
@@ -64,16 +64,15 @@
             _modeControl.selectedSegmentIndex = 1;
             break;
         case MobaOverlayModeLayoutEdit:
+            _modeControl.selectedSegmentIndex = 2;
+            break;
         case MobaOverlayModeSkillTuning:
-            _modeControl.selectedSegmentIndex = UISegmentedControlNoSegment;
+            _modeControl.selectedSegmentIndex = 3;
             break;
     }
 }
 
 - (BOOL)requestMode:(MobaOverlayMode)mode {
-    if (mode != MobaOverlayModeBattle && mode != MobaOverlayModeUI) {
-        return NO;
-    }
     if (mode == MobaOverlayModeBattle && !_battleModeAvailable) {
         [self setSelectedMode:_selectedMode];
         return NO;
@@ -89,7 +88,9 @@
 }
 
 - (void)modeControlChanged:(UISegmentedControl *)sender {
-    MobaOverlayMode mode = sender.selectedSegmentIndex == 0 ? MobaOverlayModeBattle : MobaOverlayModeUI;
+    MobaOverlayMode modes[] = {MobaOverlayModeBattle, MobaOverlayModeUI,
+                              MobaOverlayModeLayoutEdit, MobaOverlayModeSkillTuning};
+    MobaOverlayMode mode = modes[MAX(0, MIN(3, sender.selectedSegmentIndex))];
     [self requestMode:mode];
 }
 

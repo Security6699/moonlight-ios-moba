@@ -22,9 +22,12 @@
 #import "../Controls/MobaSkillControlPackage.h"
 #import "../Controls/MobaControlLayoutPresentation.h"
 #import "../Controls/MobaLayoutEditorOverlayView.h"
+#import "../Controls/MobaSkillTuningOverlayView.h"
 #import "../Controls/MoveJoystickView.h"
 #import "../Profiles/MobaLayoutEditor.h"
 #import "../Profiles/MobaLayoutSaveTransaction.h"
+#import "../Profiles/MobaSkillTuning.h"
+#import "../Profiles/MobaSkillTuningSaveTransaction.h"
 #import "../Profiles/MobaProfileStore.h"
 #import "../Profiles/MobaProfileRepository.h"
 #import "../Profiles/MobaChampionSelectionController.h"
@@ -41,6 +44,14 @@ static const CGFloat MobaDefaultCancelZoneCenterX = 0.83;
 static const CGFloat MobaDefaultCancelZoneCenterY = 0.48;
 static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
+@interface MobaSkillTuningInputGate : NSObject <MobaBattleInputGate>
+@property (nonatomic, weak) MobaOverlayLifecycle *lifecycle;
+@end
+
+@implementation MobaSkillTuningInputGate
+- (BOOL)isBattleInputAllowed { return self.lifecycle.isSkillTuningInputAllowed; }
+@end
+
 @interface MobaOverlayCoordinator () <MobaAttackControllerDelegate,
                                       MobaBattleInputGate,
                                       MobaChampionSelectionControllerDelegate,
@@ -50,6 +61,8 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                                       MobaLayoutEditorOverlayViewDelegate,
                                       MobaLayoutSaveInstalling,
                                       MobaModeToolbarViewDelegate,
+                                      MobaSkillTuningOverlayViewDelegate,
+                                      MobaSkillTuningSaveInstalling,
                                       MobaSkillCancelZoneRouting,
                                       MobaSkillCastControllerDelegate,
                                       MobaSkillControlPackageBuilding>
@@ -78,6 +91,13 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     MobaLayoutEditorController *_layoutEditorController;
     MobaLayoutEditorOverlayView *_layoutEditorOverlayView;
     MobaLayoutSaveTransaction *_layoutSaveTransaction;
+    MobaSkillTuningController *_skillTuningController;
+    MobaSkillTuningOverlayView *_skillTuningOverlayView;
+    MobaSkillTuningSaveTransaction *_skillTuningSaveTransaction;
+    MobaSkillTuningInputGate *_skillTuningInputGate;
+    MobaSkillControlPackage *_skillTuningControlPackage;
+    MobaSkillButtonView *_skillTuningSkillView;
+    MobaSkillRuntimeDescriptor *_skillTuningDescriptor;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
 #endif
@@ -175,6 +195,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
             controlPackageBuilder:self
             lifecycle:(id<MobaLayoutSaveLifecycle>)_lifecycle
             installer:self];
+        _skillTuningInputGate = [[MobaSkillTuningInputGate alloc] init];
+        _skillTuningInputGate.lifecycle = _lifecycle;
+        _skillTuningSaveTransaction = [[MobaSkillTuningSaveTransaction alloc]
+            initWithStore:_profileStore
+            repository:_profileRepository
+            runtimeBuilder:_castStrategyFactory
+            controlPackageBuilder:self
+            lifecycle:(id<MobaSkillTuningSaveLifecycle>)_lifecycle
+            installer:self];
         [self applyCommittedLayoutPresentation];
 #if DEBUG
         _cursorDiagnosticPanel = [[MobaCursorDiagnosticPanel alloc] initWithDiagnostics:_cursorDiagnostics];
@@ -185,6 +214,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (nullable MobaSkillControlPackage *)controlPackageForRuntime:(MobaChampionRuntime *)runtime
+                                                     inputGate:(id<MobaBattleInputGate>)inputGate
                                                          error:(NSError **)error {
     if (error != NULL) {
         *error = nil;
@@ -211,7 +241,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
         MobaSkillCastController *controller = [[MobaSkillCastController alloc]
             initWithDescriptor:descriptor
-                     inputGate:self
+                     inputGate:inputGate
               cancelZoneRouter:self];
         if (controller == nil) {
             break;
@@ -239,6 +269,11 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         }];
     }
     return package;
+}
+
+- (nullable MobaSkillControlPackage *)controlPackageForRuntime:(MobaChampionRuntime *)runtime
+                                                         error:(NSError **)error {
+    return [self controlPackageForRuntime:runtime inputGate:self error:error];
 }
 
 - (void)installSkillControlPackage:(MobaSkillControlPackage *)package {
@@ -407,6 +442,17 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                                        CGRectGetHeight(safeFrame) * layout.centerY);
         skillView.layer.zPosition = layout.zIndex;
     }
+    if (_skillTuningSkillView != nil) {
+        MobaControlLayoutPresentation *layout = [self currentPresentationForControlName:
+            _skillTuningSkillView.descriptor.layoutControlName];
+        CGSize hitAreaSize = _skillTuningSkillView.intrinsicContentSize;
+        _skillTuningSkillView.bounds = (CGRect){ CGPointZero, hitAreaSize };
+        _skillTuningSkillView.center = CGPointMake(CGRectGetMinX(safeFrame) +
+                                                   CGRectGetWidth(safeFrame) * layout.centerX,
+                                                   CGRectGetMinY(safeFrame) +
+                                                   CGRectGetHeight(safeFrame) * layout.centerY);
+        _skillTuningSkillView.layer.zPosition = layout.zIndex + 1;
+    }
 
     CGSize cancelZoneSize = _cancelZoneView.intrinsicContentSize;
     _cancelZoneView.bounds = (CGRect){ CGPointZero, cancelZoneSize };
@@ -493,19 +539,156 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     if (previousMode == MobaOverlayModeLayoutEdit && mode != MobaOverlayModeLayoutEdit) {
         [self discardLayoutEditorDraft];
     }
+    else if (previousMode == MobaOverlayModeSkillTuning && mode != MobaOverlayModeSkillTuning) {
+        [self discardSkillTuningDraft];
+    }
     else if (mode == MobaOverlayModeLayoutEdit && previousMode != MobaOverlayModeLayoutEdit) {
         [self beginLayoutEditing];
+    }
+    else if (mode == MobaOverlayModeSkillTuning && previousMode != MobaOverlayModeSkillTuning) {
+        if (![self beginSkillTuning]) {
+            [_lifecycle transitionToMode:MobaOverlayModeUI];
+            mode = MobaOverlayModeUI;
+        }
     }
     _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
     [_modeToolbarView setSelectedMode:_lifecycle.mode];
     [_championSelectorView setMode:_lifecycle.mode];
     for (MobaSkillButtonView *view in _skillButtonViews.allValues) {
         [view setMode:_lifecycle.mode];
+        if (_lifecycle.mode == MobaOverlayModeSkillTuning &&
+            [view.descriptor.skillSlot isEqualToString:_skillTuningController.selectedSkillSlot]) {
+            view.hidden = YES;
+        }
     }
     _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
     [self applyCurrentLayoutPresentation];
     [self layoutBattleControls];
     return YES;
+}
+
+- (MobaChampionCatalogEntry *)selectedChampionCatalogEntry {
+    return [_championSelectionController catalogEntryForChampionID:
+        _championSelectionController.selectedChampionID];
+}
+
+- (void)removeSkillTuningCandidatePackage {
+    if (_skillTuningSkillView != nil) {
+        [_lifecycle unregisterLocalInteractionResetParticipant:_skillTuningSkillView];
+        [_skillTuningSkillView removeFromSuperview];
+    }
+    if (_skillTuningDescriptor.cursorCoalescer != nil) {
+        [_lifecycle unregisterLocalInteractionResetParticipant:_skillTuningDescriptor.cursorCoalescer];
+    }
+    [_skillTuningControlPackage silentResetForReason:MobaInputInterruptionReasonSkillTuningDraftChange];
+    _skillTuningControlPackage = nil;
+    _skillTuningSkillView = nil;
+    _skillTuningDescriptor = nil;
+}
+
+- (void)setSelectedSkillTuningParticipantsEnabled:(BOOL)enabled {
+    [_skillTuningSkillView setMobaLocalInteractionEnabled:enabled];
+    [_skillTuningDescriptor.cursorCoalescer setMobaLocalInteractionEnabled:enabled];
+    [_cancelZoneView setMobaLocalInteractionEnabled:enabled];
+}
+
+- (BOOL)installLatestSkillTuningCandidateForSelectedSkill:(NSError **)error {
+    MobaChampionRuntime *runtime = _skillTuningController.lastValidRuntime;
+    MobaCanonicalSkillSlot slot = _skillTuningController.selectedSkillSlot;
+    MobaSkillControlPackage *package = [self controlPackageForRuntime:runtime
+                                                           inputGate:_skillTuningInputGate error:error];
+    MobaSkillButtonView *view = package.skillButtonViews[slot];
+    MobaSkillRuntimeDescriptor *descriptor = [runtime descriptorForSkillSlot:slot];
+    if (!package.isComplete || view == nil || descriptor == nil) return NO;
+    [self removeSkillTuningCandidatePackage];
+    _skillTuningControlPackage = package;
+    _skillTuningSkillView = view;
+    _skillTuningDescriptor = descriptor;
+    [view setMode:MobaOverlayModeSkillTuning];
+    view.skillTuningInteractionEnabled = YES;
+    [view setMobaLocalInteractionEnabled:NO];
+    [_lifecycle registerLocalInteractionResetParticipant:view];
+    if (descriptor.cursorCoalescer != nil) {
+        [_lifecycle registerLocalInteractionResetParticipant:descriptor.cursorCoalescer];
+        [descriptor.cursorCoalescer setMobaLocalInteractionEnabled:NO];
+    }
+    if (_lifecycle.isRunning) [_streamView addSubview:view];
+    for (MobaSkillButtonView *battleView in _skillButtonViews.allValues) {
+        if ([battleView.descriptor.skillSlot isEqualToString:slot]) battleView.hidden = YES;
+    }
+    [self layoutBattleControls];
+    return YES;
+}
+
+- (void)attachSkillTuningOverlay {
+    if (_skillTuningController == nil || !_lifecycle.isRunning ||
+        _lifecycle.mode != MobaOverlayModeSkillTuning || _skillTuningOverlayView.superview != nil) return;
+    _skillTuningOverlayView = [[MobaSkillTuningOverlayView alloc]
+        initWithTuningController:_skillTuningController
+        championName:_profileRepository.activeSnapshot.championProfile.displayName];
+    _skillTuningOverlayView.delegate = self;
+    _skillTuningOverlayView.frame = _streamView.bounds;
+    _skillTuningOverlayView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [_skillTuningOverlayView setVideoRect:_streamView.videoRect];
+    [_streamView addSubview:_skillTuningOverlayView];
+    [_streamView bringSubviewToFront:_modeToolbarView];
+}
+
+- (BOOL)beginSkillTuning {
+    if (_skillTuningController == nil) {
+        MobaChampionCatalogEntry *entry = [self selectedChampionCatalogEntry];
+        NSError *error = nil;
+        NSData *runtimeData = [_profileStore readDataAtRelativePath:MobaRuntimeProfileRelativePath error:&error];
+        NSData *championData = entry == nil ? nil
+            : [_profileStore readDataAtRelativePath:entry.championRelativePath error:&error];
+        if (runtimeData == nil || championData == nil || _profileRepository.activeSnapshot == nil) {
+            NSLog(@"MOBA skill tuning could not load its committed baseline: %@", error);
+            return NO;
+        }
+        _skillTuningController = [[MobaSkillTuningController alloc]
+            initWithRuntimeData:runtimeData championData:championData
+            decoder:[[MobaProfileDecoder alloc] init] repository:_profileRepository
+            runtimeBuilder:_castStrategyFactory controlPackageBuilder:self error:&error];
+        if (_skillTuningController == nil ||
+            ![self installLatestSkillTuningCandidateForSelectedSkill:&error]) {
+            NSLog(@"MOBA skill tuning baseline was rejected: %@", error);
+            _skillTuningController = nil;
+            return NO;
+        }
+    }
+    [self attachSkillTuningOverlay];
+    return YES;
+}
+
+- (void)setSkillTuningCastMode:(MobaSkillTuningCastMode)castMode
+                         reason:(MobaInputInterruptionReason)reason {
+    if (_lifecycle.mode != MobaOverlayModeSkillTuning) return;
+    if (_skillTuningOverlayView.castMode == castMode &&
+        (castMode == MobaSkillTuningCastModePreviewOnly || _lifecycle.isSkillTuningInputAllowed)) return;
+    [_lifecycle interruptAndReleaseInputsForReason:reason];
+    [self setSelectedSkillTuningParticipantsEnabled:NO];
+    [_skillTuningOverlayView cancelPreview];
+    [_skillTuningOverlayView setCastMode:MobaSkillTuningCastModePreviewOnly];
+    [_skillTuningOverlayView setEditingEnabled:YES];
+    if (castMode == MobaSkillTuningCastModeLiveCast && [_lifecycle beginSkillTuningLiveInput]) {
+        [self setSelectedSkillTuningParticipantsEnabled:YES];
+        [_skillTuningOverlayView setCastMode:MobaSkillTuningCastModeLiveCast];
+        [_skillTuningOverlayView setEditingEnabled:NO];
+    }
+}
+
+- (void)discardSkillTuningDraft {
+    if (_skillTuningController == nil) return;
+    [self setSkillTuningCastMode:MobaSkillTuningCastModePreviewOnly
+                          reason:MobaInputInterruptionReasonSkillTuningDraftChange];
+    [_skillTuningOverlayView cancelPreview];
+    [_skillTuningOverlayView removeFromSuperview];
+    _skillTuningOverlayView.delegate = nil;
+    _skillTuningOverlayView = nil;
+    [_skillTuningController revertWithError:nil];
+    [self removeSkillTuningCandidatePackage];
+    _skillTuningController = nil;
+    for (MobaSkillButtonView *view in _skillButtonViews.allValues) view.hidden = NO;
 }
 
 - (void)attachLayoutEditorOverlay {
@@ -604,10 +787,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 #endif
     [_lifecycle start];
     if (_lifecycle.mode == MobaOverlayModeLayoutEdit) [self beginLayoutEditing];
+    if (_lifecycle.mode == MobaOverlayModeSkillTuning) [self beginSkillTuning];
+}
+
+- (BOOL)isCastInputAllowed {
+    return self.isBattleInputAllowed || _lifecycle.isSkillTuningInputAllowed;
 }
 
 - (BOOL)beginCancelZonePresentationForCastToken:(id)token {
-    if (!self.isBattleInputAllowed) {
+    if (![self isCastInputAllowed]) {
         return NO;
     }
     return [_cancelZoneController beginCastingWithToken:token];
@@ -616,7 +804,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 - (BOOL)evaluateCancelZoneAtStreamViewPoint:(CGPoint)point
                                 forCastToken:(id)token
                            insideCancelZone:(BOOL *)insideCancelZone {
-    if (!self.isBattleInputAllowed) {
+    if (![self isCastInputAllowed]) {
         return NO;
     }
     return [_cancelZoneController evaluatePoint:point
@@ -626,7 +814,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 - (BOOL)applyCancelZoneTransitionResult:(MobaCastTransitionResult)result
                             forCastToken:(id)token {
-    if (!self.isBattleInputAllowed) {
+    if (![self isCastInputAllowed]) {
         return NO;
     }
     return [_cancelZoneController applyAcceptedTransitionResult:result forToken:token];
@@ -642,6 +830,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 - (void)stop {
     [self discardLayoutEditorDraft];
+    [self discardSkillTuningDraft];
     [_lifecycle stop];
     [self removeBattleControls];
 #if DEBUG
@@ -660,6 +849,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 - (void)applicationWillResignActive {
     [_layoutEditorOverlayView cancelEditingInteraction];
     [_lifecycle applicationWillResignActive];
+    [self restoreSkillTuningPreviewUIAfterInterruption];
 }
 
 - (void)applicationDidEnterBackground {
@@ -667,6 +857,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     [_layoutEditorOverlayView removeFromSuperview];
     _layoutEditorOverlayView = nil;
     [_lifecycle applicationDidEnterBackground];
+    [self restoreSkillTuningPreviewUIAfterInterruption];
 }
 
 - (void)applicationDidBecomeActive {
@@ -676,6 +867,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 - (void)streamDidDisconnect {
     [self discardLayoutEditorDraft];
+    [self discardSkillTuningDraft];
     [_lifecycle streamDidDisconnect];
     [self removeBattleControls];
 #if DEBUG
@@ -685,6 +877,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 - (void)viewControllerWillDisappear {
     [self discardLayoutEditorDraft];
+    [self discardSkillTuningDraft];
     [_lifecycle viewControllerWillDisappear];
     [self removeBattleControls];
 #if DEBUG
@@ -695,17 +888,20 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 - (void)orientationWillChange {
     [_layoutEditorOverlayView cancelEditingInteraction];
     [_lifecycle orientationWillChange];
+    [self restoreSkillTuningPreviewUIAfterInterruption];
 }
 
 - (void)orientationDidChange {
     _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
     [self layoutBattleControls];
     [_layoutEditorOverlayView refreshFromDraft];
+    [_skillTuningOverlayView setVideoRect:_streamView.videoRect];
     [_lifecycle orientationDidChange];
 }
 
 - (void)profileWillReload {
     [_lifecycle profileWillReload];
+    [self restoreSkillTuningPreviewUIAfterInterruption];
 }
 
 - (void)profileDidReload {
@@ -714,6 +910,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 - (void)mobaFeatureWillDisable {
     [self discardLayoutEditorDraft];
+    [self discardSkillTuningDraft];
     [_lifecycle mobaFeatureWillDisable];
     [self removeBattleControls];
 #if DEBUG
@@ -734,6 +931,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 - (void)skillCastControllerDidRequestTouchCancellation:(MobaSkillCastController *)controller {
     (void)controller;
     [_lifecycle touchesCancelled];
+    [self restoreSkillTuningPreviewUIAfterInterruption];
+}
+
+- (void)restoreSkillTuningPreviewUIAfterInterruption {
+    if (_lifecycle.mode != MobaOverlayModeSkillTuning || _skillTuningOverlayView == nil) return;
+    [_skillTuningOverlayView setCastMode:MobaSkillTuningCastModePreviewOnly];
+    [_skillTuningOverlayView setEditingEnabled:YES];
+    [_skillTuningOverlayView cancelPreview];
+    [self setSelectedSkillTuningParticipantsEnabled:NO];
 }
 
 - (void)layoutEditorControllerDidChangeDraft:(MobaLayoutEditorController *)controller {
@@ -793,6 +999,106 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     return YES;
 }
 
+- (BOOL)installSkillTuningSnapshot:(MobaProfileSnapshot *)snapshot
+                           runtime:(MobaChampionRuntime *)runtime
+               skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                             error:(NSError **)error {
+    if (![_championSelectionController commitPreparedProfileSnapshot:snapshot
+                                                              runtime:runtime
+                                                   skillControlPackage:skillControlPackage
+                                                                error:error]) return NO;
+    [self applyCommittedLayoutPresentation];
+    return YES;
+}
+
+- (void)skillTuningOverlay:(MobaSkillTuningOverlayView *)overlay
+            didSelectSkill:(MobaCanonicalSkillSlot)skillSlot {
+    if (overlay != _skillTuningOverlayView || _lifecycle.mode != MobaOverlayModeSkillTuning) return;
+    [self setSkillTuningCastMode:MobaSkillTuningCastModePreviewOnly
+                          reason:MobaInputInterruptionReasonSkillTuningSkillChange];
+    _skillTuningController.selectedSkillSlot = skillSlot;
+    NSError *error = nil;
+    if (![self installLatestSkillTuningCandidateForSelectedSkill:&error]) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Skill candidate unavailable" error:YES];
+    }
+    [overlay refreshFromDraft];
+}
+
+- (void)skillTuningOverlay:(MobaSkillTuningOverlayView *)overlay
+       didRequestCastMode:(MobaSkillTuningCastMode)castMode {
+    if (overlay != _skillTuningOverlayView || _lifecycle.mode != MobaOverlayModeSkillTuning) return;
+    [self setSkillTuningCastMode:castMode
+                          reason:MobaInputInterruptionReasonSkillTuningCastModeChange];
+}
+
+- (void)skillTuningOverlayDidChangeDraft:(MobaSkillTuningOverlayView *)overlay {
+    if (overlay != _skillTuningOverlayView || _lifecycle.mode != MobaOverlayModeSkillTuning) return;
+    if (_skillTuningController.validationError != nil) return;
+    NSError *error = nil;
+    if (![self installLatestSkillTuningCandidateForSelectedSkill:&error]) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Preview candidate unavailable" error:YES];
+    }
+    [overlay refreshFromDraft];
+}
+
+- (void)skillTuningOverlayDidRequestSave:(MobaSkillTuningOverlayView *)overlay {
+    if (overlay != _skillTuningOverlayView || _lifecycle.mode != MobaOverlayModeSkillTuning ||
+        !_skillTuningController.draft.isDirty || _skillTuningController.validationError != nil) return;
+    [self setSkillTuningCastMode:MobaSkillTuningCastModePreviewOnly
+                          reason:MobaInputInterruptionReasonProfileReload];
+    MobaChampionCatalogEntry *entry = [self selectedChampionCatalogEntry];
+    NSError *error = nil;
+    MobaSkillTuningSaveResult *result = entry == nil ? nil
+        : [_skillTuningSaveTransaction saveDraft:_skillTuningController.draft
+                           championRelativePath:entry.championRelativePath error:&error];
+    if (result == nil) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Save failed" error:YES];
+        return;
+    }
+    if (![_skillTuningController acceptSavedRuntimeData:result.runtimeData
+                                            championData:result.championData error:&error] ||
+        ![self installLatestSkillTuningCandidateForSelectedSkill:&error]) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Saved, but preview refresh failed" error:YES];
+        return;
+    }
+    [overlay refreshFromDraft];
+    [overlay showStatusMessage:@"Saved" error:NO];
+}
+
+- (void)skillTuningOverlayDidRequestRevert:(MobaSkillTuningOverlayView *)overlay {
+    if (overlay != _skillTuningOverlayView || _lifecycle.mode != MobaOverlayModeSkillTuning) return;
+    [self setSkillTuningCastMode:MobaSkillTuningCastModePreviewOnly
+                          reason:MobaInputInterruptionReasonSkillTuningDraftChange];
+    NSError *error = nil;
+    if (![_skillTuningController revertWithError:&error] ||
+        ![self installLatestSkillTuningCandidateForSelectedSkill:&error]) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Revert failed" error:YES];
+        return;
+    }
+    [overlay refreshFromDraft];
+}
+
+- (void)skillTuningOverlayDidRequestRestoreDefaults:(MobaSkillTuningOverlayView *)overlay {
+    if (overlay != _skillTuningOverlayView || _lifecycle.mode != MobaOverlayModeSkillTuning) return;
+    [self setSkillTuningCastMode:MobaSkillTuningCastModePreviewOnly
+                          reason:MobaInputInterruptionReasonSkillTuningDraftChange];
+    MobaChampionCatalogEntry *entry = [self selectedChampionCatalogEntry];
+    NSError *error = nil;
+    NSData *runtimeData = [_profileStore
+        readBundledDefaultDataForDestinationRelativePath:MobaRuntimeProfileRelativePath error:&error];
+    NSData *championData = entry == nil ? nil : [_profileStore
+        readBundledDefaultDataForDestinationRelativePath:entry.championRelativePath error:&error];
+    if (runtimeData == nil || championData == nil ||
+        ![_skillTuningController restoreDefaultsFromRuntimeData:runtimeData
+                                                   championData:championData error:&error] ||
+        ![self installLatestSkillTuningCandidateForSelectedSkill:&error]) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Defaults unavailable for this champion" error:YES];
+        return;
+    }
+    [overlay refreshFromDraft];
+    [overlay showStatusMessage:@"Defaults previewed. Save to commit." error:NO];
+}
+
 - (BOOL)mobaModeToolbarView:(MobaModeToolbarView *)toolbar requestMode:(MobaOverlayMode)mode {
     (void)toolbar;
     return [self transitionToMode:mode];
@@ -822,6 +1128,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 - (void)dealloc {
     [_layoutEditorOverlayView cancelEditingInteraction];
+    [_skillTuningOverlayView cancelPreview];
     [_lifecycle invalidateForDestruction];
     [_championSelectionController invalidate];
     [self removeBattleControls];

@@ -11,10 +11,6 @@
 #import "../Casting/MobaInstantCastStrategy.h"
 #import "../Casting/MobaPointCastStrategy.h"
 
-#import <math.h>
-
-const CGFloat MobaDirectionalMeaningfulDragDeadzoneRatio = 0.10;
-
 @implementation MobaSkillCastController {
     __weak id<MobaBattleInputGate> _inputGate;
     __weak id<MobaSkillCancelZoneRouting> _cancelZoneRouter;
@@ -137,23 +133,6 @@ const CGFloat MobaDirectionalMeaningfulDragDeadzoneRatio = 0.10;
     return YES;
 }
 
-- (CGFloat)meaningfulDragDeadzoneRatio {
-    MobaTouchResponseProfile *response = _descriptor.skillProfile.touchResponse;
-    if (response != nil) {
-        return response.deadzoneRatio;
-    }
-    return MobaDirectionalMeaningfulDragDeadzoneRatio;
-}
-
-- (BOOL)meaningfulDragForDisplacement:(CGVector)displacement {
-    NSNumber *wheelRadiusValue = _descriptor.layoutControlProfile.wheelRadiusPt;
-    if (_descriptor.castType == MobaProfileSkillCastTypeInstant || wheelRadiusValue == nil) {
-        return NO;
-    }
-    CGFloat threshold = (CGFloat)wheelRadiusValue.doubleValue * [self meaningfulDragDeadzoneRatio];
-    return hypot(displacement.dx, displacement.dy) > threshold;
-}
-
 - (BOOL)consumeStrategyUpdate:(MobaCastTransitionResult)result
                  displacement:(CGVector)displacement {
     switch (_descriptor.castType) {
@@ -198,7 +177,8 @@ requestCancellationOnFailure:(BOOL)requestCancellationOnFailure {
     }
 
     MobaCastTransitionResult result = [_session updateInteractionWithToken:token
-                                                            meaningfulDrag:[self meaningfulDragForDisplacement:displacement]
+                                                            meaningfulDrag:MobaSkillMeaningfulDragForDescriptor(
+                                                                _descriptor, displacement)
                                                            insideCancelZone:insideCancelZone];
     if (!result.accepted) {
         if (requestCancellationOnFailure) {

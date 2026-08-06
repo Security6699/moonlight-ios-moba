@@ -135,6 +135,10 @@ Caitlyn has no instant active skill. Instant behavior is tested with a debug cha
 
 ## 11. Non-goals
 
+Skill Tuning is an explicit calibration mode. Its typed draft can edit the current champion's existing Q/W/E/R schema fields, the fixed-canvas hero anchor and the 30/60/120 Hz cursor update rate. Preview Only performs local geometry and drawing with zero remote input. Live Cast permits only the selected skill and directly maps the user's touch through the existing Session, Strategy, Coalescer and Dispatcher chain. Movement, Attack and the other skills stay disabled.
+
+The game-space preview uses the fixed 2560×1440 canvas and maps through the current Aspect Fit video rectangle. It never uses safe-area control coordinates for aim range. Save atomically replaces only `runtime.json` and the selected champion file. Revert is memory-only and Restore Defaults only changes the draft until Save.
+
 - Android or iPhone support.
 - Portrait or unlocked camera.
 - Other stream resolutions.
