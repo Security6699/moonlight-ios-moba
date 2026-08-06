@@ -6,6 +6,7 @@
 
 #import <UIKit/UIKit.h>
 
+#import "MobaControlLayoutPresentation.h"
 #import "../Core/MobaOverlayLifecycle.h"
 
 NS_ASSUME_NONNULL_BEGIN
@@ -18,7 +19,8 @@ FOUNDATION_EXPORT const CGFloat AttackButtonDefaultNormalOpacity;
 FOUNDATION_EXPORT const CGFloat AttackButtonDefaultPressedOpacity;
 FOUNDATION_EXPORT const CGFloat AttackButtonDefaultDisabledOpacity;
 
-@interface AttackButtonView : UIView <MobaLocalInteractionResetParticipant>
+@interface AttackButtonView : UIView <MobaLayoutEditableControlPresenting,
+                                      MobaLocalInteractionResetParticipant>
 
 @property (nonatomic, readonly) CGSize visualSize;
 @property (nonatomic, readonly) CGFloat hitAreaScale;
@@ -27,6 +29,8 @@ FOUNDATION_EXPORT const CGFloat AttackButtonDefaultDisabledOpacity;
 @property (nonatomic) CGFloat disabledOpacity;
 @property (nonatomic, getter=isInteractionEnabled) BOOL interactionEnabled;
 @property (nonatomic, readonly, getter=isPressed) BOOL pressed;
+@property (nonatomic, readonly) CGFloat effectiveVisualOpacity;
+@property (nonatomic, readonly) CGSize renderedVisualSize;
 
 - (nullable instancetype)initWithAttackController:(MobaAttackController *)attackController;
 - (nullable instancetype)initWithAttackController:(MobaAttackController *)attackController

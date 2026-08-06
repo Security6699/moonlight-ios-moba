@@ -327,6 +327,18 @@
     return controller;
 }
 
+- (void)prepareSkillViewForHitTesting:(MobaSkillButtonView *)view {
+    CGSize size = view.intrinsicContentSize;
+    view.frame = CGRectMake(0.0, 0.0, size.width, size.height);
+    [view setNeedsLayout];
+    [view layoutIfNeeded];
+}
+
+- (UIView *)centerHitForSkillView:(MobaSkillButtonView *)view {
+    return [view hitTest:CGPointMake(CGRectGetMidX(view.bounds), CGRectGetMidY(view.bounds))
+               withEvent:nil];
+}
+
 - (MobaSkillCastController *)fakeControllerWithType:(MobaProfileSkillCastType)type
                                         allowCancel:(BOOL)allowCancel
                                            strategy:(MobaSkillTestStrategy *)strategy {
@@ -810,8 +822,10 @@
             initWithController:controller streamCoordinateView:[[UIView alloc] init]];
         [view setMobaLocalInteractionEnabled:YES];
         [view setMode:modeValue.integerValue];
+        [self prepareSkillViewForHitTesting:view];
         XCTAssertEqual(view.hidden, modeValue.integerValue == MobaOverlayModeUI);
         XCTAssertFalse(view.userInteractionEnabled);
+        XCTAssertNil([self centerHitForSkillView:view]);
         XCTAssertFalse([view beginInteractionWithToken:[NSObject new] streamViewPoint:CGPointZero]);
         XCTAssertEqual(strategy.events.count, 0u);
     }
@@ -828,9 +842,11 @@
     [view setMobaLocalInteractionEnabled:YES];
     XCTAssertEqualWithAccuracy(view.intrinsicContentSize.width, 110.4, 0.001);
     XCTAssertEqualWithAccuracy(view.intrinsicContentSize.height, 105.6, 0.001);
-    XCTAssertEqualWithAccuracy(view.alpha, 0.42, 0.001);
+    XCTAssertEqualWithAccuracy(view.alpha, 1.0, 0.001);
+    XCTAssertEqualWithAccuracy(view.effectiveVisualOpacity, 0.42, 0.001);
     XCTAssertEqualWithAccuracy(view.layer.zPosition, 20, 0.001);
     XCTAssertEqualObjects(view.descriptor.displayLabel, @"R");
+    XCTAssertEqualObjects(view.displayLabel, @"R");
 }
 
 - (void)testZeroNormalOpacityDoesNotDisableInteraction {
@@ -842,9 +858,36 @@
         initWithController:[self controllerForDescriptor:descriptor]
         streamCoordinateView:[[UIView alloc] init]];
     [view setMobaLocalInteractionEnabled:YES];
-    XCTAssertEqualWithAccuracy(view.alpha, 0, 0.001);
+    [self prepareSkillViewForHitTesting:view];
+    XCTAssertEqualWithAccuracy(view.alpha, 1, 0.001);
+    XCTAssertEqualWithAccuracy(view.effectiveVisualOpacity, 0, 0.001);
     XCTAssertTrue(view.userInteractionEnabled);
+    XCTAssertEqual([self centerHitForSkillView:view], view);
+    XCTAssertEqualObjects(view.displayLabel, @"Q");
+    XCTAssertEqual(view.descriptor.hostKeyCode, 81);
     XCTAssertTrue([view beginInteractionWithToken:[NSObject new] streamViewPoint:CGPointZero]);
+}
+
+- (void)testZeroGlobalOpacityDoesNotDisableSkillHitTesting {
+    MobaSkillTestStrategy *strategy = [[MobaSkillTestStrategy alloc] init];
+    MobaSkillRuntimeDescriptor *descriptor = [self descriptorWithType:MobaProfileSkillCastTypeInstant
+                                                          allowCancel:NO strategy:strategy label:@"W"
+                                                              opacity:0.7 interactionEnabled:YES];
+    MobaSkillCastController *controller = [self controllerForDescriptor:descriptor];
+    MobaSkillButtonView *view = [[MobaSkillButtonView alloc]
+        initWithController:controller streamCoordinateView:[[UIView alloc] init]];
+    MobaControlLayoutPresentation *presentation = [[MobaControlLayoutPresentation alloc]
+        initWithCenterX:0.5 centerY:0.5 visualSize:CGSizeMake(92, 88)
+        hitAreaScale:1.2 wheelRadiusPt:@100 normalOpacity:0.7 pressedOpacity:0.8
+        disabledOpacity:0.3 zIndex:20 interactionEnabled:YES];
+    [view applyControlLayoutPresentation:presentation globalOpacityMultiplier:0
+                            previewState:MobaControlOpacityPreviewStateAutomatic];
+    [view setMobaLocalInteractionEnabled:YES];
+    [self prepareSkillViewForHitTesting:view];
+    XCTAssertEqual(view.alpha, 1.0);
+    XCTAssertEqual(view.effectiveVisualOpacity, 0.0);
+    XCTAssertEqual([self centerHitForSkillView:view], view);
+    XCTAssertTrue(controller.isInteractionEnabled);
 }
 
 - (void)testProfileInteractionDisabledUsesDisabledOpacityAndRejectsInput {
@@ -856,8 +899,11 @@
         initWithController:[self controllerForDescriptor:descriptor]
         streamCoordinateView:[[UIView alloc] init]];
     [view setMobaLocalInteractionEnabled:YES];
+    [self prepareSkillViewForHitTesting:view];
     XCTAssertFalse(view.userInteractionEnabled);
-    XCTAssertEqualWithAccuracy(view.alpha, 0.30, 0.001);
+    XCTAssertEqualWithAccuracy(view.alpha, 1.0, 0.001);
+    XCTAssertEqualWithAccuracy(view.effectiveVisualOpacity, 0.30, 0.001);
+    XCTAssertNil([self centerHitForSkillView:view]);
     XCTAssertFalse([view beginInteractionWithToken:[NSObject new] streamViewPoint:CGPointZero]);
 }
 
@@ -1019,7 +1065,8 @@
         initWithController:controller streamCoordinateView:[[UIView alloc] init]];
     [view setMobaLocalInteractionEnabled:YES];
     XCTAssertTrue([view beginInteractionWithToken:[NSObject new] streamViewPoint:CGPointZero]);
-    XCTAssertEqualWithAccuracy(view.alpha, 0.88, 0.001);
+    XCTAssertEqualWithAccuracy(view.alpha, 1.0, 0.001);
+    XCTAssertEqualWithAccuracy(view.effectiveVisualOpacity, 0.88, 0.001);
 }
 
 - (void)testNewCastAfterResetDoesNotInheritPriorOwnerOrPoints {

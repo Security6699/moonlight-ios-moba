@@ -345,7 +345,8 @@
     XCTAssertEqual(self.sink.eventSnapshot.count, 0u);
     XCTAssertFalse(self.view.userInteractionEnabled);
     XCTAssertFalse(self.controller.isInteractionEnabled);
-    XCTAssertEqualWithAccuracy(self.view.alpha, self.view.disabledOpacity, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, self.view.disabledOpacity, 0.000001);
 
     [self.dispatcher releaseAllInputs];
     [self.view resetMobaLocalInteractionForReason:MobaInputInterruptionReasonApplicationWillResignActive];
@@ -403,14 +404,16 @@
     XCTAssertEqualWithAccuracy(self.view.disabledOpacity, 0.30, 0.000001);
 
     self.view.normalOpacity = 0.0;
-    XCTAssertEqualWithAccuracy(self.view.alpha, 0.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, 0.0, 0.000001);
     XCTAssertTrue(self.view.userInteractionEnabled);
     XCTAssertTrue(self.controller.isInteractionEnabled);
 
     self.view.interactionEnabled = NO;
     XCTAssertFalse(self.view.userInteractionEnabled);
     XCTAssertFalse(self.controller.isInteractionEnabled);
-    XCTAssertEqualWithAccuracy(self.view.alpha, self.view.disabledOpacity, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.alpha, 1.0, 0.000001);
+    XCTAssertEqualWithAccuracy(self.view.effectiveVisualOpacity, self.view.disabledOpacity, 0.000001);
 }
 
 - (void)testCustomVisualSizeAndHitAreaScaleAreApplied {

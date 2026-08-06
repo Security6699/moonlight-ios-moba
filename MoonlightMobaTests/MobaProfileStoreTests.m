@@ -478,4 +478,19 @@
     XCTAssertEqualObjects(error.userInfo[MobaProfileStoreErrorRelativePathKey], @"../outside");
 }
 
+- (void)testBundledDefaultReadByDestinationDoesNotReadWritableProfile {
+    NSData *expected = [self dataForString:@"bundled:ipad-pro-13-layout.json"];
+    XCTAssertEqualObjects([self.store
+        readBundledDefaultDataForDestinationRelativePath:@"active-layout.json" error:nil], expected);
+    XCTAssertFalse([self.fileManager fileExistsAtPath:self.rootURL.path]);
+    XCTAssertEqual(self.atomicWriter.writeCount, 0u);
+}
+
+- (void)testUnknownBundledDefaultDestinationReturnsResourceError {
+    NSError *error = nil;
+    XCTAssertNil([self.store readBundledDefaultDataForDestinationRelativePath:@"future.json" error:&error]);
+    XCTAssertEqual(error.code, MobaProfileStoreErrorResourceMissing);
+    XCTAssertEqualObjects(error.userInfo[MobaProfileStoreErrorRelativePathKey], @"future.json");
+}
+
 @end

@@ -80,6 +80,11 @@ typedef NS_ERROR_ENUM(MobaProfileStoreErrorDomain, MobaProfileStoreErrorCode) {
 - (nullable NSData *)readDataAtRelativePath:(NSString *)relativePath
                                       error:(NSError **)error;
 
+// Reads the bundled source for a manifest destination without consulting the
+// writable profile directory. Parsing remains outside the Store.
+- (nullable NSData *)readBundledDefaultDataForDestinationRelativePath:(NSString *)relativePath
+                                                                  error:(NSError **)error;
+
 - (BOOL)writeData:(NSData *)data
     toRelativePath:(NSString *)relativePath
    replaceExisting:(BOOL)replaceExisting

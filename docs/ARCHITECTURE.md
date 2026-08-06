@@ -196,6 +196,16 @@ Each aimed descriptor owns an independent display-link driver and `MobaCursorCoa
 
 Each skill layout comes directly from its immutable runtime descriptor. Safe-area normalized centers determine placement. Point sizes determine visible and hit-area bounds. Profile opacity, pressed opacity, disabled opacity, z-index and interaction flag remain independent. Battle shows interactive controls only while Lifecycle allows input. UI hides them. Layout Edit and Skill Tuning show them without gameplay interaction.
 
+Layout Edit keeps three explicit layers. Repository `activeSnapshot` is the immutable committed profile, the editor baseline is the committed state captured on entry or after a successful save, and `MobaLayoutEditorDraft` is mutable typed state that owns no UIKit or input object. Draft presentation overrides never mutate runtime descriptors. Leaving Layout Edit with unsaved changes restores the baseline and removes the full-stream editor overlay.
+
+The Draft retains deep mutable copies of the original validated `runtime.json` and `active-layout.json` dictionaries privately. Serialization patches only managed layout fields and `globalOpacityMultiplier`. Unknown root fields, unknown nested fields, and uninstalled future controls therefore survive a save. Candidate bytes still pass through the existing Decoder, Migrator, Validator, cross-profile reference checks, Strategy Factory, and complete skill-package build before persistence.
+
+`MobaControlLayoutPresentation` is the shared visual override boundary for Movement, Attack, and Skill views. Cancel Zone has a specialized presentation value. Final gameplay alpha is `perStateOpacity * globalOpacityMultiplier`, clamped to 0...1. The interactive gameplay View remains a clear hit-area container with alpha 1.0. Effective opacity applies only to noninteractive visual descendants. Attack preserves independent visual width and height rather than collapsing them to one diameter. Toolbar, champion selector, editor UI, diagnostics, and system UI do not use this multiplier. Opacity zero remains visually transparent but does not change `interactionEnabled` or UIKit hit testing.
+
+Layout save uses a narrow Repository candidate object rather than a public snapshot setter. After candidate validation and runtime/package prebuild, Lifecycle enters `profileWillReload`, Store atomically replaces layout then runtime, Repository conditionally commits the candidate over its exact base snapshot, and Champion Selection installs the prepared same-champion runtime and package. A failure after the first write restores both previous files with atomic writes. A committed candidate is rolled back to its captured base snapshot if installation fails. Rollback failure is reported distinctly. `profileDidReload` is paired in all persistence paths. Revert is memory-only. Restore Defaults reads bundled Store resources and remains a draft until Save.
+
+The explicit `reloadSelectedChampionWithError:` path bypasses the manual same-ID no-op only for committed profile changes. It preserves the champion ID and uses the same candidate runtime and complete skill-package rules. Skill Tuning remains Issue #21 and document picker import/export remains Issue #22.
+
 Issue #22 owns document picker access, import/export, backup rotation, user confirmation, and migration persistence. This profile layer performs none of those workflows.
 
 ## 4. Coordinate spaces
@@ -213,6 +223,8 @@ UIKit points in the stream view/controller hierarchy. Used only for rendering an
 ### Layout space
 
 Safe-area normalized center coordinates plus point dimensions. Used for persistent control layout.
+
+The editor converts StreamView points with `(point - safeFrame.origin) / safeFrame.size` and clamps centers to 0...1. It does not use the fixed game canvas or the Aspect Fit video rect. Controls may be placed anywhere in the StreamView safe area, including Aspect Fit black bars, in either landscape direction.
 
 ### Video rect
 
@@ -240,7 +252,7 @@ The debug nine-point panel submits only the fixed canvas points documented in th
 
 - Battle: MOBA controls consume their own hit areas and a StreamView routing gate blocks native direct-touch and Pencil gameplay input after real mouse handling. No full-screen overlay view is added.
 - UI: overlay controls are reduced/noninteractive and native StreamView interaction is enabled.
-- Layout Edit: remote input is disabled; handles edit control properties.
+- Layout Edit: the Lifecycle gate is closed before the editor overlay is attached. The overlay edits control properties and cannot call Dispatcher, Session, Strategy, or Cancel input.
 - Skill Tuning: preview or live-cast behavior with explicit controls.
 
 Mode transitions always close Battle input first. Leaving Battle then enqueues dispatcher release-all and resets local interaction before UI mode restores native StreamView routing. Entering Battle disables native routing before Battle controls become interactive. Layout Edit and Skill Tuning keep native routing disabled.

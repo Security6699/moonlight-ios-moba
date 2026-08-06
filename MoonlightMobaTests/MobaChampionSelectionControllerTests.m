@@ -579,4 +579,18 @@
     [lifecycle stop];
 }
 
+- (void)testExplicitReloadRebuildsSameChampionWithoutChangingSelection {
+    XCTAssertTrue([self.selection selectChampionID:@"caitlyn" error:nil]);
+    MobaProfileSnapshot *oldSnapshot = self.repository.activeSnapshot;
+    MobaChampionRuntime *oldRuntime = self.selection.activeChampionRuntime;
+    NSUInteger willCount = self.lifecycle.willCount;
+    NSUInteger didCount = self.lifecycle.didCount;
+    XCTAssertTrue([self.selection reloadSelectedChampionWithError:nil]);
+    XCTAssertEqualObjects(self.selection.selectedChampionID, @"caitlyn");
+    XCTAssertFalse(self.repository.activeSnapshot == oldSnapshot);
+    XCTAssertFalse(self.selection.activeChampionRuntime == oldRuntime);
+    XCTAssertEqual(self.lifecycle.willCount, willCount + 1);
+    XCTAssertEqual(self.lifecycle.didCount, didCount + 1);
+}
+
 @end

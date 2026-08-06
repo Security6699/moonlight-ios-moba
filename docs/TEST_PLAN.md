@@ -167,11 +167,25 @@ Verify no touch ownership transfer, no native keyboard gesture, no dropped movem
 
 - Move and resize each control.
 - Adjust per-control and global opacity.
-- Confirm opacity zero does not disable hit testing.
+- Confirm normal, pressed, disabled, and global opacity zero affect only noninteractive visual descendants. Verify the alpha-1 hit-area container with UIKit `hitTest:withEvent:`.
+- Verify Attack renders independent profile width and height before and after Save and runtime reconstruction.
 - Disable interaction explicitly and verify no hit.
 - Persist, restart, and reload.
 - Switch landscape directions and verify safe-area placement.
 - Restore defaults.
+- Verify committed models remain immutable while typed draft values change.
+- Verify unknown root, nested, and future-control JSON survives Save.
+- Verify safe-area drag conversion, 0...1 clamping, and placement in Aspect Fit black bars.
+- Select overlapping and fully transparent controls by topmost z-index.
+- Preview Normal, Pressed, and Disabled opacity without Dispatcher events.
+- Verify Move, Attack, skills, and Cancel Zone use active Layout Profile values.
+- Reject invalid centers, sizes, radii, opacity, cancel inset, and non-integer z-index.
+- Verify layout-first and runtime-second write failures restore both prior files.
+- Verify Repository or runtime installation failure restores disk and active snapshot identity.
+- Report rollback failure distinctly and retain the dirty draft for retry.
+- Verify Revert performs no write and bundled Restore Defaults performs no write before Save.
+- Verify leaving Layout Edit removes its touch blocker and restores committed presentation.
+- Verify background, disconnect, rotation, feature disable, and stop clear editor touch ownership without saving.
 
 ## 8. JSON import/export
 

@@ -5,6 +5,7 @@
 
 #import <UIKit/UIKit.h>
 
+#import "MobaControlLayoutPresentation.h"
 #import "../Core/MobaOverlayLifecycle.h"
 
 @class MobaSkillCastController;
@@ -14,7 +15,8 @@ NS_ASSUME_NONNULL_BEGIN
 
 // UIKit owns UITouch conversion and visuals only. Remote input and concrete
 // strategies are intentionally absent from this interface.
-@interface MobaSkillButtonView : UIView <MobaLocalInteractionResetParticipant>
+@interface MobaSkillButtonView : UIView <MobaLayoutEditableControlPresenting,
+                                         MobaLocalInteractionResetParticipant>
 
 @property (nonatomic, strong, readonly) MobaSkillRuntimeDescriptor *descriptor;
 @property (nonatomic, readonly) MobaOverlayMode mode;
@@ -25,6 +27,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, readonly) CGFloat normalOpacity;
 @property (nonatomic, readonly) CGFloat pressedOpacity;
 @property (nonatomic, readonly) CGFloat disabledOpacity;
+@property (nonatomic, readonly) CGFloat effectiveVisualOpacity;
+@property (nonatomic, copy, readonly) NSString *displayLabel;
 
 - (nullable instancetype)initWithController:(MobaSkillCastController *)controller
                           streamCoordinateView:(UIView *)streamCoordinateView NS_DESIGNATED_INITIALIZER;

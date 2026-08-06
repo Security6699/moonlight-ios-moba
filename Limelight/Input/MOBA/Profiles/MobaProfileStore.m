@@ -502,6 +502,44 @@ typedef NS_ENUM(NSUInteger, MobaProfileStoreItemKind) {
     return data;
 }
 
+- (NSData *)readBundledDefaultDataForDestinationRelativePath:(NSString *)relativePath
+                                                        error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    MobaProfileDefaultResource *matched = nil;
+    for (MobaProfileDefaultResource *resource in self.class.defaultResourceManifest) {
+        if ([resource.destinationRelativePath isEqualToString:relativePath] ||
+            (resource.seedsActiveLayout && [relativePath isEqualToString:MobaProfileStoreActiveLayoutPath])) {
+            matched = resource;
+            break;
+        }
+    }
+    if (matched == nil) {
+        if (error != NULL) {
+            *error = [self errorWithCode:MobaProfileStoreErrorResourceMissing
+                               operation:@"locate-bundle-resource"
+                            relativePath:relativePath ?: @"."
+                          underlyingError:nil
+                              description:@"No bundled default is registered for this profile destination."];
+        }
+        return nil;
+    }
+    NSURL *resourceURL = [_resourceProvider URLForResource:matched.bundleResourceName
+                                             withExtension:matched.bundleResourceExtension];
+    NSError *readError = nil;
+    NSData *data = resourceURL == nil ? nil : [NSData dataWithContentsOfURL:resourceURL
+                                                                    options:0
+                                                                      error:&readError];
+    if (data == nil && error != NULL) {
+        *error = [self errorWithCode:resourceURL == nil ? MobaProfileStoreErrorResourceMissing
+                                                       : MobaProfileStoreErrorResourceReadFailed
+                           operation:resourceURL == nil ? @"locate-bundle-resource" : @"read-bundle-resource"
+                        relativePath:relativePath
+                      underlyingError:readError
+                          description:@"Unable to read the bundled MOBA default resource."];
+    }
+    return data;
+}
+
 - (BOOL)writeData:(NSData *)data
     toRelativePath:(NSString *)relativePath
    replaceExisting:(BOOL)replaceExisting

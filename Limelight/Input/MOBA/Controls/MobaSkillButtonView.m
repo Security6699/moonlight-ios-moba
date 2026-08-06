@@ -17,6 +17,9 @@
     BOOL _mobaLocalInteractionEnabled;
     BOOL _pressed;
     id _activeTouchToken;
+    MobaControlLayoutPresentation *_layoutPresentation;
+    CGFloat _globalOpacityMultiplier;
+    MobaControlOpacityPreviewState _opacityPreviewState;
 }
 
 - (instancetype)initWithController:(MobaSkillCastController *)controller
@@ -32,6 +35,19 @@
         _streamCoordinateView = streamCoordinateView;
         _mode = MobaOverlayModeBattle;
         _mobaLocalInteractionEnabled = controller.isInteractionEnabled;
+        _layoutPresentation = [[MobaControlLayoutPresentation alloc]
+            initWithCenterX:layout.centerX
+            centerY:layout.centerY
+            visualSize:CGSizeMake(layout.visualWidthPt, layout.visualHeightPt)
+            hitAreaScale:layout.hitAreaScale
+            wheelRadiusPt:layout.wheelRadiusPt
+            normalOpacity:layout.opacity
+            pressedOpacity:layout.pressedOpacity
+            disabledOpacity:layout.disabledOpacity
+            zIndex:layout.zIndex
+            interactionEnabled:layout.isInteractionEnabled];
+        _globalOpacityMultiplier = 1.0;
+        _opacityPreviewState = MobaControlOpacityPreviewStateAutomatic;
 
         self.backgroundColor = UIColor.clearColor;
         self.multipleTouchEnabled = YES;
@@ -63,14 +79,15 @@
 - (id)activeTouchToken { return _activeTouchToken; }
 
 - (CGSize)visualSize {
-    MobaLayoutControlProfile *layout = self.descriptor.layoutControlProfile;
-    return CGSizeMake(layout.visualWidthPt, layout.visualHeightPt);
+    return _layoutPresentation.visualSize;
 }
 
-- (CGFloat)hitAreaScale { return self.descriptor.layoutControlProfile.hitAreaScale; }
-- (CGFloat)normalOpacity { return self.descriptor.layoutControlProfile.opacity; }
-- (CGFloat)pressedOpacity { return self.descriptor.layoutControlProfile.pressedOpacity; }
-- (CGFloat)disabledOpacity { return self.descriptor.layoutControlProfile.disabledOpacity; }
+- (CGFloat)hitAreaScale { return _layoutPresentation.hitAreaScale; }
+- (CGFloat)normalOpacity { return _layoutPresentation.normalOpacity; }
+- (CGFloat)pressedOpacity { return _layoutPresentation.pressedOpacity; }
+- (CGFloat)disabledOpacity { return _layoutPresentation.disabledOpacity; }
+- (CGFloat)effectiveVisualOpacity { return _buttonView.alpha; }
+- (NSString *)displayLabel { return _label.text ?: @""; }
 
 - (CGSize)intrinsicContentSize {
     CGSize visualSize = self.visualSize;
@@ -97,12 +114,43 @@
     BOOL enabled = visible &&
         _mode == MobaOverlayModeBattle &&
         _mobaLocalInteractionEnabled &&
-        self.descriptor.layoutControlProfile.isInteractionEnabled;
+        _layoutPresentation.isInteractionEnabled;
     self.hidden = !visible;
     self.userInteractionEnabled = enabled;
+    self.alpha = 1.0;
     [_controller setInteractionEnabled:enabled];
-    self.alpha = enabled ? (_pressed ? self.pressedOpacity : self.normalOpacity)
-                         : self.disabledOpacity;
+    CGFloat perStateOpacity;
+    switch (_opacityPreviewState) {
+        case MobaControlOpacityPreviewStateNormal:
+            perStateOpacity = self.normalOpacity;
+            break;
+        case MobaControlOpacityPreviewStatePressed:
+            perStateOpacity = self.pressedOpacity;
+            break;
+        case MobaControlOpacityPreviewStateDisabled:
+            perStateOpacity = self.disabledOpacity;
+            break;
+        case MobaControlOpacityPreviewStateAutomatic:
+            perStateOpacity = enabled ? (_pressed ? self.pressedOpacity : self.normalOpacity)
+                                      : self.disabledOpacity;
+            break;
+    }
+    _buttonView.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
+}
+
+- (void)applyControlLayoutPresentation:(MobaControlLayoutPresentation *)presentation
+               globalOpacityMultiplier:(CGFloat)globalOpacityMultiplier
+                          previewState:(MobaControlOpacityPreviewState)previewState {
+    if (presentation == nil) {
+        return;
+    }
+    _layoutPresentation = [presentation copy];
+    _globalOpacityMultiplier = MobaEffectiveControlOpacity(1.0, globalOpacityMultiplier);
+    _opacityPreviewState = previewState;
+    self.layer.zPosition = presentation.zIndex;
+    [self invalidateIntrinsicContentSize];
+    [self updateInteractionAndAppearance];
+    [self setNeedsLayout];
 }
 
 - (void)setPressedState:(BOOL)pressed {

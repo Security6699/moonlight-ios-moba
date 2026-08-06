@@ -173,6 +173,25 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
 }
 
 - (BOOL)selectChampionID:(NSString *)championID error:(NSError **)error {
+    return [self selectChampionID:championID forceReload:NO error:error];
+}
+
+- (BOOL)reloadSelectedChampionWithError:(NSError **)error {
+    NSString *championID = self.selectedChampionID;
+    if (championID.length == 0) {
+        if (error != NULL) {
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorRuntimeMissing
+                                       championID:@"<none>"
+                                        operation:@"reload-selected-champion"
+                                      description:@"No selected champion is available to reload."
+                                  underlyingError:nil];
+        }
+        return NO;
+    }
+    return [self selectChampionID:championID forceReload:YES error:error];
+}
+
+- (BOOL)selectChampionID:(NSString *)championID forceReload:(BOOL)forceReload error:(NSError **)error {
     if (error != NULL) {
         *error = nil;
     }
@@ -198,7 +217,7 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
         return NO;
     }
     @synchronized (self) {
-        if (_activeChampionRuntime != nil && [_selectedChampionID isEqualToString:championID]) {
+        if (!forceReload && _activeChampionRuntime != nil && [_selectedChampionID isEqualToString:championID]) {
             return YES;
         }
     }
@@ -283,6 +302,43 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
     @finally {
         [_lifecycle profileDidReload];
     }
+}
+
+- (BOOL)commitPreparedProfileSnapshot:(MobaProfileSnapshot *)snapshot
+                               runtime:(MobaChampionRuntime *)runtime
+                    skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                                 error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    NSString *selectedChampionID = self.selectedChampionID;
+    if (_invalidated || snapshot == nil || runtime == nil || !skillControlPackage.isComplete ||
+        selectedChampionID.length == 0 ||
+        ![snapshot.championProfile.championID isEqualToString:selectedChampionID] ||
+        ![runtime.championID isEqualToString:selectedChampionID] ||
+        _repository.activeSnapshot != snapshot) {
+        if (error != NULL) {
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorPreparedCommitRejected
+                                       championID:selectedChampionID ?: @"<none>"
+                                        operation:@"commit-prepared-profile-runtime"
+                                      description:@"The prepared runtime does not match the committed snapshot and selected champion."
+                                  underlyingError:nil];
+        }
+        return NO;
+    }
+    MobaChampionRuntime *oldRuntime = self.activeChampionRuntime;
+    for (id<MobaLocalInteractionResetParticipant> participant in oldRuntime.localInteractionResetParticipants) {
+        [_lifecycle unregisterLocalInteractionResetParticipant:participant];
+    }
+    for (id<MobaLocalInteractionResetParticipant> participant in runtime.localInteractionResetParticipants) {
+        [_lifecycle registerLocalInteractionResetParticipant:participant];
+    }
+    @synchronized (self) {
+        _activeChampionRuntime = runtime;
+        _activeSkillControlPackage = skillControlPackage;
+    }
+    [self.delegate championSelectionController:self
+                               didSelectRuntime:runtime
+                            skillControlPackage:skillControlPackage];
+    return YES;
 }
 
 - (void)invalidate {

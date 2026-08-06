@@ -28,6 +28,8 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
     BOOL _interactionEnabled;
     BOOL _mobaLocalInteractionEnabled;
     BOOL _pressed;
+    CGFloat _globalOpacityMultiplier;
+    MobaControlOpacityPreviewState _opacityPreviewState;
 }
 
 - (instancetype)initWithAttackController:(MobaAttackController *)attackController {
@@ -59,6 +61,8 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
         _disabledOpacity = AttackButtonDefaultDisabledOpacity;
         _interactionEnabled = YES;
         _mobaLocalInteractionEnabled = attackController.isInteractionEnabled;
+        _globalOpacityMultiplier = 1.0;
+        _opacityPreviewState = MobaControlOpacityPreviewStateAutomatic;
 
         self.backgroundColor = UIColor.clearColor;
         self.multipleTouchEnabled = YES;
@@ -116,6 +120,14 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
     return _pressed;
 }
 
+- (CGFloat)effectiveVisualOpacity {
+    return _buttonView.alpha;
+}
+
+- (CGSize)renderedVisualSize {
+    return _buttonView.bounds.size;
+}
+
 - (CGFloat)validatedOpacity:(CGFloat)opacity fallback:(CGFloat)fallback {
     if (!isfinite(opacity)) {
         return fallback;
@@ -156,17 +168,52 @@ const CGFloat AttackButtonDefaultDisabledOpacity = 0.30;
     BOOL enabled = _interactionEnabled && _mobaLocalInteractionEnabled;
     [_attackController setInteractionEnabled:enabled];
     self.userInteractionEnabled = enabled;
-    self.alpha = enabled ? (_pressed ? _pressedOpacity : _normalOpacity) : _disabledOpacity;
+    self.alpha = 1.0;
+    CGFloat perStateOpacity;
+    switch (_opacityPreviewState) {
+        case MobaControlOpacityPreviewStateNormal:
+            perStateOpacity = _normalOpacity;
+            break;
+        case MobaControlOpacityPreviewStatePressed:
+            perStateOpacity = _pressedOpacity;
+            break;
+        case MobaControlOpacityPreviewStateDisabled:
+            perStateOpacity = _disabledOpacity;
+            break;
+        case MobaControlOpacityPreviewStateAutomatic:
+            perStateOpacity = enabled ? (_pressed ? _pressedOpacity : _normalOpacity) : _disabledOpacity;
+            break;
+    }
+    _buttonView.alpha = MobaEffectiveControlOpacity(perStateOpacity, _globalOpacityMultiplier);
+}
+
+- (void)applyControlLayoutPresentation:(MobaControlLayoutPresentation *)presentation
+               globalOpacityMultiplier:(CGFloat)globalOpacityMultiplier
+                          previewState:(MobaControlOpacityPreviewState)previewState {
+    if (presentation == nil) {
+        return;
+    }
+    _visualSize = presentation.visualSize;
+    _hitAreaScale = presentation.hitAreaScale;
+    _normalOpacity = presentation.normalOpacity;
+    _pressedOpacity = presentation.pressedOpacity;
+    _disabledOpacity = presentation.disabledOpacity;
+    _interactionEnabled = presentation.isInteractionEnabled;
+    _globalOpacityMultiplier = [self validatedOpacity:globalOpacityMultiplier fallback:_globalOpacityMultiplier];
+    _opacityPreviewState = previewState;
+    self.layer.zPosition = presentation.zIndex;
+    [self invalidateIntrinsicContentSize];
+    [self updateInteractionAndAppearance];
+    [self setNeedsLayout];
 }
 
 - (void)layoutSubviews {
     [super layoutSubviews];
 
     CGPoint center = CGPointMake(CGRectGetMidX(self.bounds), CGRectGetMidY(self.bounds));
-    CGFloat diameter = MIN(_visualSize.width, _visualSize.height);
-    _buttonView.bounds = CGRectMake(0.0, 0.0, diameter, diameter);
+    _buttonView.bounds = (CGRect){ CGPointZero, _visualSize };
     _buttonView.center = center;
-    _buttonView.layer.cornerRadius = diameter * 0.5;
+    _buttonView.layer.cornerRadius = MIN(_visualSize.width, _visualSize.height) * 0.5;
     _label.frame = _buttonView.bounds;
 }
 

@@ -96,6 +96,10 @@ Each control has independently configurable:
 
 A global opacity multiplier applies after per-control opacity. Zero opacity does not disable interaction; `interactionEnabled` controls hit testing.
 
+Layout Edit works on a typed draft separated from immutable committed profiles. Move, Attack, Q/W/E/R, Cancel Zone, and the global multiplier preview immediately without sending gameplay input. Control centers are normalized to the StreamView safe area and may be placed in Aspect Fit black bars. Normal, Pressed, and Disabled opacity preview states are visual only.
+
+Save validates a complete candidate before replacing the active layout and Runtime opacity. The two files are atomically replaced with rollback to their prior bytes on failure, then the current champion runtime and all four skill controls are rebuilt from the committed snapshot. Revert restores the editor baseline without disk access. Restore Defaults reads bundled resources and requires a later Save. Leaving Layout Edit discards unsaved changes.
+
 ## 7. Coordinate requirements
 
 - All aiming and range values use a fixed 2560x1440 game canvas.

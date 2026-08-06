@@ -11,6 +11,25 @@ NSString *const MobaRuntimeProfileRelativePath = @"runtime.json";
 NSString *const MobaInputProfileRelativePath = @"input.json";
 NSString *const MobaActiveLayoutProfileRelativePath = @"active-layout.json";
 
+@interface MobaProfileRepositoryCandidate ()
+@property (nonatomic, strong, readwrite) MobaProfileSnapshot *snapshot;
+@property (nonatomic, strong) MobaProfileSnapshot *baseSnapshot;
+- (instancetype)initWithBaseSnapshot:(MobaProfileSnapshot *)baseSnapshot
+                             snapshot:(MobaProfileSnapshot *)snapshot;
+@end
+
+@implementation MobaProfileRepositoryCandidate
+- (instancetype)initWithBaseSnapshot:(MobaProfileSnapshot *)baseSnapshot
+                             snapshot:(MobaProfileSnapshot *)snapshot {
+    self = [super init];
+    if (self) {
+        _baseSnapshot = baseSnapshot;
+        _snapshot = snapshot;
+    }
+    return self;
+}
+@end
+
 @implementation MobaProfileRepository {
     MobaProfileStore *_store;
     MobaProfileDecoder *_decoder;
@@ -71,6 +90,73 @@ NSString *const MobaActiveLayoutProfileRelativePath = @"active-layout.json";
             }
             return NO;
         }
+    }
+    return YES;
+}
+
+- (NSError *)candidateStateError:(NSString *)description operation:(NSString *)operation {
+    return MobaProfileMakeError(MobaProfileErrorCrossProfileReferenceInvalid,
+                                MobaProfileKindLayout,
+                                @"$",
+                                operation,
+                                description,
+                                nil);
+}
+
+- (MobaProfileRepositoryCandidate *)prepareLayoutCandidateWithRuntimeData:(NSData *)runtimeData
+                                                                layoutData:(NSData *)layoutData
+                                                                     error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    MobaProfileSnapshot *base = self.activeSnapshot;
+    if (base == nil) {
+        if (error != NULL) {
+            *error = [self candidateStateError:@"An active profile snapshot is required before layout editing."
+                                      operation:@"prepare-layout-candidate"];
+        }
+        return nil;
+    }
+    MobaRuntimeProfile *runtime = [_decoder decodeRuntimeProfileData:runtimeData error:error];
+    if (runtime == nil) return nil;
+    MobaLayoutProfile *layout = [_decoder decodeLayoutProfileData:layoutData error:error];
+    if (layout == nil || ![self validateChampion:base.championProfile inputProfile:base.inputProfile error:error]) {
+        return nil;
+    }
+    MobaProfileSnapshot *snapshot = [[MobaProfileSnapshot alloc] initWithRuntimeProfile:runtime
+                                                                           inputProfile:base.inputProfile
+                                                                          layoutProfile:layout
+                                                                        championProfile:base.championProfile];
+    MobaProfileRepositoryCandidate *candidate = [[MobaProfileRepositoryCandidate alloc]
+        initWithBaseSnapshot:base snapshot:snapshot];
+    return candidate;
+}
+
+- (BOOL)commitLayoutCandidate:(MobaProfileRepositoryCandidate *)candidate error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    @synchronized (self) {
+        if (candidate == nil || candidate.baseSnapshot == nil || candidate.snapshot == nil ||
+            _activeSnapshot != candidate.baseSnapshot) {
+            if (error != NULL) {
+                *error = [self candidateStateError:@"The active snapshot changed after the layout candidate was prepared."
+                                          operation:@"commit-layout-candidate"];
+            }
+            return NO;
+        }
+        _activeSnapshot = candidate.snapshot;
+    }
+    return YES;
+}
+
+- (BOOL)rollbackLayoutCandidate:(MobaProfileRepositoryCandidate *)candidate error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    @synchronized (self) {
+        if (candidate == nil || _activeSnapshot != candidate.snapshot) {
+            if (error != NULL) {
+                *error = [self candidateStateError:@"The committed layout candidate is no longer active and cannot be rolled back."
+                                          operation:@"rollback-layout-candidate"];
+            }
+            return NO;
+        }
+        _activeSnapshot = candidate.baseSnapshot;
     }
     return YES;
 }

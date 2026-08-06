@@ -185,11 +185,19 @@ Validation:
 - Range values: 0...2560; actual target is clamped to canvas.
 - Minimum values may not exceed corresponding maximum values.
 
-## 7. Migration
+## 7. Layout editor persistence
+
+Schema v1 layout editing changes only the existing control and cancel-zone fields documented above. Control centers remain safe-area normalized values and may place controls over Aspect Fit black bars. `zIndex` remains a strict platform integer. Editor forward/back controls use overflow-safe increments and do not introduce a narrower schema range.
+
+For Cancel Zone, `activationInsetPt` is non-negative and strictly smaller than half of `diameterPt`. Opacity values and Runtime `globalOpacityMultiplier` remain in 0...1. Effective gameplay opacity is the current per-state opacity multiplied by the Runtime global multiplier. A value of zero does not imply `interactionEnabled = false`.
+
+Saving starts from deep copies of the current raw JSON dictionaries and patches only managed paths. `schemaVersion`, `layoutId`, `deviceClass`, unknown root or nested fields, and future controls are retained. Restore Defaults reads the bundled runtime and layout resources but does not persist until Save.
+
+## 8. Migration
 
 `MobaProfileMigrator` upgrades older schema versions before model creation. Unknown fields are ignored for forward tolerance. Unknown enum values are rejected with a field-specific error. Breaking changes increment `schemaVersion` and require tests.
 
-## 8. Import result
+## 9. Import result
 
 Import UI must show:
 

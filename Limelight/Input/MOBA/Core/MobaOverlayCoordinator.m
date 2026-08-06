@@ -20,7 +20,11 @@
 #import "../Controls/MobaSkillButtonView.h"
 #import "../Controls/MobaSkillCastController.h"
 #import "../Controls/MobaSkillControlPackage.h"
+#import "../Controls/MobaControlLayoutPresentation.h"
+#import "../Controls/MobaLayoutEditorOverlayView.h"
 #import "../Controls/MoveJoystickView.h"
+#import "../Profiles/MobaLayoutEditor.h"
+#import "../Profiles/MobaLayoutSaveTransaction.h"
 #import "../Profiles/MobaProfileStore.h"
 #import "../Profiles/MobaProfileRepository.h"
 #import "../Profiles/MobaChampionSelectionController.h"
@@ -42,6 +46,9 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                                       MobaChampionSelectionControllerDelegate,
                                       MobaChampionSelectorViewDelegate,
                                       MobaMovementControllerDelegate,
+                                      MobaLayoutEditorControllerDelegate,
+                                      MobaLayoutEditorOverlayViewDelegate,
+                                      MobaLayoutSaveInstalling,
                                       MobaModeToolbarViewDelegate,
                                       MobaSkillCancelZoneRouting,
                                       MobaSkillCastControllerDelegate,
@@ -68,6 +75,9 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     MobaModeToolbarView *_modeToolbarView;
     MobaSkillControlPackage *_skillControlPackage;
     NSDictionary<MobaCanonicalSkillSlot, MobaSkillButtonView *> *_skillButtonViews;
+    MobaLayoutEditorController *_layoutEditorController;
+    MobaLayoutEditorOverlayView *_layoutEditorOverlayView;
+    MobaLayoutSaveTransaction *_layoutSaveTransaction;
 #if DEBUG
     MobaCursorDiagnosticPanel *_cursorDiagnosticPanel;
 #endif
@@ -124,18 +134,33 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
             }
             _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
         }
+        MobaLayoutControlProfile *moveLayout = _profileRepository.activeSnapshot.layoutProfile.controls[@"move"];
+        CGFloat initialMoveRadius = moveLayout.wheelRadiusPt != nil
+            ? moveLayout.wheelRadiusPt.doubleValue : MoveJoystickDefaultWheelRadius;
         _movementController = [[MobaMovementController alloc]
             initWithInputDispatcher:_inputDispatcher
                          keyMapping:MobaDefaultMovementKeyMapping()
-                        wheelRadius:MoveJoystickDefaultWheelRadius
+                        wheelRadius:initialMoveRadius
                       deadZoneRatio:MobaJoystickDefaultDeadZoneRatio
          directionHysteresisDegrees:MobaJoystickDefaultDirectionHysteresisDegrees];
         _movementController.delegate = self;
-        _moveJoystickView = [[MoveJoystickView alloc] initWithMovementController:_movementController];
+        CGSize moveVisualSize = moveLayout != nil
+            ? CGSizeMake(moveLayout.visualWidthPt, moveLayout.visualHeightPt) : MoveJoystickDefaultVisualSize;
+        CGFloat moveHitScale = moveLayout != nil ? moveLayout.hitAreaScale : MoveJoystickDefaultHitAreaScale;
+        _moveJoystickView = [[MoveJoystickView alloc] initWithMovementController:_movementController
+                                                                      visualSize:moveVisualSize
+                                                                     wheelRadius:initialMoveRadius
+                                                                    hitAreaScale:moveHitScale];
         [_lifecycle registerLocalInteractionResetParticipant:_moveJoystickView];
         _attackController = [[MobaAttackController alloc] initWithInputDispatcher:_inputDispatcher];
         _attackController.delegate = self;
-        _attackButtonView = [[AttackButtonView alloc] initWithAttackController:_attackController];
+        MobaLayoutControlProfile *attackLayout = _profileRepository.activeSnapshot.layoutProfile.controls[@"attack"];
+        CGSize attackVisualSize = attackLayout != nil
+            ? CGSizeMake(attackLayout.visualWidthPt, attackLayout.visualHeightPt) : AttackButtonDefaultVisualSize;
+        CGFloat attackHitScale = attackLayout != nil ? attackLayout.hitAreaScale : AttackButtonDefaultHitAreaScale;
+        _attackButtonView = [[AttackButtonView alloc] initWithAttackController:_attackController
+                                                                    visualSize:attackVisualSize
+                                                                   hitAreaScale:attackHitScale];
         [_lifecycle registerLocalInteractionResetParticipant:_attackButtonView];
         _modeToolbarView = [[MobaModeToolbarView alloc] initWithFrame:CGRectZero];
         _modeToolbarView.delegate = self;
@@ -143,6 +168,14 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         [_modeToolbarView setSelectedMode:_lifecycle.mode];
         _cursorDiagnostics = [[MobaCursorDiagnostics alloc] initWithDispatcher:_inputDispatcher
                                                                      inputGate:self];
+        _layoutSaveTransaction = [[MobaLayoutSaveTransaction alloc]
+            initWithStore:_profileStore
+            repository:_profileRepository
+            runtimeBuilder:_castStrategyFactory
+            controlPackageBuilder:self
+            lifecycle:(id<MobaLayoutSaveLifecycle>)_lifecycle
+            installer:self];
+        [self applyCommittedLayoutPresentation];
 #if DEBUG
         _cursorDiagnosticPanel = [[MobaCursorDiagnosticPanel alloc] initWithDiagnostics:_cursorDiagnostics];
         [_lifecycle registerLocalInteractionResetParticipant:_cursorDiagnosticPanel];
@@ -230,25 +263,142 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     }
 }
 
+- (MobaControlLayoutPresentation *)presentationForProfile:(MobaLayoutControlProfile *)profile
+                                                  fallback:(MobaControlLayoutPresentation *)fallback {
+    if (profile == nil) return fallback;
+    MobaControlLayoutPresentation *presentation = [[MobaControlLayoutPresentation alloc]
+        initWithCenterX:profile.centerX
+        centerY:profile.centerY
+        visualSize:CGSizeMake(profile.visualWidthPt, profile.visualHeightPt)
+        hitAreaScale:profile.hitAreaScale
+        wheelRadiusPt:profile.wheelRadiusPt
+        normalOpacity:profile.opacity
+        pressedOpacity:profile.pressedOpacity
+        disabledOpacity:profile.disabledOpacity
+        zIndex:profile.zIndex
+        interactionEnabled:profile.isInteractionEnabled];
+    return presentation ?: fallback;
+}
+
+- (MobaControlLayoutPresentation *)fallbackMovePresentation {
+    return [[MobaControlLayoutPresentation alloc]
+        initWithCenterX:MobaDefaultMoveCenterX centerY:MobaDefaultMoveCenterY
+        visualSize:MoveJoystickDefaultVisualSize hitAreaScale:MoveJoystickDefaultHitAreaScale
+        wheelRadiusPt:@(MoveJoystickDefaultWheelRadius)
+        normalOpacity:MoveJoystickDefaultNormalOpacity
+        pressedOpacity:MoveJoystickDefaultPressedOpacity
+        disabledOpacity:MoveJoystickDefaultDisabledOpacity zIndex:10 interactionEnabled:YES];
+}
+
+- (MobaControlLayoutPresentation *)fallbackAttackPresentation {
+    return [[MobaControlLayoutPresentation alloc]
+        initWithCenterX:MobaDefaultAttackCenterX centerY:MobaDefaultAttackCenterY
+        visualSize:AttackButtonDefaultVisualSize hitAreaScale:AttackButtonDefaultHitAreaScale
+        wheelRadiusPt:nil normalOpacity:AttackButtonDefaultNormalOpacity
+        pressedOpacity:AttackButtonDefaultPressedOpacity
+        disabledOpacity:AttackButtonDefaultDisabledOpacity zIndex:24 interactionEnabled:YES];
+}
+
+- (MobaCancelZoneLayoutPresentation *)fallbackCancelPresentation {
+    return [[MobaCancelZoneLayoutPresentation alloc]
+        initWithCenterX:MobaDefaultCancelZoneCenterX centerY:MobaDefaultCancelZoneCenterY
+        diameterPt:MobaCancelZoneDefaultVisualDiameter
+        activationInsetPt:MobaDefaultCancelZoneActivationInset
+        opacity:MobaCancelZoneDefaultNormalOpacity
+        visibleOnlyWhileCasting:YES];
+}
+
+- (MobaControlLayoutPresentation *)currentPresentationForControlName:(NSString *)name {
+    if (_layoutEditorController != nil && _lifecycle.mode == MobaOverlayModeLayoutEdit) {
+        return [_layoutEditorController.draft controlNamed:name].presentation;
+    }
+    MobaLayoutControlProfile *profile = _profileRepository.activeSnapshot.layoutProfile.controls[name];
+    if ([name isEqualToString:@"move"]) {
+        return [self presentationForProfile:profile fallback:self.fallbackMovePresentation];
+    }
+    if ([name isEqualToString:@"attack"]) {
+        return [self presentationForProfile:profile fallback:self.fallbackAttackPresentation];
+    }
+    return [self presentationForProfile:profile fallback:nil];
+}
+
+- (MobaCancelZoneLayoutPresentation *)currentCancelPresentation {
+    if (_layoutEditorController != nil && _lifecycle.mode == MobaOverlayModeLayoutEdit) {
+        return _layoutEditorController.draft.cancelZone.presentation;
+    }
+    MobaCancelZoneProfile *profile = _profileRepository.activeSnapshot.layoutProfile.cancelZone;
+    if (profile == nil) return self.fallbackCancelPresentation;
+    return [[MobaCancelZoneLayoutPresentation alloc]
+        initWithCenterX:profile.centerX centerY:profile.centerY
+        diameterPt:profile.diameterPt activationInsetPt:profile.activationInsetPt
+        opacity:profile.opacity visibleOnlyWhileCasting:profile.visibleOnlyWhileCasting];
+}
+
+- (CGFloat)currentGlobalOpacityMultiplier {
+    if (_layoutEditorController != nil && _lifecycle.mode == MobaOverlayModeLayoutEdit) {
+        return _layoutEditorController.draft.globalOpacityMultiplier;
+    }
+    MobaRuntimeProfile *runtime = _profileRepository.activeSnapshot.runtimeProfile;
+    return runtime != nil ? runtime.globalOpacityMultiplier : 1.0;
+}
+
+- (void)applyCurrentLayoutPresentation {
+    CGFloat globalOpacity = self.currentGlobalOpacityMultiplier;
+    MobaControlOpacityPreviewState previewState = _lifecycle.mode == MobaOverlayModeLayoutEdit
+        ? _layoutEditorController.opacityPreviewState : MobaControlOpacityPreviewStateAutomatic;
+    MobaControlLayoutPresentation *move = [self currentPresentationForControlName:@"move"];
+    MobaControlLayoutPresentation *attack = [self currentPresentationForControlName:@"attack"];
+    [_moveJoystickView applyControlLayoutPresentation:move
+                              globalOpacityMultiplier:globalOpacity
+                                         previewState:previewState];
+    [_attackButtonView applyControlLayoutPresentation:attack
+                              globalOpacityMultiplier:globalOpacity
+                                         previewState:previewState];
+    for (MobaCanonicalSkillSlot slot in _skillButtonViews) {
+        MobaSkillButtonView *view = _skillButtonViews[slot];
+        MobaControlLayoutPresentation *skill = [self currentPresentationForControlName:view.descriptor.layoutControlName];
+        if (skill != nil) {
+            [view applyControlLayoutPresentation:skill
+                         globalOpacityMultiplier:globalOpacity
+                                    previewState:previewState];
+        }
+    }
+    [_cancelZoneView applyCancelZoneLayoutPresentation:self.currentCancelPresentation
+                               globalOpacityMultiplier:globalOpacity
+                                         editorPreview:_lifecycle.mode == MobaOverlayModeLayoutEdit
+                                          previewState:previewState];
+}
+
+- (void)applyCommittedLayoutPresentation {
+    MobaControlLayoutPresentation *move = [self presentationForProfile:
+        _profileRepository.activeSnapshot.layoutProfile.controls[@"move"] fallback:self.fallbackMovePresentation];
+    [_movementController updateWheelRadiusForCommittedProfile:move.wheelRadiusPt.doubleValue];
+    [self applyCurrentLayoutPresentation];
+    [self layoutBattleControls];
+}
+
 - (void)layoutBattleControls {
     [_streamView layoutIfNeeded];
     CGRect safeFrame = _streamView.safeAreaLayoutGuide.layoutFrame;
     CGSize moveHitAreaSize = _moveJoystickView.intrinsicContentSize;
     _moveJoystickView.bounds = (CGRect){ CGPointZero, moveHitAreaSize };
+    MobaControlLayoutPresentation *moveLayout = [self currentPresentationForControlName:@"move"];
     _moveJoystickView.center = CGPointMake(CGRectGetMinX(safeFrame) +
-                                           CGRectGetWidth(safeFrame) * MobaDefaultMoveCenterX,
+                                           CGRectGetWidth(safeFrame) * moveLayout.centerX,
                                            CGRectGetMinY(safeFrame) +
-                                           CGRectGetHeight(safeFrame) * MobaDefaultMoveCenterY);
+                                           CGRectGetHeight(safeFrame) * moveLayout.centerY);
 
     CGSize attackHitAreaSize = _attackButtonView.intrinsicContentSize;
     _attackButtonView.bounds = (CGRect){ CGPointZero, attackHitAreaSize };
+    MobaControlLayoutPresentation *attackLayout = [self currentPresentationForControlName:@"attack"];
     _attackButtonView.center = CGPointMake(CGRectGetMinX(safeFrame) +
-                                           CGRectGetWidth(safeFrame) * MobaDefaultAttackCenterX,
+                                           CGRectGetWidth(safeFrame) * attackLayout.centerX,
                                            CGRectGetMinY(safeFrame) +
-                                           CGRectGetHeight(safeFrame) * MobaDefaultAttackCenterY);
+                                           CGRectGetHeight(safeFrame) * attackLayout.centerY);
 
     for (MobaSkillButtonView *skillView in _skillButtonViews.allValues) {
-        MobaLayoutControlProfile *layout = skillView.descriptor.layoutControlProfile;
+        MobaControlLayoutPresentation *layout = [self currentPresentationForControlName:
+            skillView.descriptor.layoutControlName];
         CGSize hitAreaSize = skillView.intrinsicContentSize;
         skillView.bounds = (CGRect){ CGPointZero, hitAreaSize };
         skillView.center = CGPointMake(CGRectGetMinX(safeFrame) +
@@ -260,14 +410,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
     CGSize cancelZoneSize = _cancelZoneView.intrinsicContentSize;
     _cancelZoneView.bounds = (CGRect){ CGPointZero, cancelZoneSize };
+    MobaCancelZoneLayoutPresentation *cancelLayout = self.currentCancelPresentation;
     CGPoint cancelZoneCenter = CGPointMake(CGRectGetMinX(safeFrame) +
-                                           CGRectGetWidth(safeFrame) * MobaDefaultCancelZoneCenterX,
+                                           CGRectGetWidth(safeFrame) * cancelLayout.centerX,
                                            CGRectGetMinY(safeFrame) +
-                                           CGRectGetHeight(safeFrame) * MobaDefaultCancelZoneCenterY);
+                                           CGRectGetHeight(safeFrame) * cancelLayout.centerY);
     _cancelZoneView.center = cancelZoneCenter;
     [_cancelZoneController updateGeometry:MobaCancelZoneGeometryMake(cancelZoneCenter,
-                                                                     MobaCancelZoneDefaultVisualDiameter,
-                                                                     MobaDefaultCancelZoneActivationInset)];
+                                                                     cancelLayout.diameterPt,
+                                                                     cancelLayout.activationInsetPt)];
 
     CGSize toolbarSize = _modeToolbarView.intrinsicContentSize;
     _modeToolbarView.bounds = (CGRect){ CGPointZero, toolbarSize };
@@ -336,7 +487,15 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (BOOL)transitionToMode:(MobaOverlayMode)mode {
+    MobaOverlayMode previousMode = _lifecycle.mode;
     BOOL transitioned = [_lifecycle transitionToMode:mode];
+    if (!transitioned) return NO;
+    if (previousMode == MobaOverlayModeLayoutEdit && mode != MobaOverlayModeLayoutEdit) {
+        [self discardLayoutEditorDraft];
+    }
+    else if (mode == MobaOverlayModeLayoutEdit && previousMode != MobaOverlayModeLayoutEdit) {
+        [self beginLayoutEditing];
+    }
     _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
     [_modeToolbarView setSelectedMode:_lifecycle.mode];
     [_championSelectorView setMode:_lifecycle.mode];
@@ -344,7 +503,61 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         [view setMode:_lifecycle.mode];
     }
     _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
-    return transitioned;
+    [self applyCurrentLayoutPresentation];
+    [self layoutBattleControls];
+    return YES;
+}
+
+- (void)attachLayoutEditorOverlay {
+    if (_layoutEditorController == nil || !_lifecycle.isRunning ||
+        _lifecycle.mode != MobaOverlayModeLayoutEdit || _layoutEditorOverlayView.superview != nil) {
+        return;
+    }
+    _layoutEditorOverlayView = [[MobaLayoutEditorOverlayView alloc]
+        initWithEditorController:_layoutEditorController];
+    _layoutEditorOverlayView.delegate = self;
+    _layoutEditorOverlayView.frame = _streamView.bounds;
+    _layoutEditorOverlayView.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [_streamView addSubview:_layoutEditorOverlayView];
+    [_streamView bringSubviewToFront:_modeToolbarView];
+}
+
+- (BOOL)beginLayoutEditing {
+    if (_layoutEditorController == nil) {
+        NSError *error = nil;
+        NSData *runtimeData = [_profileStore readDataAtRelativePath:MobaRuntimeProfileRelativePath error:&error];
+        NSData *layoutData = [_profileStore readDataAtRelativePath:MobaActiveLayoutProfileRelativePath error:&error];
+        MobaProfileSnapshot *snapshot = _profileRepository.activeSnapshot;
+        if (runtimeData == nil || layoutData == nil || snapshot == nil) {
+            NSLog(@"MOBA layout editor could not load its committed baseline: %@", error);
+            return NO;
+        }
+        _layoutEditorController = [[MobaLayoutEditorController alloc]
+            initWithSnapshot:snapshot
+            runtimeData:runtimeData
+            layoutData:layoutData
+            decoder:[[MobaProfileDecoder alloc] init]
+            error:&error];
+        if (_layoutEditorController == nil) {
+            NSLog(@"MOBA layout editor baseline was rejected: %@", error);
+            return NO;
+        }
+        _layoutEditorController.delegate = self;
+    }
+    [self attachLayoutEditorOverlay];
+    [self applyCurrentLayoutPresentation];
+    [self layoutBattleControls];
+    return YES;
+}
+
+- (void)discardLayoutEditorDraft {
+    [_layoutEditorOverlayView cancelEditingInteraction];
+    [_layoutEditorOverlayView removeFromSuperview];
+    _layoutEditorOverlayView = nil;
+    if (_layoutEditorController.isDirty) [_layoutEditorController revert];
+    _layoutEditorController.delegate = nil;
+    _layoutEditorController = nil;
+    [self applyCommittedLayoutPresentation];
 }
 
 - (void)start {
@@ -390,6 +603,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     }
 #endif
     [_lifecycle start];
+    if (_lifecycle.mode == MobaOverlayModeLayoutEdit) [self beginLayoutEditing];
 }
 
 - (BOOL)beginCancelZonePresentationForCastToken:(id)token {
@@ -427,6 +641,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)stop {
+    [self discardLayoutEditorDraft];
     [_lifecycle stop];
     [self removeBattleControls];
 #if DEBUG
@@ -443,18 +658,24 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)applicationWillResignActive {
+    [_layoutEditorOverlayView cancelEditingInteraction];
     [_lifecycle applicationWillResignActive];
 }
 
 - (void)applicationDidEnterBackground {
+    [_layoutEditorOverlayView cancelEditingInteraction];
+    [_layoutEditorOverlayView removeFromSuperview];
+    _layoutEditorOverlayView = nil;
     [_lifecycle applicationDidEnterBackground];
 }
 
 - (void)applicationDidBecomeActive {
     [_lifecycle applicationDidBecomeActive];
+    [self attachLayoutEditorOverlay];
 }
 
 - (void)streamDidDisconnect {
+    [self discardLayoutEditorDraft];
     [_lifecycle streamDidDisconnect];
     [self removeBattleControls];
 #if DEBUG
@@ -463,6 +684,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)viewControllerWillDisappear {
+    [self discardLayoutEditorDraft];
     [_lifecycle viewControllerWillDisappear];
     [self removeBattleControls];
 #if DEBUG
@@ -471,12 +693,14 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)orientationWillChange {
+    [_layoutEditorOverlayView cancelEditingInteraction];
     [_lifecycle orientationWillChange];
 }
 
 - (void)orientationDidChange {
     _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
     [self layoutBattleControls];
+    [_layoutEditorOverlayView refreshFromDraft];
     [_lifecycle orientationDidChange];
 }
 
@@ -489,6 +713,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 }
 
 - (void)mobaFeatureWillDisable {
+    [self discardLayoutEditorDraft];
     [_lifecycle mobaFeatureWillDisable];
     [self removeBattleControls];
 #if DEBUG
@@ -509,6 +734,63 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 - (void)skillCastControllerDidRequestTouchCancellation:(MobaSkillCastController *)controller {
     (void)controller;
     [_lifecycle touchesCancelled];
+}
+
+- (void)layoutEditorControllerDidChangeDraft:(MobaLayoutEditorController *)controller {
+    (void)controller;
+    if (_lifecycle.mode != MobaOverlayModeLayoutEdit) return;
+    [self applyCurrentLayoutPresentation];
+    [self layoutBattleControls];
+    [_layoutEditorOverlayView refreshFromDraft];
+}
+
+- (void)layoutEditorOverlayDidRequestSave:(MobaLayoutEditorOverlayView *)overlay {
+    if (overlay != _layoutEditorOverlayView || _lifecycle.mode != MobaOverlayModeLayoutEdit) return;
+    NSError *error = nil;
+    MobaLayoutSaveResult *result = [_layoutSaveTransaction saveDraft:_layoutEditorController.draft error:&error];
+    if (result == nil) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Save failed" error:YES];
+        return;
+    }
+    if (![_layoutEditorController acceptSavedSnapshot:result.snapshot
+                                           runtimeData:result.runtimeData
+                                            layoutData:result.layoutData
+                                                 error:&error]) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Saved, but baseline refresh failed" error:YES];
+        return;
+    }
+    [self applyCurrentLayoutPresentation];
+    [self layoutBattleControls];
+    [overlay showStatusMessage:@"Saved" error:NO];
+}
+
+- (void)layoutEditorOverlayDidRequestRestoreDefaults:(MobaLayoutEditorOverlayView *)overlay {
+    if (overlay != _layoutEditorOverlayView || _lifecycle.mode != MobaOverlayModeLayoutEdit) return;
+    NSError *error = nil;
+    NSData *runtimeData = [_profileStore
+        readBundledDefaultDataForDestinationRelativePath:MobaRuntimeProfileRelativePath error:&error];
+    NSData *layoutData = [_profileStore
+        readBundledDefaultDataForDestinationRelativePath:MobaActiveLayoutProfileRelativePath error:&error];
+    if (runtimeData == nil || layoutData == nil ||
+        ![_layoutEditorController restoreDefaultsFromRuntimeData:runtimeData layoutData:layoutData error:&error]) {
+        [overlay showStatusMessage:error.localizedDescription ?: @"Defaults unavailable" error:YES];
+        return;
+    }
+    [overlay showStatusMessage:@"Defaults previewed. Save to commit." error:NO];
+}
+
+- (BOOL)installLayoutSaveSnapshot:(MobaProfileSnapshot *)snapshot
+                           runtime:(MobaChampionRuntime *)runtime
+               skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                             error:(NSError **)error {
+    if (![_championSelectionController commitPreparedProfileSnapshot:snapshot
+                                                              runtime:runtime
+                                                   skillControlPackage:skillControlPackage
+                                                                error:error]) {
+        return NO;
+    }
+    [self applyCommittedLayoutPresentation];
+    return YES;
 }
 
 - (BOOL)mobaModeToolbarView:(MobaModeToolbarView *)toolbar requestMode:(MobaOverlayMode)mode {
@@ -535,9 +817,11 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
                     format:@"Champion selection must provide a complete skill-control package"];
     }
     [self installSkillControlPackage:skillControlPackage];
+    [self applyCommittedLayoutPresentation];
 }
 
 - (void)dealloc {
+    [_layoutEditorOverlayView cancelEditingInteraction];
     [_lifecycle invalidateForDestruction];
     [_championSelectionController invalidate];
     [self removeBattleControls];
