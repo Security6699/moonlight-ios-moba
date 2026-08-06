@@ -191,7 +191,7 @@ Verify no touch ownership transfer, no native keyboard gesture, no dropped movem
 
 - Verify the typed Runtime and Champion draft is independent of committed models and preserves unknown and unedited JSON.
 - Verify all Directional and Point range axes, default aim, response, `allowCancel`, hero anchor and 30/60/120 Hz validation. Instant skills must not acquire inapplicable fields.
-- Verify game-space center, corners, sampled asymmetric minimum and maximum boundaries, point response, the shared strict meaningful-drag threshold, final preview endpoints, and canvas clamp mapping through Aspect Fit video rectangles with black bars.
+- Verify game-space center, corners, sampled Directional boundaries, Point minimum and maximum boundaries including independently zero minimum radii, point response, the shared strict meaningful-drag threshold, final preview endpoints, and canvas clamp mapping through Aspect Fit video rectangles with black bars.
 - Verify Preview Only gestures, inspector changes, skill selection, Revert and Defaults produce zero Dispatcher events.
 - Verify Live Cast enables only the selected skill, its production Coalescer, and the shared Cancel Zone, and preserves final-cursor-before-key-up and configured intentional cancel ordering.
 - Verify mode, skill, application, stream, rotation, save, reload and stop interruptions release tracked state once and invalidate stale coalescer callbacks.

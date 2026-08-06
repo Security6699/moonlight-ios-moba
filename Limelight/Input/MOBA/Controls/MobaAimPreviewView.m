@@ -36,8 +36,9 @@
     return point;
 }
 
-- (void)drawBoundaryWithRadii:(MobaAimRadii)radii color:(UIColor *)color context:(CGContextRef)context {
-    NSArray<NSValue *> *gamePoints = MobaAimPreviewBoundaryPoints(_previewResult.anchor, radii, 96);
+- (void)drawBoundaryPoints:(NSArray<NSValue *> *)gamePoints
+                     color:(UIColor *)color
+                   context:(CGContextRef)context {
     if (gamePoints.count == 0) return;
     CGContextSetStrokeColorWithColor(context, color.CGColor);
     CGPoint first = [self viewPointForGamePoint:[self gamePointFromValue:gamePoints.firstObject]];
@@ -58,14 +59,12 @@
     CGContextSaveGState(context);
     CGContextClipToRect(context, _videoRect);
     CGContextSetLineWidth(context, 2.0);
-    [self drawBoundaryWithRadii:_previewResult.maximumRadii
-                         color:[UIColor colorWithRed:0.20 green:0.75 blue:1.0 alpha:0.75]
-                       context:context];
-    if (_previewResult.pointCast) {
-        [self drawBoundaryWithRadii:_previewResult.minimumRadii
-                             color:[UIColor colorWithWhite:1.0 alpha:0.45]
-                           context:context];
-    }
+    [self drawBoundaryPoints:MobaAimPreviewMaximumBoundaryPoints(_previewResult, 96)
+                       color:[UIColor colorWithRed:0.20 green:0.75 blue:1.0 alpha:0.75]
+                     context:context];
+    [self drawBoundaryPoints:MobaAimPreviewMinimumBoundaryPoints(_previewResult, 96)
+                       color:[UIColor colorWithWhite:1.0 alpha:0.45]
+                     context:context];
     CGPoint anchor = [self viewPointForGamePoint:_previewResult.anchor];
     CGPoint defaultTarget = [self viewPointForGamePoint:_previewResult.defaultTarget];
     CGPoint target = [self viewPointForGamePoint:_previewResult.target];

@@ -10,6 +10,8 @@
 #import "../Limelight/Input/MOBA/Controls/MobaAimPreviewView.h"
 #import "../Limelight/Input/MOBA/Controls/MobaSkillTuningOverlayView.h"
 #import "../Limelight/Input/MOBA/Core/MobaInputDispatcher.h"
+#import "../Limelight/Input/MOBA/Geometry/MobaGameCanvas.h"
+#import "../Limelight/Input/MOBA/Geometry/MobaPointCastGeometry.h"
 #import "../Limelight/Input/MOBA/Geometry/MobaSkillDragSemantics.h"
 
 @interface MobaAimPreviewSink : NSObject <MobaInputSink>
@@ -58,6 +60,21 @@
     CGPoint point = CGPointZero;
     [boundary[index] getValue:&point size:sizeof(point)];
     return point;
+}
+
+- (CGVector)directionAtIndex:(NSUInteger)index sampleCount:(NSUInteger)sampleCount {
+    CGFloat angle = 2.0 * M_PI * (CGFloat)index / (CGFloat)sampleCount;
+    CGFloat x = cos(angle);
+    CGFloat y = sin(angle);
+    if (fabs(x) < 1e-12) x = 0.0;
+    if (fabs(y) < 1e-12) y = 0.0;
+    return CGVectorMake(x, y);
+}
+
+- (CGPoint)clampedCanvasPoint:(CGPoint)point {
+    MobaGameCanvasPosition position;
+    XCTAssertTrue(MobaGameCanvasPositionFromPoint(point, &position));
+    return CGPointMake(position.x, position.y);
 }
 
 - (MobaSkillRuntimeDescriptor *)directionalDescriptorWithAnchor:(CGPoint)anchor {
@@ -195,7 +212,7 @@
 - (void)testAsymmetricBoundaryCardinalsUseProductionRadii {
     CGPoint anchor = CGPointMake(1280, 720);
     MobaAimRadii radii = MobaAimRadiiMake(400, 600, 300, 500);
-    NSArray<NSValue *> *boundary = MobaAimPreviewBoundaryPoints(anchor, radii, 8);
+    NSArray<NSValue *> *boundary = MobaDirectionalAimPreviewBoundaryPoints(anchor, radii, 8);
     XCTAssertEqual(boundary.count, 8u);
     XCTAssertEqualWithAccuracy([self pointAtIndex:0 inBoundary:boundary].x, 1880, 0.001);
     XCTAssertEqualWithAccuracy([self pointAtIndex:2 inBoundary:boundary].y, 1220, 0.001);
@@ -206,7 +223,7 @@
 - (void)testAsymmetricBoundaryDiagonalsMatchProductionAimGeometry {
     CGPoint anchor = CGPointMake(1280, 720);
     MobaAimRadii radii = MobaAimRadiiMake(400, 600, 300, 500);
-    NSArray<NSValue *> *boundary = MobaAimPreviewBoundaryPoints(anchor, radii, 8);
+    NSArray<NSValue *> *boundary = MobaDirectionalAimPreviewBoundaryPoints(anchor, radii, 8);
     for (NSUInteger index = 1; index < 8; index += 2) {
         CGFloat angle = 2.0 * M_PI * (CGFloat)index / 8.0;
         CGPoint expected = CGPointZero;
@@ -218,9 +235,10 @@
     }
 }
 
-- (void)testZeroBoundaryDegeneratesToClampedAnchor {
-    NSArray<NSValue *> *boundary = MobaAimPreviewBoundaryPoints(
-        CGPointMake(3000, -10), MobaAimRadiiMake(0, 0, 0, 0), 32);
+- (void)testZeroPointMinimumBoundaryDegeneratesToClampedAnchor {
+    NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+        CGPointMake(3000, -10), MobaAimRadiiMake(0, 0, 0, 0),
+        MobaAimRadiiMake(600, 600, 400, 400), 0.0, 32);
     XCTAssertEqual(boundary.count, 1u);
     CGPoint point = [self pointAtIndex:0 inBoundary:boundary];
     XCTAssertEqual(point.x, 2559);
@@ -229,10 +247,12 @@
 
 - (void)testPointMinimumAndMaximumBoundariesUseTheirOwnAsymmetricRadii {
     CGPoint anchor = CGPointMake(1000, 700);
-    NSArray<NSValue *> *minimum = MobaAimPreviewBoundaryPoints(
-        anchor, MobaAimRadiiMake(100, 200, 80, 160), 8);
-    NSArray<NSValue *> *maximum = MobaAimPreviewBoundaryPoints(
-        anchor, MobaAimRadiiMake(400, 600, 300, 500), 8);
+    MobaAimRadii minimumRadii = MobaAimRadiiMake(100, 200, 80, 160);
+    MobaAimRadii maximumRadii = MobaAimRadiiMake(400, 600, 300, 500);
+    NSArray<NSValue *> *minimum = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimumRadii, maximumRadii, 0.0, 8);
+    NSArray<NSValue *> *maximum = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimumRadii, maximumRadii, 1.0, 8);
     XCTAssertEqualWithAccuracy([self pointAtIndex:0 inBoundary:minimum].x, 1200, 0.001);
     XCTAssertEqualWithAccuracy([self pointAtIndex:6 inBoundary:minimum].y, 620, 0.001);
     XCTAssertEqualWithAccuracy([self pointAtIndex:0 inBoundary:maximum].x, 1600, 0.001);
@@ -241,7 +261,7 @@
 
 - (void)testBoundarySamplesClampAndMapInsideVideoRect {
     CGRect videoRect = CGRectMake(100, 40, 1280, 720);
-    NSArray<NSValue *> *boundary = MobaAimPreviewBoundaryPoints(
+    NSArray<NSValue *> *boundary = MobaDirectionalAimPreviewBoundaryPoints(
         CGPointMake(2500, 1400), MobaAimRadiiMake(900, 900, 900, 900), 64);
     for (NSValue *value in boundary) {
         CGPoint gamePoint = CGPointZero;
@@ -252,6 +272,130 @@
         XCTAssertLessThanOrEqual(mapped.x, CGRectGetMaxX(videoRect));
         XCTAssertGreaterThanOrEqual(mapped.y, CGRectGetMinY(videoRect));
         XCTAssertLessThanOrEqual(mapped.y, CGRectGetMaxY(videoRect));
+    }
+}
+
+- (void)testPointMinimumLeftZeroCollapsesLeftRayButKeepsRightRadius {
+    CGPoint anchor = CGPointMake(1000, 700);
+    MobaAimRadii minimum = MobaAimRadiiMake(0, 100, 80, 120);
+    MobaAimRadii maximum = MobaAimRadiiMake(400, 600, 300, 500);
+    NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimum, maximum, 0.0, 8);
+    XCTAssertEqual(boundary.count, 8u);
+    XCTAssertEqualWithAccuracy([self pointAtIndex:0 inBoundary:boundary].x, 1100, 0.001);
+    XCTAssertEqualWithAccuracy([self pointAtIndex:0 inBoundary:boundary].y, 700, 0.001);
+    XCTAssertEqualWithAccuracy([self pointAtIndex:4 inBoundary:boundary].x, anchor.x, 0.001);
+    XCTAssertEqualWithAccuracy([self pointAtIndex:4 inBoundary:boundary].y, anchor.y, 0.001);
+}
+
+- (void)testPointMinimumUpZeroCollapsesUpRayButKeepsDownRadius {
+    CGPoint anchor = CGPointMake(1000, 700);
+    MobaAimRadii minimum = MobaAimRadiiMake(90, 100, 0, 120);
+    MobaAimRadii maximum = MobaAimRadiiMake(400, 600, 300, 500);
+    NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimum, maximum, 0.0, 8);
+    XCTAssertEqual(boundary.count, 8u);
+    XCTAssertEqualWithAccuracy([self pointAtIndex:2 inBoundary:boundary].y, 820, 0.001);
+    XCTAssertEqualWithAccuracy([self pointAtIndex:6 inBoundary:boundary].x, anchor.x, 0.001);
+    XCTAssertEqualWithAccuracy([self pointAtIndex:6 inBoundary:boundary].y, anchor.y, 0.001);
+}
+
+- (void)testPointMinimumDiagonalSelectingEitherZeroAxisCollapsesToAnchor {
+    CGPoint anchor = CGPointMake(1000, 700);
+    MobaAimRadii minimum = MobaAimRadiiMake(0, 100, 0, 120);
+    MobaAimRadii maximum = MobaAimRadiiMake(400, 600, 300, 500);
+    NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimum, maximum, 0.0, 8);
+    for (NSNumber *index in @[@3, @5, @7]) {
+        CGPoint point = [self pointAtIndex:index.unsignedIntegerValue inBoundary:boundary];
+        XCTAssertEqualWithAccuracy(point.x, anchor.x, 0.001);
+        XCTAssertEqualWithAccuracy(point.y, anchor.y, 0.001);
+    }
+}
+
+- (void)testPartialZeroPointMinimumReturnsCompleteResultBoundary {
+    MobaAimPreviewResult result = {
+        CGPointMake(1000, 700), CGPointZero, CGPointZero, CGVectorMake(1, 0),
+        MobaAimRadiiMake(0, 100, 0, 120), MobaAimRadiiMake(400, 600, 300, 500),
+        0.0, YES,
+    };
+    NSArray<NSValue *> *boundary = MobaAimPreviewMinimumBoundaryPoints(result, 64);
+    XCTAssertEqual(boundary.count, 64u);
+}
+
+- (void)testNonzeroPointMinimumCardinalsUseEachMinimumRadius {
+    CGPoint anchor = CGPointMake(1000, 700);
+    MobaAimRadii minimum = MobaAimRadiiMake(90, 100, 80, 120);
+    MobaAimRadii maximum = MobaAimRadiiMake(400, 600, 300, 500);
+    NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimum, maximum, 0.0, 8);
+    XCTAssertEqual([self pointAtIndex:0 inBoundary:boundary].x, 1100);
+    XCTAssertEqual([self pointAtIndex:2 inBoundary:boundary].y, 820);
+    XCTAssertEqual([self pointAtIndex:4 inBoundary:boundary].x, 910);
+    XCTAssertEqual([self pointAtIndex:6 inBoundary:boundary].y, 620);
+}
+
+- (void)testEveryPartialZeroMinimumSampleMatchesProductionPointGeometry {
+    CGPoint anchor = CGPointMake(1000, 700);
+    MobaAimRadii minimum = MobaAimRadiiMake(0, 100, 0, 120);
+    MobaAimRadii maximum = MobaAimRadiiMake(400, 600, 300, 500);
+    NSUInteger sampleCount = 32;
+    NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimum, maximum, 0.0, sampleCount);
+    XCTAssertEqual(boundary.count, sampleCount);
+    for (NSUInteger index = 0; index < sampleCount; index++) {
+        CGPoint expected = CGPointZero;
+        XCTAssertTrue(MobaPointCastTargetForDirection(anchor,
+            [self directionAtIndex:index sampleCount:sampleCount], minimum, maximum, 0.0, &expected));
+        expected = [self clampedCanvasPoint:expected];
+        CGPoint actual = [self pointAtIndex:index inBoundary:boundary];
+        XCTAssertEqualWithAccuracy(actual.x, expected.x, 0.001);
+        XCTAssertEqualWithAccuracy(actual.y, expected.y, 0.001);
+    }
+}
+
+- (void)testEveryMaximumSampleMatchesProductionPointGeometry {
+    CGPoint anchor = CGPointMake(1000, 700);
+    MobaAimRadii minimum = MobaAimRadiiMake(0, 100, 0, 120);
+    MobaAimRadii maximum = MobaAimRadiiMake(400, 600, 300, 500);
+    NSUInteger sampleCount = 32;
+    NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+        anchor, minimum, maximum, 1.0, sampleCount);
+    XCTAssertEqual(boundary.count, sampleCount);
+    for (NSUInteger index = 0; index < sampleCount; index++) {
+        CGPoint expected = CGPointZero;
+        XCTAssertTrue(MobaPointCastTargetForDirection(anchor,
+            [self directionAtIndex:index sampleCount:sampleCount], minimum, maximum, 1.0, &expected));
+        expected = [self clampedCanvasPoint:expected];
+        CGPoint actual = [self pointAtIndex:index inBoundary:boundary];
+        XCTAssertEqualWithAccuracy(actual.x, expected.x, 0.001);
+        XCTAssertEqualWithAccuracy(actual.y, expected.y, 0.001);
+    }
+}
+
+- (void)testPointMinimumAndMaximumBoundariesClampAndMapInsideVideoRect {
+    CGPoint anchor = CGPointMake(2500, 1400);
+    MobaAimRadii minimum = MobaAimRadiiMake(0, 100, 0, 120);
+    MobaAimRadii maximum = MobaAimRadiiMake(400, 600, 300, 500);
+    CGRect videoRect = CGRectMake(100, 40, 1280, 720);
+    for (NSNumber *ratio in @[@0.0, @1.0]) {
+        NSArray<NSValue *> *boundary = MobaPointAimPreviewBoundaryPoints(
+            anchor, minimum, maximum, ratio.doubleValue, 64);
+        XCTAssertEqual(boundary.count, 64u);
+        for (NSValue *value in boundary) {
+            CGPoint gamePoint = CGPointZero;
+            [value getValue:&gamePoint size:sizeof(gamePoint)];
+            XCTAssertGreaterThanOrEqual(gamePoint.x, 0);
+            XCTAssertLessThanOrEqual(gamePoint.x, MobaGameCanvasMaxX);
+            XCTAssertGreaterThanOrEqual(gamePoint.y, 0);
+            XCTAssertLessThanOrEqual(gamePoint.y, MobaGameCanvasMaxY);
+            CGPoint mapped = CGPointZero;
+            XCTAssertTrue(MobaAimPreviewMapGamePointToVideoRect(gamePoint, videoRect, &mapped));
+            XCTAssertGreaterThanOrEqual(mapped.x, CGRectGetMinX(videoRect));
+            XCTAssertLessThanOrEqual(mapped.x, CGRectGetMaxX(videoRect));
+            XCTAssertGreaterThanOrEqual(mapped.y, CGRectGetMinY(videoRect));
+            XCTAssertLessThanOrEqual(mapped.y, CGRectGetMaxY(videoRect));
+        }
     }
 }
 

@@ -37,9 +37,18 @@ static NSValue *MobaAimPreviewPointValue(CGPoint point) {
     return [NSValue valueWithBytes:&point objCType:@encode(CGPoint)];
 }
 
-NSArray<NSValue *> *MobaAimPreviewBoundaryPoints(CGPoint anchor,
-                                                  MobaAimRadii radii,
-                                                  NSUInteger sampleCount) {
+static CGVector MobaAimPreviewDirectionAtIndex(NSUInteger index, NSUInteger sampleCount) {
+    CGFloat angle = 2.0 * (CGFloat)M_PI * (CGFloat)index / (CGFloat)sampleCount;
+    CGFloat x = cos(angle);
+    CGFloat y = sin(angle);
+    if (fabs(x) < 1e-12) x = 0.0;
+    if (fabs(y) < 1e-12) y = 0.0;
+    return CGVectorMake(x, y);
+}
+
+NSArray<NSValue *> *MobaDirectionalAimPreviewBoundaryPoints(CGPoint anchor,
+                                                             MobaAimRadii radii,
+                                                             NSUInteger sampleCount) {
     if (!isfinite(anchor.x) || !isfinite(anchor.y) || sampleCount == 0 ||
         !isfinite(radii.leftPx) || !isfinite(radii.rightPx) ||
         !isfinite(radii.upPx) || !isfinite(radii.downPx) ||
@@ -48,16 +57,9 @@ NSArray<NSValue *> *MobaAimPreviewBoundaryPoints(CGPoint anchor,
         return @[];
     }
 
-    CGPoint clampedAnchor = MobaAimPreviewClampedPoint(anchor);
-    if (radii.leftPx == 0.0 && radii.rightPx == 0.0 &&
-        radii.upPx == 0.0 && radii.downPx == 0.0) {
-        return @[MobaAimPreviewPointValue(clampedAnchor)];
-    }
-
     NSMutableArray<NSValue *> *points = [NSMutableArray arrayWithCapacity:sampleCount];
     for (NSUInteger index = 0; index < sampleCount; index++) {
-        CGFloat angle = 2.0 * (CGFloat)M_PI * (CGFloat)index / (CGFloat)sampleCount;
-        CGVector direction = CGVectorMake(cos(angle), sin(angle));
+        CGVector direction = MobaAimPreviewDirectionAtIndex(index, sampleCount);
         CGPoint point = CGPointZero;
         if (!MobaAimTargetForDirection(anchor, direction, radii, 1.0, &point)) {
             return @[];
@@ -65,6 +67,54 @@ NSArray<NSValue *> *MobaAimPreviewBoundaryPoints(CGPoint anchor,
         [points addObject:MobaAimPreviewPointValue(MobaAimPreviewClampedPoint(point))];
     }
     return points;
+}
+
+NSArray<NSValue *> *MobaPointAimPreviewBoundaryPoints(CGPoint anchor,
+                                                       MobaAimRadii minimumRadii,
+                                                       MobaAimRadii maximumRadii,
+                                                       CGFloat distanceRatio,
+                                                       NSUInteger sampleCount) {
+    if (sampleCount == 0 || !isfinite(distanceRatio)) return @[];
+
+    BOOL allMinimumRadiiAreZero = minimumRadii.leftPx == 0.0 &&
+        minimumRadii.rightPx == 0.0 && minimumRadii.upPx == 0.0 &&
+        minimumRadii.downPx == 0.0;
+    if (allMinimumRadiiAreZero && distanceRatio <= 0.0) {
+        CGPoint anchorPoint = CGPointZero;
+        if (!MobaPointCastTargetForDirection(anchor, CGVectorMake(1.0, 0.0),
+                                              minimumRadii, maximumRadii,
+                                              distanceRatio, &anchorPoint)) return @[];
+        return @[MobaAimPreviewPointValue(MobaAimPreviewClampedPoint(anchorPoint))];
+    }
+
+    NSMutableArray<NSValue *> *points = [NSMutableArray arrayWithCapacity:sampleCount];
+    for (NSUInteger index = 0; index < sampleCount; index++) {
+        CGVector direction = MobaAimPreviewDirectionAtIndex(index, sampleCount);
+        CGPoint point = CGPointZero;
+        if (!MobaPointCastTargetForDirection(anchor, direction, minimumRadii,
+                                              maximumRadii, distanceRatio, &point)) {
+            return @[];
+        }
+        [points addObject:MobaAimPreviewPointValue(MobaAimPreviewClampedPoint(point))];
+    }
+    return points;
+}
+
+NSArray<NSValue *> *MobaAimPreviewMinimumBoundaryPoints(MobaAimPreviewResult result,
+                                                         NSUInteger sampleCount) {
+    if (!result.pointCast) return @[];
+    return MobaPointAimPreviewBoundaryPoints(result.anchor, result.minimumRadii,
+                                             result.maximumRadii, 0.0, sampleCount);
+}
+
+NSArray<NSValue *> *MobaAimPreviewMaximumBoundaryPoints(MobaAimPreviewResult result,
+                                                         NSUInteger sampleCount) {
+    if (result.pointCast) {
+        return MobaPointAimPreviewBoundaryPoints(result.anchor, result.minimumRadii,
+                                                 result.maximumRadii, 1.0, sampleCount);
+    }
+    return MobaDirectionalAimPreviewBoundaryPoints(result.anchor, result.maximumRadii,
+                                                    sampleCount);
 }
 
 BOOL MobaAimPreviewResultForDescriptor(MobaSkillRuntimeDescriptor *descriptor,

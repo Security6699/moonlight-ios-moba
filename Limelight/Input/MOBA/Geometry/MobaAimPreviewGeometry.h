@@ -29,11 +29,30 @@ FOUNDATION_EXPORT BOOL MobaAimPreviewMapGamePointToVideoRect(CGPoint gamePoint,
                                                               CGRect videoRect,
                                                               CGPoint * _Nullable viewPoint);
 
-// Builds a closed-loop-ready asymmetric range boundary in fixed game-canvas
-// coordinates. Each sample reuses production aim geometry and canvas clamping.
-FOUNDATION_EXPORT NSArray<NSValue *> *MobaAimPreviewBoundaryPoints(CGPoint anchor,
-                                                                   MobaAimRadii radii,
-                                                                   NSUInteger sampleCount);
+// Builds a closed-loop-ready Directional range boundary in fixed game-canvas
+// coordinates. Every sample reuses production Directional aim geometry.
+FOUNDATION_EXPORT NSArray<NSValue *> *MobaDirectionalAimPreviewBoundaryPoints(
+    CGPoint anchor,
+    MobaAimRadii radii,
+    NSUInteger sampleCount);
+
+// Builds a Point range boundary through production Point geometry. A ratio of
+// zero represents the minimum boundary and one represents the maximum.
+FOUNDATION_EXPORT NSArray<NSValue *> *MobaPointAimPreviewBoundaryPoints(
+    CGPoint anchor,
+    MobaAimRadii minimumRadii,
+    MobaAimRadii maximumRadii,
+    CGFloat distanceRatio,
+    NSUInteger sampleCount);
+
+// Result-facing seams keep cast-type selection and production geometry in this
+// pure layer. UIKit receives only clamped game-space points to draw.
+FOUNDATION_EXPORT NSArray<NSValue *> *MobaAimPreviewMinimumBoundaryPoints(
+    MobaAimPreviewResult result,
+    NSUInteger sampleCount);
+FOUNDATION_EXPORT NSArray<NSValue *> *MobaAimPreviewMaximumBoundaryPoints(
+    MobaAimPreviewResult result,
+    NSUInteger sampleCount);
 
 // Reuses the production directional and point geometry. The result target is
 // clamped through MobaGameCanvas after geometry calculation.
