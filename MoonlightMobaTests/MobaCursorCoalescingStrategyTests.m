@@ -356,7 +356,8 @@ static CGPoint MobaStrategyCoalescingPointFromValue(NSValue *value) {
     MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
                                                                     meaningfulDrag:NO
                                                                    insideCancelZone:NO];
-    XCTAssertTrue([strategy updateWithTransitionResult:fallback dragDirection:CGVectorZero]);
+    XCTAssertTrue([strategy updateWithTransitionResult:fallback
+                                         dragDirection:CGVectorMake(0.0, 0.0)]);
 
     [self.driver fireCurrentTick];
     [self drainDispatcher];
@@ -391,7 +392,8 @@ static CGPoint MobaStrategyCoalescingPointFromValue(NSValue *value) {
                                                                     meaningfulDrag:NO
                                                                    insideCancelZone:NO];
     XCTAssertEqual(fallback.currentState, MobaCastStateAimingDefault);
-    XCTAssertTrue([strategy updateWithTransitionResult:fallback dragDirection:CGVectorZero]);
+    XCTAssertTrue([strategy updateWithTransitionResult:fallback
+                                         dragDirection:CGVectorMake(0.0, 0.0)]);
     XCTAssertTrue(self.coalescer.hasPendingPoint);
     [self.driver fireCurrentTick];
     [self drainDispatcher];
@@ -407,7 +409,8 @@ static CGPoint MobaStrategyCoalescingPointFromValue(NSValue *value) {
     MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
                                                                     meaningfulDrag:NO
                                                                    insideCancelZone:NO];
-    XCTAssertTrue([strategy updateWithTransitionResult:fallback dragDirection:CGVectorZero]);
+    XCTAssertTrue([strategy updateWithTransitionResult:fallback
+                                         dragDirection:CGVectorMake(0.0, 0.0)]);
     XCTAssertTrue(self.coalescer.hasPendingPoint);
 
     XCTAssertTrue([strategy commitWithTransitionResult:

@@ -384,7 +384,7 @@ static CGVector MobaDirectionalVectorFromValue(NSValue *value) {
                                                                     meaningfulDrag:NO
                                                                    insideCancelZone:NO];
     XCTAssertTrue([self.strategy updateWithTransitionResult:fallback
-                                              dragDirection:CGVectorZero]);
+                                              dragDirection:CGVectorMake(0.0, 0.0)]);
     [self drainDispatcher];
     [self.sink clear];
 
@@ -414,7 +414,7 @@ static CGVector MobaDirectionalVectorFromValue(NSValue *value) {
                                                                    insideCancelZone:NO];
     XCTAssertEqual(fallback.currentState, MobaCastStateAimingDefault);
     XCTAssertTrue([self.strategy updateWithTransitionResult:fallback
-                                              dragDirection:CGVectorZero]);
+                                              dragDirection:CGVectorMake(0.0, 0.0)]);
     [self assertPoint:self.strategy.latestTarget equals:self.strategy.defaultTarget];
 }
 
