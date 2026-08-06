@@ -168,7 +168,15 @@ Runtime, input, layout, champion, and nested profile objects are immutable after
 
 `MobaProfileRepository` forms the transactional activation boundary. It reads runtime, input, active layout, and one caller-selected champion relative path through `MobaProfileStore`. All four profiles are migrated, validated, and constructed locally. Cross-profile validation then confirms every champion skill `inputAction` resolves in the input profile. Only a fully valid candidate becomes one immutable `MobaProfileSnapshot`, which replaces `activeSnapshot` in one synchronized assignment. Any storage, parsing, migration, validation, construction, or reference failure preserves the prior snapshot object and contents.
 
-Issue #19 owns Strategy Factory wiring and active champion selection. Issue #22 owns document picker access, import/export, backup rotation, user confirmation, and migration persistence. This profile layer performs none of those workflows and never mutates Coordinator, Dispatcher, Lifecycle, or active input state.
+Repository activation includes a candidate-acceptance seam. `MobaCastStrategyFactory` must successfully map the typed candidate snapshot into a `MobaChampionRuntime` before Repository commits it as `activeSnapshot`. Factory failure preserves the old snapshot and its field-specific runtime error. The Factory never parses JSON or reads storage.
+
+The canonical UI slots are Q, W, E, and R. Each slot maps once to the corresponding champion skill and `abilityQ`, `abilityW`, `abilityE`, or `abilityR` layout control. Its display label stays Q, W, E, or R. The host key is resolved separately through the skill `inputAction` and Input Profile actions dictionary. Remapped host letters are not UI labels. A playable runtime requires all four canonical slots. Additional future noncanonical skill fields remain valid profile data but are ignored by this four-slot runtime shell.
+
+Each aimed descriptor owns an independent display-link driver and `MobaCursorCoalescer`, configured with the Runtime Profile update rate and sharing the one Dispatcher. Instant descriptors create neither. `MobaChampionSelectionController` performs manual Caitlyn or Debug Instant replacement inside paired `profileWillReload` and `profileDidReload` calls. It releases and resets the old runtime through Lifecycle, builds and validates the candidate, swaps registered coalescer participants only after Repository commits, and restores the old snapshot, runtime, selection, and participants on failure.
+
+`MobaChampionSelectorView` is a compact UI-mode-only manual selection shell. It delegates champion IDs and owns no Repository, Strategy, Dispatcher, or remote-input behavior. This issue deliberately does not add `SkillButtonView`. A later skill-control issue will create one Cast Session and UIKit touch orchestration boundary for each selected runtime descriptor.
+
+Issue #22 owns document picker access, import/export, backup rotation, user confirmation, and migration persistence. This profile layer performs none of those workflows.
 
 ## 4. Coordinate spaces
 

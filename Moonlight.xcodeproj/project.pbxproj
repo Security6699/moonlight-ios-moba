@@ -120,6 +120,15 @@
 		B0180000000000000000000C /* MobaProfileRepository.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010D /* MobaProfileRepository.m */; };
 		B0180000000000000000000D /* MobaProfileDecoderTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010E /* MobaProfileDecoderTests.m */; };
 		B0180000000000000000000E /* MobaProfileRepositoryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B0180000000000000000010F /* MobaProfileRepositoryTests.m */; };
+		B01900000000000000000001 /* MobaCastStrategyFactory.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000102 /* MobaCastStrategyFactory.m */; };
+		B01900000000000000000002 /* MobaCastStrategyFactory.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000102 /* MobaCastStrategyFactory.m */; };
+		B01900000000000000000003 /* MobaChampionSelectionController.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000104 /* MobaChampionSelectionController.m */; };
+		B01900000000000000000004 /* MobaChampionSelectionController.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000104 /* MobaChampionSelectionController.m */; };
+		B01900000000000000000005 /* MobaChampionSelectorView.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000106 /* MobaChampionSelectorView.m */; };
+		B01900000000000000000006 /* MobaChampionSelectorView.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000106 /* MobaChampionSelectorView.m */; };
+		B01900000000000000000007 /* MobaCastStrategyFactoryTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000107 /* MobaCastStrategyFactoryTests.m */; };
+		B01900000000000000000008 /* MobaChampionSelectionControllerTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000108 /* MobaChampionSelectionControllerTests.m */; };
+		B01900000000000000000009 /* MobaChampionSelectorViewTests.m in Sources */ = {isa = PBXBuildFile; fileRef = B01900000000000000000109 /* MobaChampionSelectorViewTests.m */; };
 		98181BE92791277400E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BE82791275D00E43572 /* libSDL2.a */; };
 		98181BEB2791278F00E43572 /* libSDL2.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEA2791278300E43572 /* libSDL2.a */; };
 		98181BED2791281100E43572 /* CoreMotion.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 98181BEC2791281100E43572 /* CoreMotion.framework */; };
@@ -419,6 +428,15 @@
 		B0180000000000000000010D /* MobaProfileRepository.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileRepository.m; sourceTree = "<group>"; };
 		B0180000000000000000010E /* MobaProfileDecoderTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileDecoderTests.m; sourceTree = "<group>"; };
 		B0180000000000000000010F /* MobaProfileRepositoryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileRepositoryTests.m; sourceTree = "<group>"; };
+		B01900000000000000000101 /* MobaCastStrategyFactory.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaCastStrategyFactory.h; sourceTree = "<group>"; };
+		B01900000000000000000102 /* MobaCastStrategyFactory.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastStrategyFactory.m; sourceTree = "<group>"; };
+		B01900000000000000000103 /* MobaChampionSelectionController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaChampionSelectionController.h; sourceTree = "<group>"; };
+		B01900000000000000000104 /* MobaChampionSelectionController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaChampionSelectionController.m; sourceTree = "<group>"; };
+		B01900000000000000000105 /* MobaChampionSelectorView.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaChampionSelectorView.h; sourceTree = "<group>"; };
+		B01900000000000000000106 /* MobaChampionSelectorView.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaChampionSelectorView.m; sourceTree = "<group>"; };
+		B01900000000000000000107 /* MobaCastStrategyFactoryTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaCastStrategyFactoryTests.m; sourceTree = "<group>"; };
+		B01900000000000000000108 /* MobaChampionSelectionControllerTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaChampionSelectionControllerTests.m; sourceTree = "<group>"; };
+		B01900000000000000000109 /* MobaChampionSelectorViewTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaChampionSelectorViewTests.m; sourceTree = "<group>"; };
 		98783FEA242EAC5D00F00EF4 /* Moonlight v1.5.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.5.xcdatamodel"; sourceTree = "<group>"; };
 		98882A032AF60F5300C5A11C /* libavcodec.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavcodec.a; path = libs/FFmpeg/lib/iOS/libavcodec.a; sourceTree = "<group>"; };
 		98882A042AF60F5300C5A11C /* libavutil.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libavutil.a; path = libs/FFmpeg/lib/iOS/libavutil.a; sourceTree = "<group>"; };
@@ -809,6 +827,8 @@
 		B00400000000000000000109 /* Profiles */ = {
 			isa = PBXGroup;
 			children = (
+				B01900000000000000000103 /* MobaChampionSelectionController.h */,
+				B01900000000000000000104 /* MobaChampionSelectionController.m */,
 				B0180000000000000000010A /* MobaProfileDecoder.h */,
 				B0180000000000000000010B /* MobaProfileDecoder.m */,
 				B01800000000000000000101 /* MobaProfileError.h */,
@@ -863,6 +883,8 @@
 		AC1300000000000000000107 /* Casting */ = {
 			isa = PBXGroup;
 			children = (
+				B01900000000000000000101 /* MobaCastStrategyFactory.h */,
+				B01900000000000000000102 /* MobaCastStrategyFactory.m */,
 				AD1400000000000000000101 /* MobaCastStrategy.h */,
 				AD1400000000000000000102 /* MobaCastStrategy.m */,
 				AC1300000000000000000101 /* MobaCastStateMachine.h */,
@@ -882,6 +904,8 @@
 		A9C000000000000000000109 /* Controls */ = {
 			isa = PBXGroup;
 			children = (
+				B01900000000000000000105 /* MobaChampionSelectorView.h */,
+				B01900000000000000000106 /* MobaChampionSelectorView.m */,
 				AF1600000000000000000103 /* MobaCancelZoneController.h */,
 				AF1600000000000000000104 /* MobaCancelZoneController.m */,
 				AF1600000000000000000105 /* MobaCancelZoneView.h */,
@@ -914,6 +938,9 @@
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
+				B01900000000000000000107 /* MobaCastStrategyFactoryTests.m */,
+				B01900000000000000000108 /* MobaChampionSelectionControllerTests.m */,
+				B01900000000000000000109 /* MobaChampionSelectorViewTests.m */,
 				B0180000000000000000010E /* MobaProfileDecoderTests.m */,
 				B0180000000000000000010F /* MobaProfileRepositoryTests.m */,
 				B00400000000000000000103 /* MobaProfileStoreTests.m */,
@@ -1287,6 +1314,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B01900000000000000000002 /* MobaCastStrategyFactory.m in Sources */,
+				B01900000000000000000004 /* MobaChampionSelectionController.m in Sources */,
+				B01900000000000000000006 /* MobaChampionSelectorView.m in Sources */,
+				B01900000000000000000007 /* MobaCastStrategyFactoryTests.m in Sources */,
+				B01900000000000000000008 /* MobaChampionSelectionControllerTests.m in Sources */,
+				B01900000000000000000009 /* MobaChampionSelectorViewTests.m in Sources */,
 				B0180000000000000000000A /* MobaProfileDecoder.m in Sources */,
 				B0180000000000000000000D /* MobaProfileDecoderTests.m in Sources */,
 				B01800000000000000000002 /* MobaProfileError.m in Sources */,
@@ -1412,6 +1445,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				B01900000000000000000001 /* MobaCastStrategyFactory.m in Sources */,
+				B01900000000000000000003 /* MobaChampionSelectionController.m in Sources */,
+				B01900000000000000000005 /* MobaChampionSelectorView.m in Sources */,
 				B01800000000000000000009 /* MobaProfileDecoder.m in Sources */,
 				B01800000000000000000001 /* MobaProfileError.m in Sources */,
 				B01800000000000000000005 /* MobaProfileMigrator.m in Sources */,

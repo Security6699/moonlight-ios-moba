@@ -9,7 +9,9 @@
 #import "MoonlightMobaInputAdapter.h"
 #import "MoonlightMobaInputSender.h"
 #import "StreamView.h"
+#import "../Casting/MobaCastStrategyFactory.h"
 #import "../Controls/AttackButtonView.h"
+#import "../Controls/MobaChampionSelectorView.h"
 #import "../Controls/MobaAttackController.h"
 #import "../Controls/MobaCancelZoneController.h"
 #import "../Controls/MobaCancelZoneView.h"
@@ -17,6 +19,8 @@
 #import "../Controls/MobaModeToolbarView.h"
 #import "../Controls/MoveJoystickView.h"
 #import "../Profiles/MobaProfileStore.h"
+#import "../Profiles/MobaProfileRepository.h"
+#import "../Profiles/MobaChampionSelectionController.h"
 
 #if DEBUG
 #import "../Debug/MobaCursorDiagnosticPanel.h"
@@ -32,6 +36,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 
 @interface MobaOverlayCoordinator () <MobaAttackControllerDelegate,
                                       MobaBattleInputGate,
+                                      MobaChampionSelectorViewDelegate,
                                       MobaMovementControllerDelegate,
                                       MobaModeToolbarViewDelegate>
 @end
@@ -39,6 +44,11 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
 @implementation MobaOverlayCoordinator {
     __weak StreamView *_streamView;
     MobaProfileStore *_profileStore;
+    MobaProfileRepository *_profileRepository;
+    MobaCADisplayLinkDriverProvider *_displayLinkDriverProvider;
+    MobaCastStrategyFactory *_castStrategyFactory;
+    MobaChampionSelectionController *_championSelectionController;
+    MobaChampionSelectorView *_championSelectorView;
     MobaInputDispatcher *_inputDispatcher;
     MobaOverlayLifecycle *_lifecycle;
     MobaCursorDiagnostics *_cursorDiagnostics;
@@ -60,7 +70,8 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         _streamView = streamView;
         _profileStore = [[MobaProfileStore alloc] init];
         NSError *profileStoreError = nil;
-        if (![_profileStore bootstrapDefaultsIfFeatureEnabled:YES error:&profileStoreError]) {
+        BOOL profileStoreReady = [_profileStore bootstrapDefaultsIfFeatureEnabled:YES error:&profileStoreError];
+        if (!profileStoreReady) {
             // Profile storage is optional infrastructure. A failure must not
             // prevent the existing Moonlight stream from being initialized.
             NSLog(@"MOBA profile defaults bootstrap failed: %@", profileStoreError);
@@ -70,6 +81,27 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
         _inputDispatcher = [[MobaInputDispatcher alloc] initWithSink:adapter];
         _lifecycle = [[MobaOverlayLifecycle alloc] initWithEnvironment:(id<MobaOverlayLifecycleEnvironment>)streamView
                                                        inputDispatcher:_inputDispatcher];
+        _profileRepository = [[MobaProfileRepository alloc] initWithStore:_profileStore];
+        _displayLinkDriverProvider = [[MobaCADisplayLinkDriverProvider alloc] init];
+        _castStrategyFactory = [[MobaCastStrategyFactory alloc] initWithDispatcher:_inputDispatcher
+                                                                    driverProvider:_displayLinkDriverProvider];
+        _championSelectionController = [[MobaChampionSelectionController alloc]
+            initWithRepository:_profileRepository
+                 runtimeBuilder:_castStrategyFactory
+                      lifecycle:(id<MobaChampionSelectionLifecycle>)_lifecycle];
+        _championSelectorView = [[MobaChampionSelectorView alloc]
+            initWithCatalogEntries:_championSelectionController.catalogEntries];
+        _championSelectorView.delegate = self;
+        [_championSelectorView setMode:_lifecycle.mode];
+        if (profileStoreReady) {
+            NSError *selectionError = nil;
+            if (![_championSelectionController selectChampionID:@"caitlyn" error:&selectionError]) {
+                // Runtime profiles are optional MOBA infrastructure. Failure
+                // must not prevent the normal Moonlight stream from starting.
+                NSLog(@"MOBA default champion runtime failed: %@", selectionError);
+            }
+            _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
+        }
         _movementController = [[MobaMovementController alloc]
             initWithInputDispatcher:_inputDispatcher
                          keyMapping:MobaDefaultMovementKeyMapping()
@@ -140,6 +172,11 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     _modeToolbarView.bounds = (CGRect){ CGPointZero, toolbarSize };
     _modeToolbarView.center = CGPointMake(CGRectGetMaxX(safeFrame) - toolbarSize.width * 0.5 - 12.0,
                                           CGRectGetMinY(safeFrame) + toolbarSize.height * 0.5 + 8.0);
+
+    CGSize selectorSize = _championSelectorView.intrinsicContentSize;
+    _championSelectorView.bounds = (CGRect){ CGPointZero, selectorSize };
+    _championSelectorView.center = CGPointMake(CGRectGetMinX(safeFrame) + selectorSize.width * 0.5 + 12.0,
+                                               CGRectGetMinY(safeFrame) + selectorSize.height * 0.5 + 8.0);
 }
 
 - (void)removeBattleControls {
@@ -147,6 +184,7 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     [_attackButtonView removeFromSuperview];
     [_cancelZoneView removeFromSuperview];
     [_modeToolbarView removeFromSuperview];
+    [_championSelectorView removeFromSuperview];
 }
 
 - (BOOL)isRunning {
@@ -173,6 +211,14 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     return _lifecycle.isInputSuspended;
 }
 
+- (MobaChampionRuntime *)activeChampionRuntime {
+    return _championSelectionController.activeChampionRuntime;
+}
+
+- (MobaChampionSelectionController *)championSelectionController {
+    return _championSelectionController;
+}
+
 - (void)registerLocalInteractionResetParticipant:(id<MobaLocalInteractionResetParticipant>)participant {
     [_lifecycle registerLocalInteractionResetParticipant:participant];
 }
@@ -185,6 +231,8 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     BOOL transitioned = [_lifecycle transitionToMode:mode];
     _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
     [_modeToolbarView setSelectedMode:_lifecycle.mode];
+    [_championSelectorView setMode:_lifecycle.mode];
+    _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
     return transitioned;
 }
 
@@ -205,8 +253,13 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     if (_modeToolbarView.superview == nil) {
         [_streamView addSubview:_modeToolbarView];
     }
+    if (_championSelectorView.superview == nil) {
+        [_streamView addSubview:_championSelectorView];
+    }
     _modeToolbarView.battleModeAvailable = self.isBattleModeAvailable;
     [_modeToolbarView setSelectedMode:_lifecycle.mode];
+    [_championSelectorView setMode:_lifecycle.mode];
+    _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
     [self layoutBattleControls];
 
 #if DEBUG
@@ -341,8 +394,18 @@ static const CGFloat MobaDefaultCancelZoneActivationInset = 8.0;
     return [self transitionToMode:mode];
 }
 
+- (BOOL)mobaChampionSelectorView:(MobaChampionSelectorView *)selectorView
+               requestChampionID:(NSString *)championID
+                            error:(NSError **)error {
+    (void)selectorView;
+    BOOL selected = [_championSelectionController selectChampionID:championID error:error];
+    _championSelectorView.selectedChampionID = _championSelectionController.selectedChampionID;
+    return selected;
+}
+
 - (void)dealloc {
     [_lifecycle invalidateForDestruction];
+    [_championSelectionController invalidate];
     [self removeBattleControls];
 #if DEBUG
     [_cursorDiagnosticPanel removeFromSuperview];

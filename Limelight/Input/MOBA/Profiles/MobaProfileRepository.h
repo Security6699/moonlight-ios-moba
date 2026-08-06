@@ -15,6 +15,9 @@ FOUNDATION_EXPORT NSString *const MobaRuntimeProfileRelativePath;
 FOUNDATION_EXPORT NSString *const MobaInputProfileRelativePath;
 FOUNDATION_EXPORT NSString *const MobaActiveLayoutProfileRelativePath;
 
+typedef BOOL (^MobaProfileCandidateValidator)(MobaProfileSnapshot *candidate,
+                                               NSError **error);
+
 // Owns only candidate loading and transactional active-snapshot replacement.
 // It never writes profiles and never mutates Coordinator or input state.
 @interface MobaProfileRepository : NSObject
@@ -29,10 +32,21 @@ FOUNDATION_EXPORT NSString *const MobaActiveLayoutProfileRelativePath;
 - (BOOL)reloadWithChampionRelativePath:(NSString *)championRelativePath
                                   error:(NSError **)error;
 
+- (BOOL)reloadWithChampionRelativePath:(NSString *)championRelativePath
+                    candidateValidator:(nullable MobaProfileCandidateValidator)candidateValidator
+                                 error:(NSError **)error;
+
 - (BOOL)loadRuntimeRelativePath:(NSString *)runtimeRelativePath
               inputRelativePath:(NSString *)inputRelativePath
              layoutRelativePath:(NSString *)layoutRelativePath
            championRelativePath:(NSString *)championRelativePath
+                          error:(NSError **)error;
+
+- (BOOL)loadRuntimeRelativePath:(NSString *)runtimeRelativePath
+              inputRelativePath:(NSString *)inputRelativePath
+             layoutRelativePath:(NSString *)layoutRelativePath
+           championRelativePath:(NSString *)championRelativePath
+             candidateValidator:(nullable MobaProfileCandidateValidator)candidateValidator
                           error:(NSError **)error;
 
 @end
