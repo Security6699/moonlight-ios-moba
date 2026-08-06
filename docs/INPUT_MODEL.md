@@ -144,13 +144,15 @@ Begin:
 
 Update:
 
-1. Calculate direction target.
-2. Store latest cursor point for display-link delivery.
+1. In `AimingDragged`, calculate the direction target and store it for display-link delivery.
+2. In `AimingDefault`, restore the per-cast default target for display-link delivery without requiring a drag vector.
+3. In `CancelArmed`, preserve the latest target and submit no cursor update.
+4. After leaving the cancel zone, restore Default or recalculate Dragged according to the Session state.
 
 Commit:
 
-1. Enqueue final cursor point.
-2. Enqueue ability key-up in the same serialized operation.
+1. Stop coalescing and discard pending intermediate points.
+2. Enqueue the final cursor point and ability key-up in the same serialized operation.
 
 ### Point/Ground
 

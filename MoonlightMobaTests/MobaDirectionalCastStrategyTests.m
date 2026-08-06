@@ -257,7 +257,10 @@ static CGVector MobaDirectionalVectorFromValue(NSValue *value) {
     XCTAssertEqual(self.sink.cursorPoints.count, 1u);
     [self assertPoint:MobaDirectionalPointFromValue(self.sink.cursorPoints.firstObject)
                equals:CGPointMake(1000.0, 400.0)];
+    XCTAssertTrue(self.strategy.hasDefaultTarget);
+    [self assertPoint:self.strategy.defaultTarget equals:CGPointMake(1000.0, 400.0)];
     XCTAssertTrue(self.strategy.hasLatestTarget);
+    [self assertPoint:self.strategy.latestTarget equals:self.strategy.defaultTarget];
 }
 
 - (void)testNoDragCommitUsesDefaultUpTarget {
@@ -354,6 +357,83 @@ static CGVector MobaDirectionalVectorFromValue(NSValue *value) {
     [self drainDispatcher];
     XCTAssertEqual(self.sink.events.count, 0u);
     [self assertPoint:self.strategy.latestTarget equals:CGPointMake(1200.0, 700.0)];
+}
+
+- (void)testDraggedThenAimingDefaultRestoresDefaultWithoutValidDirection {
+    [self beginCast];
+    [self updateCastInDirection:CGVectorMake(1.0, 0.0)];
+    [self assertPoint:self.strategy.latestTarget equals:CGPointMake(1200.0, 700.0)];
+    [self drainDispatcher];
+    [self.sink clear];
+
+    MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
+                                                                    meaningfulDrag:NO
+                                                                   insideCancelZone:NO];
+    XCTAssertEqual(fallback.currentState, MobaCastStateAimingDefault);
+    XCTAssertTrue([self.strategy updateWithTransitionResult:fallback
+                                              dragDirection:CGVectorMake(NAN, INFINITY)]);
+    [self assertPoint:self.strategy.latestTarget equals:self.strategy.defaultTarget];
+    [self drainDispatcher];
+    XCTAssertEqual(self.sink.events.count, 0u);
+}
+
+- (void)testCommitAfterAimingDefaultFallbackUsesDefaultBeforeSkillUp {
+    [self beginCast];
+    [self updateCastInDirection:CGVectorMake(1.0, 0.0)];
+    MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
+                                                                    meaningfulDrag:NO
+                                                                   insideCancelZone:NO];
+    XCTAssertTrue([self.strategy updateWithTransitionResult:fallback
+                                              dragDirection:CGVectorZero]);
+    [self drainDispatcher];
+    [self.sink clear];
+
+    XCTAssertTrue([self.strategy commitWithTransitionResult:
+        [self.session releaseInteractionWithToken:self.token]]);
+    [self drainDispatcher];
+    XCTAssertEqualObjects(self.sink.events, (@[@"cursor", @"key:81:up"]));
+    [self assertPoint:MobaDirectionalPointFromValue(self.sink.cursorPoints.firstObject)
+               equals:CGPointMake(1000.0, 400.0)];
+}
+
+- (void)testCancelArmedPreservesLatestAndExitToDefaultRestoresDefault {
+    [self beginCast];
+    [self updateCastInDirection:CGVectorMake(1.0, 0.0)];
+    CGPoint draggedTarget = self.strategy.latestTarget;
+
+    MobaCastTransitionResult armed = [self.session updateInteractionWithToken:self.token
+                                                                 meaningfulDrag:YES
+                                                                insideCancelZone:YES];
+    XCTAssertEqual(armed.currentState, MobaCastStateCancelArmed);
+    XCTAssertTrue([self.strategy updateWithTransitionResult:armed
+                                              dragDirection:CGVectorMake(NAN, INFINITY)]);
+    [self assertPoint:self.strategy.latestTarget equals:draggedTarget];
+
+    MobaCastTransitionResult fallback = [self.session updateInteractionWithToken:self.token
+                                                                    meaningfulDrag:NO
+                                                                   insideCancelZone:NO];
+    XCTAssertEqual(fallback.currentState, MobaCastStateAimingDefault);
+    XCTAssertTrue([self.strategy updateWithTransitionResult:fallback
+                                              dragDirection:CGVectorZero]);
+    [self assertPoint:self.strategy.latestTarget equals:self.strategy.defaultTarget];
+}
+
+- (void)testCancelArmedExitToDraggedUsesCurrentDirection {
+    [self beginCast];
+    [self updateCastInDirection:CGVectorMake(1.0, 0.0)];
+    MobaCastTransitionResult armed = [self.session updateInteractionWithToken:self.token
+                                                                 meaningfulDrag:YES
+                                                                insideCancelZone:YES];
+    XCTAssertTrue([self.strategy updateWithTransitionResult:armed
+                                              dragDirection:CGVectorMake(-1.0, 0.0)]);
+
+    MobaCastTransitionResult dragged = [self.session updateInteractionWithToken:self.token
+                                                                   meaningfulDrag:YES
+                                                                  insideCancelZone:NO];
+    XCTAssertEqual(dragged.currentState, MobaCastStateAimingDragged);
+    XCTAssertTrue([self.strategy updateWithTransitionResult:dragged
+                                              dragDirection:CGVectorMake(-1.0, 0.0)]);
+    [self assertPoint:self.strategy.latestTarget equals:CGPointMake(900.0, 700.0)];
 }
 
 - (void)testCommitUsesLastValidTargetAndPreservesAtomicEventOrder {
@@ -539,7 +619,25 @@ static CGVector MobaDirectionalVectorFromValue(NSValue *value) {
     [self drainDispatcher];
 
     XCTAssertEqualObjects(self.sink.events, (@[@"key:81:up"]));
+    XCTAssertFalse(self.strategy.hasDefaultTarget);
     XCTAssertFalse(self.strategy.hasLatestTarget);
+}
+
+- (void)testNewCastDoesNotInheritPreviousDefaultOrLatestState {
+    [self beginCast];
+    [self updateCastInDirection:CGVectorMake(1.0, 0.0)];
+    XCTAssertTrue([self.strategy commitWithTransitionResult:
+        [self.session releaseInteractionWithToken:self.token]]);
+    XCTAssertFalse(self.strategy.hasDefaultTarget);
+    XCTAssertFalse(self.strategy.hasLatestTarget);
+
+    [self.session silentReset];
+    self.token = [[NSObject alloc] init];
+    [self beginCast];
+    XCTAssertTrue(self.strategy.hasDefaultTarget);
+    XCTAssertTrue(self.strategy.hasLatestTarget);
+    [self assertPoint:self.strategy.defaultTarget equals:CGPointMake(1000.0, 400.0)];
+    [self assertPoint:self.strategy.latestTarget equals:self.strategy.defaultTarget];
 }
 
 - (void)testTwoStrategyInstancesKeepIndependentConfigurationsAndLatestTargets {

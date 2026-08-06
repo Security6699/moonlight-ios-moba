@@ -68,6 +68,8 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
     MobaDirectionalCastConfiguration *_configuration;
     id<MobaCursorCoalescing> _cursorCoalescer;
     BOOL _awaitingTerminalOutcome;
+    BOOL _hasDefaultTarget;
+    CGPoint _defaultTarget;
     BOOL _hasLatestTarget;
     CGPoint _latestTarget;
 }
@@ -92,6 +94,14 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
         _cursorCoalescer = cursorCoalescer;
     }
     return self;
+}
+
+- (BOOL)hasDefaultTarget {
+    return _hasDefaultTarget;
+}
+
+- (CGPoint)defaultTarget {
+    return _defaultTarget;
 }
 
 - (BOOL)hasLatestTarget {
@@ -120,6 +130,8 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
     }
 
     _awaitingTerminalOutcome = YES;
+    _hasDefaultTarget = YES;
+    _defaultTarget = defaultTarget;
     _hasLatestTarget = YES;
     _latestTarget = defaultTarget;
     [_dispatcher moveCursorToCanvasPoint:defaultTarget];
@@ -129,7 +141,20 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
 
 - (BOOL)updateWithTransitionResult:(MobaCastTransitionResult)result
                      dragDirection:(CGVector)dragDirection {
-    if (!_awaitingTerminalOutcome || !MobaCastTransitionIsAcceptedUpdate(result)) {
+    if (!_awaitingTerminalOutcome ||
+        !_hasDefaultTarget ||
+        !MobaCastTransitionIsAcceptedUpdate(result)) {
+        return NO;
+    }
+
+    if (result.currentState == MobaCastStateAimingDefault) {
+        [self restoreDefaultTarget];
+        return [self submitLatestTargetIfNeeded];
+    }
+    if (result.currentState == MobaCastStateCancelArmed) {
+        return YES;
+    }
+    if (result.currentState != MobaCastStateAimingDragged) {
         return NO;
     }
 
@@ -144,7 +169,16 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
 
     _hasLatestTarget = YES;
     _latestTarget = target;
-    return _cursorCoalescer == nil || [_cursorCoalescer submitLatestPoint:target];
+    return [self submitLatestTargetIfNeeded];
+}
+
+- (void)restoreDefaultTarget {
+    _hasLatestTarget = YES;
+    _latestTarget = _defaultTarget;
+}
+
+- (BOOL)submitLatestTargetIfNeeded {
+    return _cursorCoalescer == nil || [_cursorCoalescer submitLatestPoint:_latestTarget];
 }
 
 - (BOOL)commitWithTransitionResult:(MobaCastTransitionResult)result {
@@ -177,6 +211,8 @@ static BOOL MobaDirectionalConfigurationScalarIsFinite(CGFloat value) {
 
 - (void)clearLocalCastState {
     _awaitingTerminalOutcome = NO;
+    _hasDefaultTarget = NO;
+    _defaultTarget = CGPointZero;
     _hasLatestTarget = NO;
     _latestTarget = CGPointZero;
 }
