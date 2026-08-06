@@ -29,9 +29,9 @@ static NSError *MobaRuntimeInstallerError(NSString *operation, NSString *descrip
 @property (nonatomic, weak) id<MobaProfileRuntimeInstallationHost> host;
 @property (nonatomic, strong) MobaChampionPreparedImportState *championState;
 @property (nonatomic, strong) MobaProfileSnapshot *oldSnapshot;
-@property (nonatomic, strong) MobaProfileSnapshot *newSnapshot;
+@property (nonatomic, strong) MobaProfileSnapshot *candidateSnapshot;
 @property (nonatomic, copy) NSString *oldChampionRelativePath;
-@property (nonatomic, copy) NSString *newChampionRelativePath;
+@property (nonatomic, copy) NSString *candidateChampionRelativePath;
 @property (nonatomic) MobaMovementKeyMapping oldMovementMapping;
 @property (nonatomic) MobaMovementKeyMapping newMovementMapping;
 @property (nonatomic) uint16_t oldAttackKeyCode;
@@ -99,9 +99,9 @@ static NSError *MobaRuntimeInstallerError(NSString *operation, NSString *descrip
     installation.host = host;
     installation.championState = championState;
     installation.oldSnapshot = host.profileImportActiveSnapshot;
-    installation.newSnapshot = snapshot;
+    installation.candidateSnapshot = snapshot;
     installation.oldChampionRelativePath = host.profileImportActiveChampionRelativePath;
-    installation.newChampionRelativePath = championRelativePath;
+    installation.candidateChampionRelativePath = championRelativePath;
     installation.oldMovementMapping = movement.keyMapping;
     installation.newMovementMapping = MobaMovementKeyMappingMake(inputMovement.upKeyCode,
         inputMovement.leftKeyCode, inputMovement.downKeyCode, inputMovement.rightKeyCode);
@@ -135,8 +135,8 @@ static NSError *MobaRuntimeInstallerError(NSString *operation, NSString *descrip
                                            reason:stepError.localizedDescription ?: @"Profile commit step failed."
                                          userInfo:nil];
         }
-        [host setProfileImportActiveChampionRelativePath:installation.newChampionRelativePath];
-        if (![host applyProfileImportPresentationForSnapshot:installation.newSnapshot error:&stepError]) {
+        [host setProfileImportActiveChampionRelativePath:installation.candidateChampionRelativePath];
+        if (![host applyProfileImportPresentationForSnapshot:installation.candidateSnapshot error:&stepError]) {
             @throw [NSException exceptionWithName:@"MobaProfileInstallationPresentationFailure"
                                            reason:stepError.localizedDescription ?: @"Profile presentation failed."
                                          userInfo:nil];
