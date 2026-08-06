@@ -29,6 +29,12 @@ FOUNDATION_EXPORT BOOL MobaAimPreviewMapGamePointToVideoRect(CGPoint gamePoint,
                                                               CGRect videoRect,
                                                               CGPoint * _Nullable viewPoint);
 
+// Builds a closed-loop-ready asymmetric range boundary in fixed game-canvas
+// coordinates. Each sample reuses production aim geometry and canvas clamping.
+FOUNDATION_EXPORT NSArray<NSValue *> *MobaAimPreviewBoundaryPoints(CGPoint anchor,
+                                                                   MobaAimRadii radii,
+                                                                   NSUInteger sampleCount);
+
 // Reuses the production directional and point geometry. The result target is
 // clamped through MobaGameCanvas after geometry calculation.
 FOUNDATION_EXPORT BOOL MobaAimPreviewResultForDescriptor(MobaSkillRuntimeDescriptor *descriptor,

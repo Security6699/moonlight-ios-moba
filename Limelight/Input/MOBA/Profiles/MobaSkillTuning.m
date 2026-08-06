@@ -57,6 +57,27 @@ static NSData *MobaSkillTuningJSONData(NSDictionary *json, NSError **error) {
                                              error:error];
 }
 
+static void MobaSkillTuningPatchKeys(NSMutableDictionary *destination,
+                                     NSDictionary *defaults,
+                                     NSArray<NSString *> *keys) {
+    for (NSString *key in keys) {
+        id value = defaults[key];
+        if (value != nil) destination[key] = MobaSkillTuningDeepMutableCopy(value);
+    }
+}
+
+static NSMutableDictionary *MobaSkillTuningMutableChild(NSMutableDictionary *parent,
+                                                        NSDictionary *defaults,
+                                                        NSString *key) {
+    id child = parent[key];
+    if ([child isKindOfClass:NSMutableDictionary.class]) return child;
+    id defaultChild = defaults[key];
+    if (![defaultChild isKindOfClass:NSDictionary.class]) return nil;
+    NSMutableDictionary *created = [NSMutableDictionary dictionary];
+    parent[key] = created;
+    return created;
+}
+
 @interface MobaSkillTuningSkillValue ()
 - (instancetype)initWithSlot:(MobaCanonicalSkillSlot)slot json:(NSDictionary *)json;
 @end
@@ -265,6 +286,94 @@ static NSData *MobaSkillTuningJSONData(NSDictionary *json, NSError **error) {
     return YES;
 }
 
+- (BOOL)applyManagedDefaultsFromRuntimeData:(NSData *)runtimeData
+                               championData:(NSData *)championData
+                                    decoder:(MobaProfileDecoder *)decoder
+                                      error:(NSError **)error {
+    if ([decoder decodeRuntimeProfileData:runtimeData error:error] == nil ||
+        [decoder decodeChampionProfileData:championData error:error] == nil) return NO;
+
+    NSMutableDictionary *defaultRuntime = MobaSkillTuningJSONObject(runtimeData, error);
+    NSMutableDictionary *defaultChampion = MobaSkillTuningJSONObject(championData, error);
+    NSMutableDictionary *candidateRuntime = MobaSkillTuningDeepMutableCopy(_runtimeJSON);
+    NSMutableDictionary *candidateChampion = MobaSkillTuningDeepMutableCopy(_championJSON);
+    if (defaultRuntime == nil || defaultChampion == nil ||
+        ![candidateChampion[@"championId"] isEqual:defaultChampion[@"championId"]]) {
+        if (error != NULL) {
+            *error = MobaSkillTuningError(MobaSkillTuningErrorInvalidBaseline,
+                @"Bundled defaults must match the current champion.", @"$.championId", nil);
+        }
+        return NO;
+    }
+
+    NSMutableDictionary *runtimeCamera = MobaSkillTuningMutableChild(candidateRuntime,
+                                                                      defaultRuntime,
+                                                                      @"camera");
+    NSDictionary *defaultCamera = defaultRuntime[@"camera"];
+    NSMutableDictionary *runtimeAnchor = MobaSkillTuningMutableChild(runtimeCamera,
+                                                                      defaultCamera,
+                                                                      @"heroAnchorPx");
+    NSDictionary *defaultAnchor = defaultCamera[@"heroAnchorPx"];
+    if (runtimeCamera == nil || runtimeAnchor == nil || ![defaultAnchor isKindOfClass:NSDictionary.class]) {
+        if (error != NULL) *error = MobaSkillTuningError(MobaSkillTuningErrorInvalidBaseline,
+            @"Bundled runtime defaults are missing the managed camera anchor.",
+            @"$.camera.heroAnchorPx", nil);
+        return NO;
+    }
+    MobaSkillTuningPatchKeys(runtimeAnchor, defaultAnchor, @[@"x", @"y"]);
+    MobaSkillTuningPatchKeys(candidateRuntime, defaultRuntime, @[@"mouseUpdateRateHz"]);
+
+    NSMutableDictionary *candidateSkills = candidateChampion[@"skills"];
+    NSDictionary *defaultSkills = defaultChampion[@"skills"];
+    for (MobaCanonicalSkillSlot slot in MobaCanonicalSkillSlots()) {
+        NSMutableDictionary *skill = candidateSkills[slot];
+        NSDictionary *defaultSkill = defaultSkills[slot];
+        NSString *castType = skill[@"castType"];
+        if (![skill isKindOfClass:NSMutableDictionary.class] ||
+            ![defaultSkill isKindOfClass:NSDictionary.class] ||
+            ![castType isEqual:defaultSkill[@"castType"]]) {
+            if (error != NULL) *error = MobaSkillTuningError(MobaSkillTuningErrorInvalidBaseline,
+                @"Bundled defaults must contain compatible canonical skill cast types.",
+                [NSString stringWithFormat:@"$.skills.%@.castType", slot], nil);
+            return NO;
+        }
+
+        MobaSkillTuningPatchKeys(skill, defaultSkill, @[@"allowCancel"]);
+        if ([castType isEqualToString:@"instant"]) continue;
+
+        NSMutableDictionary *defaultAim = MobaSkillTuningMutableChild(skill, defaultSkill, @"defaultAim");
+        NSDictionary *bundledDefaultAim = defaultSkill[@"defaultAim"];
+        MobaSkillTuningPatchKeys(defaultAim, bundledDefaultAim, @[@"angleDeg", @"distanceRatio"]);
+
+        NSMutableDictionary *range = MobaSkillTuningMutableChild(skill, defaultSkill, @"range");
+        NSDictionary *bundledRange = defaultSkill[@"range"];
+        NSMutableDictionary *response = MobaSkillTuningMutableChild(skill, defaultSkill, @"touchResponse");
+        NSDictionary *bundledResponse = defaultSkill[@"touchResponse"];
+        if ([castType isEqualToString:@"directional"]) {
+            MobaSkillTuningPatchKeys(range, bundledRange,
+                @[@"leftPx", @"rightPx", @"upPx", @"downPx"]);
+            MobaSkillTuningPatchKeys(response, bundledResponse, @[@"deadzoneRatio"]);
+        }
+        else if ([castType isEqualToString:@"point"]) {
+            MobaSkillTuningPatchKeys(range, bundledRange,
+                @[@"minLeftPx", @"minRightPx", @"minUpPx", @"minDownPx",
+                  @"maxLeftPx", @"maxRightPx", @"maxUpPx", @"maxDownPx"]);
+            MobaSkillTuningPatchKeys(response, bundledResponse,
+                @[@"deadzoneRatio", @"fullRangeRatio", @"curveExponent"]);
+        }
+    }
+
+    NSData *candidateRuntimeData = MobaSkillTuningJSONData(candidateRuntime, error);
+    NSData *candidateChampionData = MobaSkillTuningJSONData(candidateChampion, error);
+    if (candidateRuntimeData == nil || candidateChampionData == nil ||
+        [decoder decodeRuntimeProfileData:candidateRuntimeData error:error] == nil ||
+        [decoder decodeChampionProfileData:candidateChampionData error:error] == nil) return NO;
+
+    _runtimeJSON = candidateRuntime;
+    _championJSON = candidateChampion;
+    return YES;
+}
+
 - (void)revert {
     _runtimeJSON = MobaSkillTuningJSONObject(_baselineRuntimeData, nil);
     _championJSON = MobaSkillTuningJSONObject(_baselineChampionData, nil);
@@ -335,7 +444,8 @@ static NSData *MobaSkillTuningJSONData(NSDictionary *json, NSError **error) {
                                  error:(NSError **)error {
     NSData *oldRuntime = [_draft runtimeDataWithError:nil];
     NSData *oldChampion = [_draft championDataWithError:nil];
-    if (![_draft replaceWithRuntimeData:runtimeData championData:championData decoder:_decoder error:error] ||
+    if (![_draft applyManagedDefaultsFromRuntimeData:runtimeData championData:championData
+                                              decoder:_decoder error:error] ||
         ![self refreshCandidateWithError:error]) {
         [_draft replaceWithRuntimeData:oldRuntime championData:oldChampion decoder:_decoder error:nil];
         return NO;

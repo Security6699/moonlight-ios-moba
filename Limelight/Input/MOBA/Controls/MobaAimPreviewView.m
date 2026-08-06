@@ -30,20 +30,25 @@
     return mapped;
 }
 
-- (void)drawEllipseWithRadii:(MobaAimRadii)radii color:(UIColor *)color context:(CGContextRef)context {
-    CGPoint anchor = [self viewPointForGamePoint:_previewResult.anchor];
-    CGPoint left = [self viewPointForGamePoint:CGPointMake(_previewResult.anchor.x - radii.leftPx,
-                                                           _previewResult.anchor.y)];
-    CGPoint right = [self viewPointForGamePoint:CGPointMake(_previewResult.anchor.x + radii.rightPx,
-                                                            _previewResult.anchor.y)];
-    CGPoint up = [self viewPointForGamePoint:CGPointMake(_previewResult.anchor.x,
-                                                         _previewResult.anchor.y - radii.upPx)];
-    CGPoint down = [self viewPointForGamePoint:CGPointMake(_previewResult.anchor.x,
-                                                           _previewResult.anchor.y + radii.downPx)];
-    CGRect ellipse = CGRectMake(left.x, up.y, right.x - left.x, down.y - up.y);
+- (CGPoint)gamePointFromValue:(NSValue *)value {
+    CGPoint point = CGPointZero;
+    [value getValue:&point size:sizeof(point)];
+    return point;
+}
+
+- (void)drawBoundaryWithRadii:(MobaAimRadii)radii color:(UIColor *)color context:(CGContextRef)context {
+    NSArray<NSValue *> *gamePoints = MobaAimPreviewBoundaryPoints(_previewResult.anchor, radii, 96);
+    if (gamePoints.count == 0) return;
     CGContextSetStrokeColorWithColor(context, color.CGColor);
-    CGContextStrokeEllipseInRect(context, ellipse);
-    (void)anchor;
+    CGPoint first = [self viewPointForGamePoint:[self gamePointFromValue:gamePoints.firstObject]];
+    CGContextBeginPath(context);
+    CGContextMoveToPoint(context, first.x, first.y);
+    for (NSUInteger index = 1; index < gamePoints.count; index++) {
+        CGPoint point = [self viewPointForGamePoint:[self gamePointFromValue:gamePoints[index]]];
+        CGContextAddLineToPoint(context, point.x, point.y);
+    }
+    if (gamePoints.count > 1) CGContextClosePath(context);
+    CGContextStrokePath(context);
 }
 
 - (void)drawRect:(CGRect)rect {
@@ -51,12 +56,13 @@
     if (!_hasPreviewResult || CGRectIsEmpty(_videoRect)) return;
     CGContextRef context = UIGraphicsGetCurrentContext();
     CGContextSaveGState(context);
+    CGContextClipToRect(context, _videoRect);
     CGContextSetLineWidth(context, 2.0);
-    [self drawEllipseWithRadii:_previewResult.maximumRadii
+    [self drawBoundaryWithRadii:_previewResult.maximumRadii
                          color:[UIColor colorWithRed:0.20 green:0.75 blue:1.0 alpha:0.75]
                        context:context];
     if (_previewResult.pointCast) {
-        [self drawEllipseWithRadii:_previewResult.minimumRadii
+        [self drawBoundaryWithRadii:_previewResult.minimumRadii
                              color:[UIColor colorWithWhite:1.0 alpha:0.45]
                            context:context];
     }

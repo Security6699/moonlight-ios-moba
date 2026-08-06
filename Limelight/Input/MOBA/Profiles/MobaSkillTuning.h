@@ -83,6 +83,10 @@ typedef NS_ENUM(NSInteger, MobaSkillTuningField) {
                   championData:(NSData *)championData
                        decoder:(MobaProfileDecoder *)decoder
                          error:(NSError **)error;
+- (BOOL)applyManagedDefaultsFromRuntimeData:(NSData *)runtimeData
+                               championData:(NSData *)championData
+                                    decoder:(MobaProfileDecoder *)decoder
+                                      error:(NSError **)error;
 - (void)revert;
 - (BOOL)acceptCurrentValuesAsBaselineWithError:(NSError **)error;
 @end

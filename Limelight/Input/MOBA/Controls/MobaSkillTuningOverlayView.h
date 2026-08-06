@@ -36,6 +36,10 @@ typedef NS_ENUM(NSInteger, MobaSkillTuningCastMode) {
 @property (nonatomic, strong, readonly) MobaAimPreviewView *aimPreviewView;
 @property (nonatomic, readonly) MobaSkillTuningCastMode castMode;
 @property (nonatomic, readonly) CGVector previewDisplacement;
+@property (nonatomic, strong, readonly) UIScrollView *inspectorScrollView;
+@property (nonatomic, copy, readonly) NSArray<NSString *> *visibleFieldLabels;
+@property (nonatomic, readonly, getter=isEditingEnabled) BOOL editingEnabled;
+@property (nonatomic, strong, readonly) UISegmentedControl *castModeControl;
 
 - (instancetype)initWithTuningController:(MobaSkillTuningController *)tuningController
                              championName:(NSString *)championName NS_DESIGNATED_INITIALIZER;
@@ -52,6 +56,7 @@ typedef NS_ENUM(NSInteger, MobaSkillTuningCastMode) {
 - (BOOL)beginPreviewWithToken:(id)token streamViewPoint:(CGPoint)point;
 - (BOOL)updatePreviewWithToken:(id)token streamViewPoint:(CGPoint)point;
 - (BOOL)endPreviewWithToken:(id)token;
+- (BOOL)endPreviewWithToken:(id)token streamViewPoint:(CGPoint)point;
 - (void)cancelPreview;
 @end
 

@@ -179,6 +179,43 @@
     XCTAssertEqual(self.lifecycle.didCount, 1u);
 }
 
+- (void)testSaveAfterManagedDefaultsPreservesUnmanagedRuntimeAndChampionFields {
+    NSMutableDictionary *runtime = [NSJSONSerialization JSONObjectWithData:self.runtimeData
+        options:NSJSONReadingMutableContainers error:nil];
+    NSMutableDictionary *champion = [NSJSONSerialization JSONObjectWithData:self.championData
+        options:NSJSONReadingMutableContainers error:nil];
+    runtime[@"globalOpacityMultiplier"] = @0.37;
+    runtime[@"futureRuntime"] = @{ @"retained": @YES };
+    runtime[@"camera"][@"heroAnchorPx"][@"x"] = @1500;
+    champion[@"displayName"] = @"Local Caitlyn";
+    champion[@"skills"][@"Q"][@"futureSkill"] = @99;
+    champion[@"skills"][@"Q"][@"range"][@"leftPx"] = @501;
+    NSData *currentRuntime = [NSJSONSerialization dataWithJSONObject:runtime options:0 error:nil];
+    NSData *currentChampion = [NSJSONSerialization dataWithJSONObject:champion options:0 error:nil];
+    self.store.dataByPath[MobaRuntimeProfileRelativePath] = currentRuntime;
+    self.store.dataByPath[@"champions/caitlyn.json"] = currentChampion;
+    XCTAssertTrue([self.repository reloadWithChampionRelativePath:@"champions/caitlyn.json" error:nil]);
+    self.draft = [[MobaSkillTuningDraft alloc] initWithRuntimeData:currentRuntime
+        championData:currentChampion decoder:[[MobaProfileDecoder alloc] init] error:nil];
+    XCTAssertTrue([self.draft applyManagedDefaultsFromRuntimeData:self.runtimeData
+                                                    championData:self.championData
+                                                         decoder:[[MobaProfileDecoder alloc] init]
+                                                           error:nil]);
+
+    XCTAssertNotNil([self.transaction saveDraft:self.draft
+                           championRelativePath:@"champions/caitlyn.json" error:nil]);
+    NSDictionary *savedRuntime = [NSJSONSerialization JSONObjectWithData:
+        self.store.dataByPath[MobaRuntimeProfileRelativePath] options:0 error:nil];
+    NSDictionary *savedChampion = [NSJSONSerialization JSONObjectWithData:
+        self.store.dataByPath[@"champions/caitlyn.json"] options:0 error:nil];
+    XCTAssertEqualObjects(savedRuntime[@"globalOpacityMultiplier"], @0.37);
+    XCTAssertEqualObjects(savedRuntime[@"futureRuntime"], @{ @"retained": @YES });
+    XCTAssertEqualObjects(savedRuntime[@"camera"][@"heroAnchorPx"][@"x"], @1280);
+    XCTAssertEqualObjects(savedChampion[@"displayName"], @"Local Caitlyn");
+    XCTAssertEqualObjects(savedChampion[@"skills"][@"Q"][@"futureSkill"], @99);
+    XCTAssertEqualObjects(savedChampion[@"skills"][@"Q"][@"range"][@"leftPx"], @720);
+}
+
 - (void)testChampionWriteFailureRollsBackFirstRuntimeWrite {
     self.store.failedWrites = @{ @"champions/caitlyn.json": [NSSet setWithObject:@1] };
     MobaProfileSnapshot *base = self.repository.activeSnapshot;

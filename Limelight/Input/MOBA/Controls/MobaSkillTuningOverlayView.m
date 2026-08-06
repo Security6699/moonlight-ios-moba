@@ -8,6 +8,8 @@
 #import "MobaAimPreviewView.h"
 #import "../Geometry/MobaAimPreviewGeometry.h"
 
+#import <math.h>
+
 @implementation MobaSkillTuningOverlayView {
     UIView *_inspectorPanel;
     UILabel *_championLabel;
@@ -18,7 +20,10 @@
     UISegmentedControl *_rateControl;
     UITextField *_anchorXField;
     UITextField *_anchorYField;
+    UIScrollView *_inspectorScrollView;
+    UIStackView *_contentStack;
     UIStackView *_fieldStack;
+    NSMutableArray<UILabel *> *_fieldLabels;
     NSMutableDictionary<NSNumber *, UITextField *> *_numericFields;
     UISwitch *_allowCancelSwitch;
     UIButton *_saveButton;
@@ -38,6 +43,7 @@
         _editingEnabled = YES;
         _numericFields = [NSMutableDictionary dictionary];
         _actionButtons = [NSMutableArray array];
+        _fieldLabels = [NSMutableArray array];
         self.backgroundColor = UIColor.clearColor;
         _aimPreviewView = [[MobaAimPreviewView alloc] initWithFrame:CGRectZero];
         [self addSubview:_aimPreviewView];
@@ -63,23 +69,31 @@
         [_castModeControl addTarget:self action:@selector(castModeChanged:) forControlEvents:UIControlEventValueChanged];
         [_inspectorPanel addSubview:_castModeControl];
 
-        _anchorXField = [self textFieldWithPlaceholder:@"Anchor X"];
-        _anchorYField = [self textFieldWithPlaceholder:@"Anchor Y"];
+        _inspectorScrollView = [[UIScrollView alloc] initWithFrame:CGRectZero];
+        _inspectorScrollView.alwaysBounceVertical = YES;
+        [_inspectorPanel addSubview:_inspectorScrollView];
+        _contentStack = [[UIStackView alloc] initWithFrame:CGRectZero];
+        _contentStack.axis = UILayoutConstraintAxisVertical;
+        _contentStack.spacing = 7.0;
+        [_inspectorScrollView addSubview:_contentStack];
+
+        _anchorXField = [self textField];
+        _anchorYField = [self textField];
         [_anchorXField addTarget:self action:@selector(runtimeFieldEnded:) forControlEvents:UIControlEventEditingDidEnd];
         [_anchorYField addTarget:self action:@selector(runtimeFieldEnded:) forControlEvents:UIControlEventEditingDidEnd];
-        [_inspectorPanel addSubview:_anchorXField];
-        [_inspectorPanel addSubview:_anchorYField];
+        [_contentStack addArrangedSubview:[self rowWithTitle:@"Hero Anchor X" unit:@"px" control:_anchorXField]];
+        [_contentStack addArrangedSubview:[self rowWithTitle:@"Hero Anchor Y" unit:@"px" control:_anchorYField]];
         _rateControl = [[UISegmentedControl alloc] initWithItems:@[@"30", @"60", @"120"]];
         [_rateControl addTarget:self action:@selector(rateChanged:) forControlEvents:UIControlEventValueChanged];
-        [_inspectorPanel addSubview:_rateControl];
+        [_contentStack addArrangedSubview:[self rowWithTitle:@"Mouse Update Rate" unit:@"Hz" control:_rateControl]];
 
         _fieldStack = [[UIStackView alloc] initWithFrame:CGRectZero];
         _fieldStack.axis = UILayoutConstraintAxisVertical;
         _fieldStack.spacing = 5.0;
-        [_inspectorPanel addSubview:_fieldStack];
+        [_contentStack addArrangedSubview:_fieldStack];
         _allowCancelSwitch = [[UISwitch alloc] initWithFrame:CGRectZero];
         [_allowCancelSwitch addTarget:self action:@selector(allowCancelChanged:) forControlEvents:UIControlEventValueChanged];
-        [_inspectorPanel addSubview:_allowCancelSwitch];
+        [_contentStack addArrangedSubview:[self rowWithTitle:@"Allow Cancel" unit:@"" control:_allowCancelSwitch]];
 
         NSArray *titles = @[@"Save", @"Revert", @"Defaults"];
         for (NSUInteger index = 0; index < titles.count; index++) {
@@ -101,15 +115,49 @@
     return self;
 }
 
-- (UITextField *)textFieldWithPlaceholder:(NSString *)placeholder {
+- (UITextField *)textField {
     UITextField *field = [[UITextField alloc] initWithFrame:CGRectZero];
-    field.placeholder = placeholder;
     field.backgroundColor = [UIColor colorWithWhite:1.0 alpha:0.10];
     field.textColor = UIColor.whiteColor;
     field.keyboardType = UIKeyboardTypeNumbersAndPunctuation;
     field.layer.cornerRadius = 5.0;
     return field;
 }
+
+- (UIView *)rowWithTitle:(NSString *)title unit:(NSString *)unit control:(UIView *)control {
+    UIView *row = [[UIView alloc] initWithFrame:CGRectZero];
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
+    label.text = unit.length == 0 ? title : [NSString stringWithFormat:@"%@ (%@)", title, unit];
+    label.textColor = UIColor.whiteColor;
+    label.font = [UIFont systemFontOfSize:13.0];
+    label.accessibilityLabel = label.text;
+    [row addSubview:label];
+    [row addSubview:control];
+    [_fieldLabels addObject:label];
+    control.accessibilityLabel = label.text;
+    row.accessibilityElements = @[label, control];
+    [row.heightAnchor constraintEqualToConstant:34.0].active = YES;
+    label.translatesAutoresizingMaskIntoConstraints = NO;
+    control.translatesAutoresizingMaskIntoConstraints = NO;
+    [NSLayoutConstraint activateConstraints:@[
+        [label.leadingAnchor constraintEqualToAnchor:row.leadingAnchor],
+        [label.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+        [label.widthAnchor constraintEqualToAnchor:row.widthAnchor multiplier:0.50],
+        [control.leadingAnchor constraintEqualToAnchor:label.trailingAnchor constant:6.0],
+        [control.trailingAnchor constraintEqualToAnchor:row.trailingAnchor],
+        [control.centerYAnchor constraintEqualToAnchor:row.centerYAnchor],
+    ]];
+    return row;
+}
+
+- (NSArray<NSString *> *)visibleFieldLabels {
+    NSMutableArray<NSString *> *labels = [NSMutableArray arrayWithCapacity:_fieldLabels.count];
+    for (UILabel *label in _fieldLabels) if (label.text.length > 0) [labels addObject:label.text];
+    return labels;
+}
+
+- (BOOL)isEditingEnabled { return _editingEnabled; }
+- (UISegmentedControl *)castModeControl { return _castModeControl; }
 
 - (NSString *)slotForIndex:(NSInteger)index { return MobaCanonicalSkillSlots()[(NSUInteger)MAX(0, MIN(3, index))]; }
 
@@ -134,10 +182,16 @@
 }
 
 - (NSString *)titleForField:(MobaSkillTuningField)field {
-    NSArray *titles = @[@"Default angle", @"Default distance", @"Left", @"Right", @"Up", @"Down",
-        @"Min left", @"Min right", @"Min up", @"Min down", @"Max left", @"Max right", @"Max up",
-        @"Max down", @"Deadzone", @"Full range", @"Curve"];
+    NSArray *titles = @[@"Default Angle", @"Default Distance Ratio", @"Left Range", @"Right Range", @"Up Range", @"Down Range",
+        @"Min Left", @"Min Right", @"Min Up", @"Min Down", @"Max Left", @"Max Right", @"Max Up",
+        @"Max Down", @"Deadzone Ratio", @"Full Range Ratio", @"Curve Exponent"];
     return titles[field];
+}
+
+- (NSString *)unitForField:(MobaSkillTuningField)field {
+    if (field == MobaSkillTuningFieldDefaultAngleDegrees) return @"deg";
+    if ((field >= MobaSkillTuningFieldDirectionalLeftPx && field <= MobaSkillTuningFieldPointMaxDownPx)) return @"px";
+    return @"";
 }
 
 - (void)rebuildNumericFieldsForValue:(MobaSkillTuningSkillValue *)value {
@@ -145,18 +199,21 @@
         [_fieldStack removeArrangedSubview:view];
         [view removeFromSuperview];
     }
+    while (_fieldLabels.count > 4) [_fieldLabels removeLastObject];
     [_numericFields removeAllObjects];
     for (NSNumber *fieldNumber in [self fieldsForValue:value]) {
         MobaSkillTuningField field = fieldNumber.integerValue;
-        UITextField *textField = [self textFieldWithPlaceholder:[self titleForField:field]];
+        UITextField *textField = [self textField];
         textField.tag = field;
         NSNumber *number = field == MobaSkillTuningFieldDefaultAngleDegrees ? value.defaultAngleDegrees
             : field == MobaSkillTuningFieldDefaultDistanceRatio ? value.defaultDistanceRatio
             : value.numericValues[fieldNumber];
         textField.text = number.stringValue;
         [textField addTarget:self action:@selector(skillFieldEnded:) forControlEvents:UIControlEventEditingDidEnd];
-        [textField.heightAnchor constraintEqualToConstant:28.0].active = YES;
-        [_fieldStack addArrangedSubview:textField];
+        UIView *row = [self rowWithTitle:[self titleForField:field]
+                                    unit:[self unitForField:field]
+                                 control:textField];
+        [_fieldStack addArrangedSubview:row];
         _numericFields[fieldNumber] = textField;
     }
 }
@@ -208,6 +265,8 @@
     for (UITextField *field in _numericFields.allValues) field.enabled = enabled;
     MobaSkillTuningSkillValue *value = [_tuningController.draft skillValueForSlot:_tuningController.selectedSkillSlot];
     _allowCancelSwitch.enabled = enabled && value.castType != MobaProfileSkillCastTypeInstant;
+    for (UIButton *button in _actionButtons) button.enabled = enabled;
+    _saveButton.enabled = enabled && _tuningController.draft.isDirty && _tuningController.validationError == nil;
 }
 
 - (void)showStatusMessage:(NSString *)message error:(BOOL)isError {
@@ -281,7 +340,8 @@
 }
 
 - (BOOL)beginPreviewWithToken:(id)token streamViewPoint:(CGPoint)point {
-    if (_castMode != MobaSkillTuningCastModePreviewOnly || token == nil || _previewToken != nil) return NO;
+    if (_castMode != MobaSkillTuningCastModePreviewOnly || token == nil || _previewToken != nil ||
+        !isfinite(point.x) || !isfinite(point.y)) return NO;
     _previewToken = token;
     _previewInitialPoint = point;
     _previewDisplacement = CGVectorMake(0, 0);
@@ -289,7 +349,7 @@
     return YES;
 }
 - (BOOL)updatePreviewWithToken:(id)token streamViewPoint:(CGPoint)point {
-    if (token == nil || token != _previewToken) return NO;
+    if (token == nil || token != _previewToken || !isfinite(point.x) || !isfinite(point.y)) return NO;
     _previewDisplacement = CGVectorMake(point.x - _previewInitialPoint.x, point.y - _previewInitialPoint.y);
     [self refreshPreview];
     return YES;
@@ -298,6 +358,15 @@
     if (token == nil || token != _previewToken) return NO;
     _previewToken = nil;
     return YES;
+}
+- (BOOL)endPreviewWithToken:(id)token streamViewPoint:(CGPoint)point {
+    if (token == nil || token != _previewToken) return NO;
+    if (!isfinite(point.x) || !isfinite(point.y)) {
+        [self cancelPreview];
+        return NO;
+    }
+    if (![self updatePreviewWithToken:token streamViewPoint:point]) return NO;
+    return [self endPreviewWithToken:token];
 }
 - (void)cancelPreview { _previewToken = nil; _previewDisplacement = CGVectorMake(0, 0); [self refreshPreview]; }
 
@@ -311,7 +380,9 @@
 }
 - (void)touchesEnded:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event {
     (void)event;
-    for (UITouch *touch in touches) if ([self endPreviewWithToken:touch]) break;
+    for (UITouch *touch in touches) {
+        if ([self endPreviewWithToken:touch streamViewPoint:[touch locationInView:self]]) break;
+    }
 }
 - (void)touchesCancelled:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event { (void)touches; (void)event; [self cancelPreview]; }
 
@@ -326,13 +397,14 @@
     _skillControl.frame = CGRectMake(12, 40, contentWidth, 32);
     _castTypeLabel.frame = CGRectMake(12, 76, contentWidth, 24);
     _castModeControl.frame = CGRectMake(12, 104, contentWidth, 32);
-    _anchorXField.frame = CGRectMake(12, 142, contentWidth * 0.48, 32);
-    _anchorYField.frame = CGRectMake(18 + contentWidth * 0.48, 142, contentWidth * 0.48, 32);
-    _rateControl.frame = CGRectMake(12, 180, contentWidth, 32);
-    _fieldStack.frame = CGRectMake(12, 218, contentWidth, _fieldStack.arrangedSubviews.count * 33.0);
-    _allowCancelSwitch.frame = CGRectMake(12, CGRectGetMaxY(_fieldStack.frame) + 5, 60, 32);
-    CGFloat actionsY = MIN(CGRectGetMaxY(_allowCancelSwitch.frame) + 5,
-                           CGRectGetHeight(_inspectorPanel.bounds) - 92.0);
+    CGFloat actionsY = CGRectGetHeight(_inspectorPanel.bounds) - 92.0;
+    _inspectorScrollView.frame = CGRectMake(12, 142, contentWidth, MAX(0.0, actionsY - 150.0));
+    CGFloat stackHeight = 0.0;
+    for (UIView *row in _contentStack.arrangedSubviews) {
+        stackHeight += row == _fieldStack ? _fieldStack.arrangedSubviews.count * 41.0 : 41.0;
+    }
+    _contentStack.frame = CGRectMake(0, 0, contentWidth, stackHeight);
+    _inspectorScrollView.contentSize = CGSizeMake(contentWidth, stackHeight);
     for (NSUInteger index = 0; index < _actionButtons.count; index++) {
         _actionButtons[index].frame = CGRectMake(12.0 + index * 94.0, actionsY, 88.0, 34.0);
     }

@@ -253,6 +253,7 @@
 @property (nonatomic, strong) MobaSkillTestCancellationDelegate *cancellationDelegate;
 - (MobaSkillCastController *)directionalControllerAllowCancel:(BOOL)allowCancel
                                               cursorCoalescer:(nullable id<MobaCursorCoalescing>)cursorCoalescer;
+- (MobaSkillCastController *)pointControllerWithCursorCoalescer:(nullable id<MobaCursorCoalescing>)cursorCoalescer;
 @end
 
 @implementation MobaSkillCastOrchestrationTests
@@ -403,6 +404,10 @@
 }
 
 - (MobaSkillCastController *)pointController {
+    return [self pointControllerWithCursorCoalescer:nil];
+}
+
+- (MobaSkillCastController *)pointControllerWithCursorCoalescer:(id<MobaCursorCoalescing>)cursorCoalescer {
     MobaPointCastConfiguration *configuration =
         [MobaPointCastConfiguration defaultConfigurationWithTargetMode:MobaPointCastTargetModeGround
                                                            skillKeyCode:69
@@ -415,13 +420,21 @@
                                                            maximumRadii:MobaAimRadiiMake(200, 200, 200, 200)
                                                             cancelAction:[MobaCastCancelAction releaseOnlyAction]];
     MobaPointCastStrategy *strategy = [[MobaPointCastStrategy alloc]
-        initWithDispatcher:self.dispatcher configuration:configuration];
-    return [self controllerForDescriptor:[self descriptorWithType:MobaProfileSkillCastTypePoint
-                                                        allowCancel:YES
-                                                           strategy:strategy
-                                                              label:@"W"
-                                                            opacity:0.72
-                                                 interactionEnabled:YES]];
+        initWithDispatcher:self.dispatcher configuration:configuration cursorCoalescer:cursorCoalescer];
+    MobaSkillTestTouchResponse *response = [[MobaSkillTestTouchResponse alloc] init];
+    response.deadzoneRatio = 0.10;
+    MobaSkillTestProfile *skill = [[MobaSkillTestProfile alloc] init];
+    skill.castType = MobaProfileSkillCastTypePoint;
+    skill.allowCancel = YES;
+    skill.touchResponse = response;
+    MobaSkillRuntimeDescriptor *descriptor = [[MobaSkillRuntimeDescriptor alloc]
+        initWithSkillSlot:@"W" displayLabel:@"W" layoutControlName:@"abilityW"
+        inputAction:@"abilityW" hostKeyCode:69 castType:MobaProfileSkillCastTypePoint
+        allowCancel:YES skillProfile:(MobaChampionSkillProfile *)skill
+        layoutControlProfile:(MobaLayoutControlProfile *)[self layoutWithOpacity:0.72 interactionEnabled:YES]
+        strategy:strategy cursorCoalescer:(MobaCursorCoalescer *)cursorCoalescer
+        instantConfiguration:nil directionalConfiguration:nil pointConfiguration:configuration];
+    return [self controllerForDescriptor:descriptor];
 }
 
 - (void)testBattleGatePrecedesSessionAndRejectedBeginOwnsNothing {
@@ -829,6 +842,72 @@
         XCTAssertFalse([view beginInteractionWithToken:[NSObject new] streamViewPoint:CGPointZero]);
         XCTAssertEqual(strategy.events.count, 0u);
     }
+}
+
+- (void)testProductionCoalescerMustBeExplicitlyEnabledForLiveCastAndExitDiscardsPending {
+    MobaSkillEndpointDriver *driver = [[MobaSkillEndpointDriver alloc] init];
+    MobaCursorCoalescer *coalescer = [[MobaCursorCoalescer alloc]
+        initWithDispatcher:self.dispatcher driver:driver];
+    [coalescer setMobaLocalInteractionEnabled:NO];
+    MobaSkillCastController *controller = [self directionalControllerAllowCancel:NO
+                                                                  cursorCoalescer:coalescer];
+    NSObject *blockedToken = [[NSObject alloc] init];
+    XCTAssertFalse([controller beginInteractionWithToken:blockedToken streamViewPoint:CGPointZero]);
+    XCTAssertFalse(coalescer.isRunning);
+
+    [coalescer setMobaLocalInteractionEnabled:YES];
+    NSObject *liveToken = [[NSObject alloc] init];
+    XCTAssertTrue([controller beginInteractionWithToken:liveToken streamViewPoint:CGPointZero]);
+    XCTAssertTrue(coalescer.isRunning);
+    XCTAssertTrue([controller updateInteractionWithToken:liveToken streamViewPoint:CGPointMake(30, 0)]);
+    XCTAssertTrue(coalescer.hasPendingPoint);
+
+    [coalescer setMobaLocalInteractionEnabled:NO];
+    [controller silentReset];
+    XCTAssertFalse(coalescer.isRunning);
+    XCTAssertFalse(coalescer.hasPendingPoint);
+    [driver tick];
+    [self drainDispatcher];
+    XCTAssertFalse([self.sink.events containsObject:@"cursor:1100:700"]);
+}
+
+- (void)testPointLiveCastBeginsWithEnabledProductionCoalescer {
+    MobaSkillEndpointDriver *driver = [[MobaSkillEndpointDriver alloc] init];
+    MobaCursorCoalescer *coalescer = [[MobaCursorCoalescer alloc]
+        initWithDispatcher:self.dispatcher driver:driver];
+    [coalescer setMobaLocalInteractionEnabled:NO];
+    MobaSkillCastController *controller = [self pointControllerWithCursorCoalescer:coalescer];
+    XCTAssertFalse([controller beginInteractionWithToken:[[NSObject alloc] init]
+                                          streamViewPoint:CGPointZero]);
+    [coalescer setMobaLocalInteractionEnabled:YES];
+    NSObject *token = [[NSObject alloc] init];
+    XCTAssertTrue([controller beginInteractionWithToken:token streamViewPoint:CGPointZero]);
+    XCTAssertTrue(coalescer.isRunning);
+    [controller silentReset];
+    XCTAssertFalse(coalescer.isRunning);
+}
+
+- (void)testInstantLiveCastDescriptorHasNoCoalescer {
+    MobaSkillCastController *controller = [self instantController];
+    XCTAssertNil(controller.descriptor.cursorCoalescer);
+    XCTAssertTrue([controller beginInteractionWithToken:[[NSObject alloc] init]
+                                         streamViewPoint:CGPointZero]);
+}
+
+- (void)testMeaningfulDragHelperMatchesControllerStrictSessionBoundary {
+    MobaSkillCastController *controller = [self directionalControllerAllowCancel:NO cursorCoalescer:nil];
+    MobaSkillRuntimeDescriptor *descriptor = controller.descriptor;
+    NSObject *token = [[NSObject alloc] init];
+    XCTAssertTrue([controller beginInteractionWithToken:token streamViewPoint:CGPointMake(100, 100)]);
+    CGVector equal = CGVectorMake(10, 0);
+    XCTAssertFalse(MobaSkillMeaningfulDragForDescriptor(descriptor, equal));
+    XCTAssertTrue([controller updateInteractionWithToken:token streamViewPoint:CGPointMake(110, 100)]);
+    XCTAssertEqual(controller.session.state, MobaCastStateAimingDefault);
+    CGVector above = CGVectorMake(10.01, 0);
+    XCTAssertTrue(MobaSkillMeaningfulDragForDescriptor(descriptor, above));
+    XCTAssertTrue([controller updateInteractionWithToken:token streamViewPoint:CGPointMake(110.01, 100)]);
+    XCTAssertEqual(controller.session.state, MobaCastStateAimingDragged);
+    [controller silentReset];
 }
 
 - (void)testSkillTuningRequiresExplicitPerCandidateInteractionOptIn {

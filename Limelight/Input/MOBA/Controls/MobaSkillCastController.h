@@ -8,16 +8,13 @@
 
 #import "../Casting/MobaCastStateMachine.h"
 #import "../Core/MobaCursorDiagnostics.h"
+#import "../Geometry/MobaSkillDragSemantics.h"
 
 @class MobaCastSession;
 @class MobaSkillCastController;
 @class MobaSkillRuntimeDescriptor;
 
 NS_ASSUME_NONNULL_BEGIN
-
-// Directional profiles created before touch response was required use this
-// named orchestration fallback. It matches the bundled directional profiles.
-FOUNDATION_EXPORT const CGFloat MobaDirectionalMeaningfulDragDeadzoneRatio;
 
 @protocol MobaSkillCancelZoneRouting <NSObject>
 - (BOOL)beginCancelZonePresentationForCastToken:(id)token;
