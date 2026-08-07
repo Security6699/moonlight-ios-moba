@@ -75,6 +75,17 @@ typedef BOOL (^MobaProfileCandidateValidator)(MobaProfileSnapshot *candidate,
 - (BOOL)rollbackSkillTuningCandidate:(MobaProfileRepositoryCandidate *)candidate
                                 error:(NSError **)error;
 
+// Narrow single-profile import seam. The imported model is combined with the
+// other immutable models from the exact active base snapshot. Champion/Input
+// references are validated before a candidate is returned.
+- (nullable MobaProfileRepositoryCandidate *)prepareImportCandidateWithProfileKind:(MobaProfileKind)profileKind
+                                                                                data:(NSData *)data
+                                                                               error:(NSError **)error;
+- (BOOL)commitImportCandidate:(MobaProfileRepositoryCandidate *)candidate
+                         error:(NSError **)error;
+- (BOOL)rollbackImportCandidate:(MobaProfileRepositoryCandidate *)candidate
+                           error:(NSError **)error;
+
 @end
 
 NS_ASSUME_NONNULL_END

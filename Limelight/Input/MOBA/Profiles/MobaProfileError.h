@@ -30,6 +30,8 @@ typedef NS_ERROR_ENUM(MobaProfileErrorDomain, MobaProfileErrorCode) {
     MobaProfileErrorCrossProfileReferenceInvalid,
     MobaProfileErrorStorageReadFailed,
     MobaProfileErrorStorageWriteFailed,
+    MobaProfileErrorUnknownProfileType,
+    MobaProfileErrorAmbiguousProfileType,
 };
 
 FOUNDATION_EXPORT NSError *MobaProfileMakeError(MobaProfileErrorCode code,

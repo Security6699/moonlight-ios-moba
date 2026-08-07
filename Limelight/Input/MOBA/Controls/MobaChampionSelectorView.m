@@ -51,6 +51,20 @@
     return _displayedChampionNames;
 }
 
+- (void)setCatalogEntries:(NSArray<MobaChampionCatalogEntry *> *)catalogEntries {
+    if (catalogEntries.count == 0) return;
+    _catalogEntries = [catalogEntries copy];
+    NSMutableArray<NSString *> *names = [NSMutableArray arrayWithCapacity:catalogEntries.count];
+    for (MobaChampionCatalogEntry *entry in catalogEntries) [names addObject:entry.displayName];
+    _displayedChampionNames = [names copy];
+    [_segmentedControl removeAllSegments];
+    [_displayedChampionNames enumerateObjectsUsingBlock:^(NSString *name, NSUInteger index, BOOL *stop) {
+        [_segmentedControl insertSegmentWithTitle:name atIndex:index animated:NO];
+    }];
+    [self invalidateIntrinsicContentSize];
+    self.selectedChampionID = _selectedChampionID;
+}
+
 - (CGSize)intrinsicContentSize {
     CGSize controlSize = _segmentedControl.intrinsicContentSize;
     return CGSizeMake(MAX(260.0, controlSize.width + 20.0), MAX(44.0, controlSize.height + 12.0));

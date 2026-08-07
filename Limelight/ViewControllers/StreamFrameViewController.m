@@ -117,7 +117,8 @@
 
 #if !TARGET_OS_TV
     if (_settings.mobaControlsEnabled) {
-        _mobaOverlayCoordinator = [[MobaOverlayCoordinator alloc] initWithStreamView:_streamView];
+        _mobaOverlayCoordinator = [[MobaOverlayCoordinator alloc]
+            initWithStreamView:_streamView presentationViewController:self];
     }
 #endif
     

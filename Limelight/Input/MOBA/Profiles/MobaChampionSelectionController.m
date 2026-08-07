@@ -26,6 +26,24 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
 }
 @end
 
+@interface MobaChampionPreparedImportState : NSObject
+@property (nonatomic, weak) MobaChampionSelectionController *owner;
+@property (nonatomic, strong) MobaProfileSnapshot *snapshot;
+@property (nonatomic, strong) MobaChampionRuntime *runtime;
+@property (nonatomic, strong) MobaSkillControlPackage *skillControlPackage;
+@property (nonatomic, copy) NSString *championID;
+@property (nonatomic, copy) NSArray<MobaChampionCatalogEntry *> *candidateCatalogEntries;
+@property (nonatomic, copy) NSArray<MobaChampionCatalogEntry *> *oldCatalogEntries;
+@property (nonatomic, copy, nullable) NSString *oldSelectedChampionID;
+@property (nonatomic, strong, nullable) MobaChampionRuntime *oldRuntime;
+@property (nonatomic, strong, nullable) MobaSkillControlPackage *oldSkillControlPackage;
+@property (nonatomic) BOOL commitStarted;
+@property (nonatomic) BOOL rolledBack;
+@end
+
+@implementation MobaChampionPreparedImportState
+@end
+
 @implementation MobaChampionSelectionController {
     MobaProfileRepository *_repository;
     id<MobaChampionRuntimeBuilding> _runtimeBuilder;
@@ -339,6 +357,153 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
                                didSelectRuntime:runtime
                             skillControlPackage:skillControlPackage];
     return YES;
+}
+
+- (BOOL)commitPreparedImportedSnapshot:(MobaProfileSnapshot *)snapshot
+                                runtime:(MobaChampionRuntime *)runtime
+                     skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                  championRelativePath:(NSString *)championRelativePath
+                                  error:(NSError **)error {
+    MobaChampionPreparedImportState *state = [self prepareImportedSnapshot:snapshot
+        runtime:runtime skillControlPackage:skillControlPackage
+        championRelativePath:championRelativePath error:error];
+    return state != nil && [self commitPreparedImportedState:state error:error];
+}
+
+- (MobaChampionPreparedImportState *)prepareImportedSnapshot:(MobaProfileSnapshot *)snapshot
+                                                      runtime:(MobaChampionRuntime *)runtime
+                                           skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                                        championRelativePath:(NSString *)championRelativePath
+                                                        error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    NSString *championID = snapshot.championProfile.championID;
+    if (_invalidated || snapshot == nil || runtime == nil || !skillControlPackage.isComplete ||
+        championID.length == 0 || championRelativePath.length == 0 ||
+        ![runtime.championID isEqualToString:championID]) {
+        if (error != NULL) {
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorPreparedCommitRejected
+                                       championID:championID ?: @"<none>"
+                                        operation:@"commit-imported-profile-runtime"
+                                      description:@"The imported runtime does not match the committed snapshot."
+                                  underlyingError:nil];
+        }
+        return nil;
+    }
+
+    MobaChampionCatalogEntry *entry = [[MobaChampionCatalogEntry alloc]
+        initWithChampionID:championID
+        displayName:snapshot.championProfile.displayName
+        championRelativePath:championRelativePath];
+    if (entry == nil) {
+        if (error != NULL) {
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorPreparedCommitRejected
+                                       championID:championID
+                                        operation:@"create-imported-catalog-entry"
+                                      description:@"The imported Champion catalog entry is invalid."
+                                  underlyingError:nil];
+        }
+        return nil;
+    }
+
+    NSMutableArray<MobaChampionCatalogEntry *> *entries = [_catalogEntries mutableCopy];
+    NSUInteger existingIndex = [entries indexOfObjectPassingTest:^BOOL(MobaChampionCatalogEntry *candidate,
+                                                                        NSUInteger index, BOOL *stop) {
+        return [candidate.championID isEqualToString:championID];
+    }];
+    if (existingIndex == NSNotFound) [entries addObject:entry];
+    else entries[existingIndex] = entry;
+    MobaChampionPreparedImportState *state = [[MobaChampionPreparedImportState alloc] init];
+    state.owner = self;
+    state.snapshot = snapshot;
+    state.runtime = runtime;
+    state.skillControlPackage = skillControlPackage;
+    state.championID = championID;
+    state.candidateCatalogEntries = [entries copy];
+    state.oldCatalogEntries = [_catalogEntries copy];
+    state.oldSelectedChampionID = self.selectedChampionID;
+    state.oldRuntime = self.activeChampionRuntime;
+    state.oldSkillControlPackage = self.activeSkillControlPackage;
+    return state;
+}
+
+- (BOOL)commitPreparedImportedState:(MobaChampionPreparedImportState *)state error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    if (state.owner != self || state.commitStarted || state.rolledBack ||
+        _invalidated || _repository.activeSnapshot != state.snapshot) {
+        if (error != NULL) *error = [self selectionErrorWithCode:MobaChampionSelectionErrorPreparedCommitRejected
+            championID:state.championID ?: @"<none>" operation:@"commit-prepared-import"
+            description:@"The prepared Champion import is stale or cannot be committed."
+            underlyingError:nil];
+        return NO;
+    }
+    state.commitStarted = YES;
+    @try {
+        for (id<MobaLocalInteractionResetParticipant> participant in state.oldRuntime.localInteractionResetParticipants) {
+            [_lifecycle unregisterLocalInteractionResetParticipant:participant];
+        }
+        for (id<MobaLocalInteractionResetParticipant> participant in state.runtime.localInteractionResetParticipants) {
+            [_lifecycle registerLocalInteractionResetParticipant:participant];
+        }
+        @synchronized (self) {
+            _catalogEntries = state.candidateCatalogEntries;
+            _selectedChampionID = state.championID;
+            _activeChampionRuntime = state.runtime;
+            _activeSkillControlPackage = state.skillControlPackage;
+        }
+        [self.delegate championSelectionController:self didSelectRuntime:state.runtime
+            skillControlPackage:state.skillControlPackage];
+        return YES;
+    }
+    @catch (NSException *exception) {
+        NSError *rollbackError = nil;
+        [self rollbackPreparedImportedState:state error:&rollbackError];
+        if (error != NULL) {
+            NSError *underlying = [NSError errorWithDomain:NSCocoaErrorDomain
+                code:NSFileWriteUnknownError
+                userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Champion installation raised an exception."}];
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorUnexpectedException
+                championID:state.championID operation:@"commit-prepared-import"
+                description:@"The prepared Champion installation failed and was restored."
+                underlyingError:rollbackError ?: underlying];
+        }
+        return NO;
+    }
+}
+
+- (BOOL)rollbackPreparedImportedState:(MobaChampionPreparedImportState *)state error:(NSError **)error {
+    if (error != NULL) *error = nil;
+    if (state.owner != self) return NO;
+    if (state.rolledBack || !state.commitStarted) return YES;
+    @try {
+        for (id<MobaLocalInteractionResetParticipant> participant in state.runtime.localInteractionResetParticipants) {
+            [_lifecycle unregisterLocalInteractionResetParticipant:participant];
+        }
+        for (id<MobaLocalInteractionResetParticipant> participant in state.oldRuntime.localInteractionResetParticipants) {
+            [_lifecycle registerLocalInteractionResetParticipant:participant];
+        }
+        @synchronized (self) {
+            _catalogEntries = state.oldCatalogEntries;
+            _selectedChampionID = state.oldSelectedChampionID;
+            _activeChampionRuntime = state.oldRuntime;
+            _activeSkillControlPackage = state.oldSkillControlPackage;
+        }
+        [self.delegate championSelectionController:self didSelectRuntime:state.oldRuntime
+            skillControlPackage:state.oldSkillControlPackage];
+        state.rolledBack = YES;
+        return YES;
+    }
+    @catch (NSException *exception) {
+        if (error != NULL) {
+            NSError *underlying = [NSError errorWithDomain:NSCocoaErrorDomain
+                code:NSFileWriteUnknownError
+                userInfo:@{NSLocalizedDescriptionKey: exception.reason ?: @"Champion rollback raised an exception."}];
+            *error = [self selectionErrorWithCode:MobaChampionSelectionErrorUnexpectedException
+                championID:state.oldSelectedChampionID ?: @"<none>" operation:@"rollback-prepared-import"
+                description:@"The previous Champion runtime could not be restored."
+                underlyingError:underlying];
+        }
+        return NO;
+    }
 }
 
 - (void)invalidate {

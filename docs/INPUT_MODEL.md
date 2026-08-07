@@ -230,3 +230,8 @@ At minimum, simultaneously support:
 3. Attack or a separate action.
 
 MOBA battle mode must prevent the third touch from activating Moonlight's native keyboard gesture.
+## Profile management interruption
+
+Opening Profile management first transitions through Coordinator to UI mode. The existing Lifecycle synchronously closes the Battle gate and queues one Dispatcher `releaseAllInputs` before any modal or document picker appears. Preview, cancellation, export, and picker callbacks never send remote input.
+
+Confirmed import uses the existing profile-reload interruption. Runtime/package replacement cannot reopen Battle. Dismissal, background, rotation, disconnect, controller stop, and feature disable clear pending plans and temporary UI state. Returning from management remains in UI mode and never restores pressed keys, active touches, pending taps, or a prior cast.

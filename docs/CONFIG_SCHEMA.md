@@ -216,3 +216,10 @@ Import UI must show:
 - Summary of values that will replace active state.
 
 The user explicitly confirms before applying.
+## Import, export, and backups
+
+Profile type is detected from JSON content, not the external file name. Complete strong signatures are checked before narrow malformed-profile fallbacks. Unknown root and nested fields do not participate in ambiguity. Two complete profile structures are rejected as ambiguous at `$`, while malformed content with one clear type tendency reaches that type's Decoder and field path. The selected schema-v1 Decoder remains the sole migration and validation authority.
+
+Exports return the active Store bytes without model reserialization. This preserves unknown root and nested values. Runtime, Input, and Layout replace `runtime.json`, `input.json`, and `active-layout.json`. Safe ASCII Champion identifiers retain `champions/<championId>.json`. Other valid UTF-8 identifiers use deterministic base64url components in `champions/encoded/`, while the model and catalog retain the original identifier. External file names never determine Store paths.
+
+Each confirmed import creates `backups/<UTC timestamp>-<UUID>/` before active bytes change. It contains `runtime.json`, `input.json`, `active-layout.json`, `active-champion.json`, `manifest.json`, and `target-champion.json` when a different existing Champion destination is replaced. Manifest format version 1 records UTC time, import kind, prior selected Champion, original active Champion path, replacement path, source-path mappings, and whether the destination existed. Backup browsing and restore UI are not part of schema v1.

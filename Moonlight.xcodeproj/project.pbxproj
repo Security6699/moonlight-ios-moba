@@ -84,6 +84,13 @@
 		D0210000000000000000000D /* MobaSkillTuningSaveTransactionTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D0210000000000000000010D /* MobaSkillTuningSaveTransactionTests.m */; };
 		D0210000000000000000000E /* MobaSkillDragSemantics.m in Sources */ = {isa = PBXBuildFile; fileRef = D0210000000000000000010F /* MobaSkillDragSemantics.m */; };
 		D0210000000000000000000F /* MobaSkillDragSemantics.m in Sources */ = {isa = PBXBuildFile; fileRef = D0210000000000000000010F /* MobaSkillDragSemantics.m */; };
+		D02200000000000000000001 /* MobaProfileTransferService.m in Sources */ = {isa = PBXBuildFile; fileRef = D02200000000000000000102 /* MobaProfileTransferService.m */; };
+		D02200000000000000000002 /* MobaProfileTransferService.m in Sources */ = {isa = PBXBuildFile; fileRef = D02200000000000000000102 /* MobaProfileTransferService.m */; };
+		D02200000000000000000003 /* MobaProfileImportTransaction.m in Sources */ = {isa = PBXBuildFile; fileRef = D02200000000000000000104 /* MobaProfileImportTransaction.m */; };
+		D02200000000000000000004 /* MobaProfileImportTransaction.m in Sources */ = {isa = PBXBuildFile; fileRef = D02200000000000000000104 /* MobaProfileImportTransaction.m */; };
+		D02200000000000000000005 /* MobaProfileTransferViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D02200000000000000000106 /* MobaProfileTransferViewController.m */; };
+		D02200000000000000000006 /* MobaProfileTransferViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = D02200000000000000000106 /* MobaProfileTransferViewController.m */; };
+		D02200000000000000000007 /* MobaProfileTransferServiceTests.m in Sources */ = {isa = PBXBuildFile; fileRef = D02200000000000000000107 /* MobaProfileTransferServiceTests.m */; };
 		C05100000000000000000005 /* MobaSkillCastOrchestrationTests.m in Sources */ = {isa = PBXBuildFile; fileRef = C05100000000000000000105 /* MobaSkillCastOrchestrationTests.m */; };
 		AB1100000000000000000001 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
 		AB1100000000000000000002 /* MobaNativeTouchRoutingController.m in Sources */ = {isa = PBXBuildFile; fileRef = AB1100000000000000000102 /* MobaNativeTouchRoutingController.m */; };
@@ -350,6 +357,13 @@
 		D0210000000000000000010D /* MobaSkillTuningSaveTransactionTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaSkillTuningSaveTransactionTests.m; sourceTree = "<group>"; };
 		D0210000000000000000010E /* MobaSkillDragSemantics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaSkillDragSemantics.h; sourceTree = "<group>"; };
 		D0210000000000000000010F /* MobaSkillDragSemantics.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaSkillDragSemantics.m; sourceTree = "<group>"; };
+		D02200000000000000000101 /* MobaProfileTransferService.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileTransferService.h; sourceTree = "<group>"; };
+		D02200000000000000000102 /* MobaProfileTransferService.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileTransferService.m; sourceTree = "<group>"; };
+		D02200000000000000000103 /* MobaProfileImportTransaction.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileImportTransaction.h; sourceTree = "<group>"; };
+		D02200000000000000000104 /* MobaProfileImportTransaction.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileImportTransaction.m; sourceTree = "<group>"; };
+		D02200000000000000000105 /* MobaProfileTransferViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MobaProfileTransferViewController.h; sourceTree = "<group>"; };
+		D02200000000000000000106 /* MobaProfileTransferViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileTransferViewController.m; sourceTree = "<group>"; };
+		D02200000000000000000107 /* MobaProfileTransferServiceTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MobaProfileTransferServiceTests.m; sourceTree = "<group>"; };
 		566E9D2B2770B23A00EF7BFE /* Moonlight v1.7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Moonlight v1.7.xcdatamodel"; sourceTree = "<group>"; };
 		693B3A9A218638CD00982F7B /* Settings.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; path = Settings.bundle; sourceTree = "<group>"; };
 		9803CCAB254F9EAF00EE185E /* ConnectionCallbacks.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ConnectionCallbacks.h; sourceTree = "<group>"; };
@@ -893,6 +907,10 @@
 		B00400000000000000000109 /* Profiles */ = {
 			isa = PBXGroup;
 			children = (
+				D02200000000000000000101 /* MobaProfileTransferService.h */,
+				D02200000000000000000102 /* MobaProfileTransferService.m */,
+				D02200000000000000000103 /* MobaProfileImportTransaction.h */,
+				D02200000000000000000104 /* MobaProfileImportTransaction.m */,
 				D02100000000000000000101 /* MobaSkillTuning.h */,
 				D02100000000000000000102 /* MobaSkillTuning.m */,
 				D02100000000000000000103 /* MobaSkillTuningSaveTransaction.h */,
@@ -982,6 +1000,8 @@
 		A9C000000000000000000109 /* Controls */ = {
 			isa = PBXGroup;
 			children = (
+				D02200000000000000000105 /* MobaProfileTransferViewController.h */,
+				D02200000000000000000106 /* MobaProfileTransferViewController.m */,
 				D02100000000000000000107 /* MobaAimPreviewView.h */,
 				D02100000000000000000108 /* MobaAimPreviewView.m */,
 				D02100000000000000000109 /* MobaSkillTuningOverlayView.h */,
@@ -1030,6 +1050,7 @@
 		A5D000000000000000000011 /* MoonlightMobaTests */ = {
 			isa = PBXGroup;
 			children = (
+				D02200000000000000000107 /* MobaProfileTransferServiceTests.m */,
 				D0210000000000000000010B /* MobaSkillTuningTests.m */,
 				D0210000000000000000010C /* MobaAimPreviewGeometryTests.m */,
 				D0210000000000000000010D /* MobaSkillTuningSaveTransactionTests.m */,
@@ -1413,6 +1434,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D02200000000000000000002 /* MobaProfileTransferService.m in Sources */,
+				D02200000000000000000004 /* MobaProfileImportTransaction.m in Sources */,
+				D02200000000000000000006 /* MobaProfileTransferViewController.m in Sources */,
+				D02200000000000000000007 /* MobaProfileTransferServiceTests.m in Sources */,
 				D02100000000000000000002 /* MobaSkillTuning.m in Sources */,
 				D02100000000000000000004 /* MobaSkillTuningSaveTransaction.m in Sources */,
 				D02100000000000000000006 /* MobaAimPreviewGeometry.m in Sources */,
@@ -1564,6 +1589,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D02200000000000000000001 /* MobaProfileTransferService.m in Sources */,
+				D02200000000000000000003 /* MobaProfileImportTransaction.m in Sources */,
+				D02200000000000000000005 /* MobaProfileTransferViewController.m in Sources */,
 				D02100000000000000000001 /* MobaSkillTuning.m in Sources */,
 				D02100000000000000000003 /* MobaSkillTuningSaveTransaction.m in Sources */,
 				D02100000000000000000005 /* MobaAimPreviewGeometry.m in Sources */,

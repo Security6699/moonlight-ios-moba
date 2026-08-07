@@ -21,6 +21,7 @@ typedef NS_ERROR_ENUM(MobaProfileStoreErrorDomain, MobaProfileStoreErrorCode) {
     MobaProfileStoreErrorDestinationExists,
     MobaProfileStoreErrorReadFailed,
     MobaProfileStoreErrorWriteFailed,
+    MobaProfileStoreErrorRemoveFailed,
 };
 
 @protocol MobaProfileResourceProviding <NSObject>
@@ -80,6 +81,9 @@ typedef NS_ERROR_ENUM(MobaProfileStoreErrorDomain, MobaProfileStoreErrorCode) {
 - (nullable NSData *)readDataAtRelativePath:(NSString *)relativePath
                                       error:(NSError **)error;
 
+- (BOOL)dataExistsAtRelativePath:(NSString *)relativePath
+                            error:(NSError **)error;
+
 // Reads the bundled source for a manifest destination without consulting the
 // writable profile directory. Parsing remains outside the Store.
 - (nullable NSData *)readBundledDefaultDataForDestinationRelativePath:(NSString *)relativePath
@@ -89,6 +93,17 @@ typedef NS_ERROR_ENUM(MobaProfileStoreErrorDomain, MobaProfileStoreErrorCode) {
     toRelativePath:(NSString *)relativePath
    replaceExisting:(BOOL)replaceExisting
              error:(NSError **)error;
+
+// Import rollback uses this narrow, containment-checked seam only when a new
+// destination did not exist before the transaction. Missing files are a
+// successful no-op. Directories and non-regular items are never removed.
+- (BOOL)removeDataAtRelativePath:(NSString *)relativePath
+                            error:(NSError **)error;
+
+// Removes only a containment-checked directory. Import backup creation uses
+// this to discard its own incomplete directory before a manifest exists.
+- (BOOL)removeDirectoryAtRelativePath:(NSString *)relativePath
+                                 error:(NSError **)error;
 
 @end
 

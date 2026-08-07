@@ -45,6 +45,7 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
 @end
 
 @class MobaChampionSelectionController;
+@class MobaChampionPreparedImportState;
 
 @protocol MobaChampionSelectionControllerDelegate <NSObject>
 - (void)championSelectionController:(MobaChampionSelectionController *)controller
@@ -91,6 +92,27 @@ typedef NS_ERROR_ENUM(MobaChampionSelectionErrorDomain, MobaChampionSelectionErr
 - (BOOL)commitPreparedProfileSnapshot:(MobaProfileSnapshot *)snapshot
                                runtime:(MobaChampionRuntime *)runtime
                     skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                                 error:(NSError **)error;
+
+// Import-only prepared install seam. Unlike editor/tuning commits, this may
+// atomically switch to a newly validated Champion ID and catalog path.
+- (BOOL)commitPreparedImportedSnapshot:(MobaProfileSnapshot *)snapshot
+                                runtime:(MobaChampionRuntime *)runtime
+                     skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                  championRelativePath:(NSString *)championRelativePath
+                                  error:(NSError **)error;
+
+// Import installation preflight and reversible commit. Preparation captures
+// the existing catalog, runtime, package and participant ownership without
+// mutating them. Rollback is idempotent.
+- (nullable MobaChampionPreparedImportState *)prepareImportedSnapshot:(MobaProfileSnapshot *)snapshot
+                                                               runtime:(MobaChampionRuntime *)runtime
+                                                    skillControlPackage:(MobaSkillControlPackage *)skillControlPackage
+                                                 championRelativePath:(NSString *)championRelativePath
+                                                                 error:(NSError **)error;
+- (BOOL)commitPreparedImportedState:(MobaChampionPreparedImportState *)state
+                               error:(NSError **)error;
+- (BOOL)rollbackPreparedImportedState:(MobaChampionPreparedImportState *)state
                                  error:(NSError **)error;
 - (void)invalidate;
 

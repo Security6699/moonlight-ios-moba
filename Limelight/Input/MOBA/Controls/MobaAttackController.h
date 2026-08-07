@@ -41,6 +41,14 @@ FOUNDATION_EXPORT const NSUInteger MobaDefaultAttackTapDurationMs;
 /// This is a silent local gate used by Lifecycle and does not release input.
 - (void)setInteractionEnabled:(BOOL)interactionEnabled;
 
+// Profile-import commit boundary only. The controller must already be
+// disabled, unpressed, and without an owned touch.
+- (BOOL)updateAttackKeyCodeForCommittedProfile:(uint16_t)attackKeyCode
+                                  tapDurationMs:(NSUInteger)tapDurationMs;
+- (BOOL)canApplyCommittedAttackProfile;
+- (void)applyCommittedAttackKeyCodeAfterPreflight:(uint16_t)attackKeyCode
+                                      tapDurationMs:(NSUInteger)tapDurationMs;
+
 /// The first accepted token submits exactly one Dispatcher tap on touch-down.
 - (BOOL)beginInteractionWithToken:(id)token;
 

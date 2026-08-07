@@ -7,6 +7,7 @@
 
 @implementation MobaModeToolbarView {
     UISegmentedControl *_modeControl;
+    UIButton *_profilesButton;
     MobaOverlayMode _selectedMode;
 }
 
@@ -20,6 +21,13 @@
     [_modeControl addTarget:self action:@selector(modeControlChanged:)
           forControlEvents:UIControlEventValueChanged];
     [self addSubview:_modeControl];
+
+    _profilesButton = [UIButton buttonWithType:UIButtonTypeSystem];
+    [_profilesButton setTitle:@"Profiles" forState:UIControlStateNormal];
+    [_profilesButton setTitleColor:UIColor.whiteColor forState:UIControlStateNormal];
+    [_profilesButton addTarget:self action:@selector(profilesTapped)
+              forControlEvents:UIControlEventTouchUpInside];
+    [self addSubview:_profilesButton];
 
     _battleModeAvailable = YES;
     [self setSelectedMode:MobaOverlayModeBattle];
@@ -42,7 +50,7 @@
 }
 
 - (CGSize)intrinsicContentSize {
-    return CGSizeMake(348.0, 42.0);
+    return CGSizeMake(438.0, 42.0);
 }
 
 - (MobaOverlayMode)selectedMode {
@@ -94,9 +102,22 @@
     [self requestMode:mode];
 }
 
+- (void)profilesTapped {
+    if ([_delegate respondsToSelector:@selector(mobaModeToolbarViewDidRequestProfileTransfer:)]) {
+        [_delegate mobaModeToolbarViewDidRequestProfileTransfer:self];
+    }
+}
+
 - (void)layoutSubviews {
     [super layoutSubviews];
-    _modeControl.frame = CGRectInset(self.bounds, 5.0, 5.0);
+    CGRect content = CGRectInset(self.bounds, 5.0, 5.0);
+    CGFloat buttonWidth = 80.0;
+    _profilesButton.frame = CGRectMake(CGRectGetMaxX(content) - buttonWidth,
+                                       CGRectGetMinY(content), buttonWidth,
+                                       CGRectGetHeight(content));
+    _modeControl.frame = CGRectMake(CGRectGetMinX(content), CGRectGetMinY(content),
+                                    MAX(0.0, CGRectGetWidth(content) - buttonWidth - 5.0),
+                                    CGRectGetHeight(content));
 }
 
 @end
