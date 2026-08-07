@@ -131,3 +131,162 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO
+
+      - name: Package unsigned iOS IPA
+        id: unsigned_ipa
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          PRODUCTS_DIR="$RUNNER_TEMP/MoonlightDerivedData/Build/Products/Debug-iphoneos"
+          IPA_ROOT="$RUNNER_TEMP/MoonlightUnsignedIPA"
+          PAYLOAD_DIR="$IPA_ROOT/Payload"
+          OUTPUT_IPA="$IPA_ROOT/Moonlight-MOBA-unsigned.ipa"
+          BUILD_INFO="$IPA_ROOT/Moonlight-MOBA-build-info.txt"
+          APP_CANDIDATES="$RUNNER_TEMP/moonlight-device-app-candidates.txt"
+
+          if [[ ! -d "$PRODUCTS_DIR" ]]; then
+            echo "Device products directory does not exist: $PRODUCTS_DIR" >&2
+            exit 1
+          fi
+
+          find "$PRODUCTS_DIR" -maxdepth 1 -type d -name '*.app' -print | LC_ALL=C sort > "$APP_CANDIDATES"
+          APP_COUNT=0
+          APP_PATH=""
+          while IFS= read -r app_path; do
+            if [[ -n "$app_path" ]]; then
+              APP_COUNT=$((APP_COUNT + 1))
+              APP_PATH="$app_path"
+            fi
+          done < "$APP_CANDIDATES"
+
+          if [[ "$APP_COUNT" -ne 1 ]]; then
+            echo "Expected exactly one top-level device app in $PRODUCTS_DIR; found $APP_COUNT." >&2
+            echo "Top-level app candidates:" >&2
+            if [[ "$APP_COUNT" -eq 0 ]]; then
+              echo "  (none)" >&2
+            else
+              sed 's/^/  /' "$APP_CANDIDATES" >&2
+            fi
+            exit 1
+          fi
+
+          APP_BASENAME="$(basename "$APP_PATH")"
+          INFO_PLIST="$APP_PATH/Info.plist"
+          if [[ ! -f "$INFO_PLIST" ]]; then
+            echo "App Info.plist is missing: $INFO_PLIST" >&2
+            exit 1
+          fi
+
+          read_plist_value() {
+            /usr/libexec/PlistBuddy -c "Print :$1" "$INFO_PLIST"
+          }
+
+          BUNDLE_IDENTIFIER="$(read_plist_value CFBundleIdentifier)"
+          BUNDLE_EXECUTABLE="$(read_plist_value CFBundleExecutable)"
+          BUNDLE_VERSION="$(read_plist_value CFBundleVersion)"
+          if BUNDLE_DISPLAY_NAME="$(read_plist_value CFBundleDisplayName 2>/dev/null)"; then
+            :
+          else
+            BUNDLE_DISPLAY_NAME="$(read_plist_value CFBundleName)"
+          fi
+          if SHORT_VERSION="$(read_plist_value CFBundleShortVersionString 2>/dev/null)"; then
+            :
+          else
+            SHORT_VERSION="(not set)"
+          fi
+
+          APP_EXECUTABLE="$APP_PATH/$BUNDLE_EXECUTABLE"
+          if [[ ! -f "$APP_EXECUTABLE" ]]; then
+            echo "App executable is missing: $APP_EXECUTABLE" >&2
+            exit 1
+          fi
+
+          echo "Device app: $APP_PATH"
+          echo "Bundle ID: $BUNDLE_IDENTIFIER"
+          echo "Executable: $BUNDLE_EXECUTABLE"
+          echo "Display name: $BUNDLE_DISPLAY_NAME"
+          echo "Bundle version: $BUNDLE_VERSION"
+          echo "Short version: $SHORT_VERSION"
+
+          if codesign -dv --verbose=4 "$APP_PATH" 2>&1; then
+            echo "App currently reports code-signing metadata; CI did not add or alter it."
+          else
+            echo "App is unsigned as expected for the CI sideload artifact."
+          fi
+
+          rm -rf "$IPA_ROOT"
+          mkdir -p "$PAYLOAD_DIR"
+          ditto "$APP_PATH" "$PAYLOAD_DIR/$APP_BASENAME"
+
+          (
+            cd "$IPA_ROOT"
+            ditto -c -k --sequesterRsrc --keepParent Payload "$OUTPUT_IPA"
+          )
+
+          if [[ ! -s "$OUTPUT_IPA" ]]; then
+            echo "IPA was not created or is empty: $OUTPUT_IPA" >&2
+            exit 1
+          fi
+
+          unzip -l "$OUTPUT_IPA"
+          ARCHIVE_LIST="$(unzip -Z1 "$OUTPUT_IPA")"
+          INFO_PLIST_COUNT="$(printf '%s\n' "$ARCHIVE_LIST" | grep -Ec '^Payload/[^/]+\.app/Info\.plist$' || true)"
+          if [[ "$INFO_PLIST_COUNT" -ne 1 ]]; then
+            echo "Expected exactly one Payload/*.app/Info.plist; found $INFO_PLIST_COUNT." >&2
+            exit 1
+          fi
+
+          ARCHIVE_APP_PATH="Payload/$APP_BASENAME"
+          ARCHIVE_EXECUTABLE="$ARCHIVE_APP_PATH/$BUNDLE_EXECUTABLE"
+          if ! printf '%s\n' "$ARCHIVE_LIST" | grep -Fxq "$ARCHIVE_EXECUTABLE"; then
+            echo "IPA does not contain the expected executable: $ARCHIVE_EXECUTABLE" >&2
+            exit 1
+          fi
+
+          if printf '%s\n' "$ARCHIVE_LIST" | grep -Eq '(^|/)(Debug-iphonesimulator|DerivedData|SourcePackages|\.git)(/|$)|\.xcarchive(/|$)'; then
+            echo "IPA contains a forbidden simulator, build, source-package, archive, or Git path." >&2
+            exit 1
+          fi
+
+          IPA_SHA256="$(shasum -a 256 "$OUTPUT_IPA" | awk '{print $1}')"
+          IPA_SIZE_BYTES="$(stat -f '%z' "$OUTPUT_IPA")"
+          echo "IPA path: $OUTPUT_IPA"
+          echo "IPA size: $IPA_SIZE_BYTES bytes"
+          echo "IPA SHA-256: $IPA_SHA256"
+
+          cat > "$BUILD_INFO" <<EOF
+          Repository: $GITHUB_REPOSITORY
+          Commit SHA: $GITHUB_SHA
+          Ref: $GITHUB_REF
+          Workflow run: $GITHUB_RUN_ID
+          Configuration: Debug
+          Platform: iphoneos
+          Signing: unsigned
+          App bundle path: $ARCHIVE_APP_PATH
+          Bundle ID: $BUNDLE_IDENTIFIER
+          Executable: $BUNDLE_EXECUTABLE
+          Display name: $BUNDLE_DISPLAY_NAME
+          Bundle Version: $BUNDLE_VERSION
+          Short Version: $SHORT_VERSION
+          IPA size bytes: $IPA_SIZE_BYTES
+          IPA SHA256: $IPA_SHA256
+          EOF
+
+          {
+            echo "app_path=$ARCHIVE_APP_PATH"
+            echo "bundle_identifier=$BUNDLE_IDENTIFIER"
+            echo "bundle_executable=$BUNDLE_EXECUTABLE"
+            echo "ipa_sha256=$IPA_SHA256"
+            echo "ipa_size_bytes=$IPA_SIZE_BYTES"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Upload unsigned iOS IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Moonlight-MOBA-unsigned-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/MoonlightUnsignedIPA/Moonlight-MOBA-unsigned.ipa
+            ${{ runner.temp }}/MoonlightUnsignedIPA/Moonlight-MOBA-build-info.txt
+          if-no-files-found: error
+          retention-days: 14
