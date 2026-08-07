@@ -227,6 +227,8 @@ Every code PR targeting `master` must pass `iOS Build` before merge. CI failures
 
 Run relevant XCTest targets when introduced. A successful compile does not replace XCTest, and neither CI nor XCTest replaces target-iPad touch, lifecycle, latency, layout, or game-calibration testing.
 
+After the unsigned device build and full XCTest gate succeed, the workflow packages that exact `iphoneos` app as `Moonlight-MOBA-unsigned.ipa` and uploads it with non-secret build metadata. This artifact is unsigned and intended only for local development and testing. It must be re-signed before installation on an iPad. No Apple credentials, certificates, provisioning profiles, or signing secrets are stored in this repository or CI.
+
 ## 11. MVP exit criteria
 
 All automated tests pass; nine-point diagnostics pass; no lifecycle stuck keys; Caitlyn strategies behave as configured; layout/opacity and import/export persist; unresolved items are limited to documented calibration values rather than architecture defects.
