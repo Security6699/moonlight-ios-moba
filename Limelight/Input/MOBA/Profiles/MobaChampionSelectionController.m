@@ -32,7 +32,7 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
 @property (nonatomic, strong) MobaChampionRuntime *runtime;
 @property (nonatomic, strong) MobaSkillControlPackage *skillControlPackage;
 @property (nonatomic, copy) NSString *championID;
-@property (nonatomic, copy) NSArray<MobaChampionCatalogEntry *> *newCatalogEntries;
+@property (nonatomic, copy) NSArray<MobaChampionCatalogEntry *> *candidateCatalogEntries;
 @property (nonatomic, copy) NSArray<MobaChampionCatalogEntry *> *oldCatalogEntries;
 @property (nonatomic, copy, nullable) NSString *oldSelectedChampionID;
 @property (nonatomic, strong, nullable) MobaChampionRuntime *oldRuntime;
@@ -418,7 +418,7 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
     state.runtime = runtime;
     state.skillControlPackage = skillControlPackage;
     state.championID = championID;
-    state.newCatalogEntries = [entries copy];
+    state.candidateCatalogEntries = [entries copy];
     state.oldCatalogEntries = [_catalogEntries copy];
     state.oldSelectedChampionID = self.selectedChampionID;
     state.oldRuntime = self.activeChampionRuntime;
@@ -445,7 +445,7 @@ NSString *const MobaChampionSelectionOperationKey = @"MobaChampionSelectionOpera
             [_lifecycle registerLocalInteractionResetParticipant:participant];
         }
         @synchronized (self) {
-            _catalogEntries = state.newCatalogEntries;
+            _catalogEntries = state.candidateCatalogEntries;
             _selectedChampionID = state.championID;
             _activeChampionRuntime = state.runtime;
             _activeSkillControlPackage = state.skillControlPackage;
